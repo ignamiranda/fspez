@@ -20,9 +20,25 @@ class PostDetailScreen extends ConsumerWidget {
       )),
     );
     final voteOverrides = ref.watch(voteProvider);
+    final saveOverrides = ref.watch(saveProvider);
 
     void handleVote(String fullname, VoteDirection direction) {
       ref.read(voteProvider.notifier).toggle(fullname, direction);
+    }
+
+    Future<void> handleSave(String fullname) async {
+      try {
+        await ref.read(saveProvider.notifier).toggle(fullname);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Save failed: $e'),
+              duration: const Duration(seconds: 8),
+            ),
+          );
+        }
+      }
     }
 
     return Scaffold(
@@ -37,9 +53,12 @@ class PostDetailScreen extends ConsumerWidget {
           context,
           detail.comments,
           voteOverrides: voteOverrides,
+          saveOverrides: saveOverrides,
           onVote: handleVote,
+          onSave: handleSave,
         ),
-        loading: () => _buildBody(context, const [], onVote: handleVote),
+        loading: () => _buildBody(context, const [],
+            onVote: handleVote, onSave: handleSave),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -62,11 +81,14 @@ class PostDetailScreen extends ConsumerWidget {
     BuildContext context,
     List<Comment> comments, {
     Map<String, VoteDirection> voteOverrides = const {},
+    Map<String, bool> saveOverrides = const {},
     void Function(String fullname, VoteDirection direction)? onVote,
+    void Function(String fullname)? onSave,
   }) {
     final theme = Theme.of(context);
     final postFullname = 't3_${post.id}';
     final postEffectiveVote = voteOverrides[postFullname];
+    final postEffectiveSaved = saveOverrides[postFullname];
 
     return ListView(
       children: [
@@ -75,6 +97,8 @@ class PostDetailScreen extends ConsumerWidget {
           theme: theme,
           effectiveVote: postEffectiveVote,
           onVote: (dir) => onVote?.call(postFullname, dir),
+          effectiveSaved: postEffectiveSaved,
+          onSave: onSave != null ? () => onSave(postFullname) : null,
         ),
         if (post.selftext != null && post.selftext!.isNotEmpty)
           Padding(
@@ -117,6 +141,8 @@ class PostDetailScreen extends ConsumerWidget {
             comment: c,
             voteOverrides: voteOverrides,
             onVote: onVote,
+            saveOverrides: saveOverrides,
+            onSave: onSave,
           )),
       ],
     );
@@ -128,12 +154,16 @@ class _PostHeader extends StatelessWidget {
   final ThemeData theme;
   final VoteDirection? effectiveVote;
   final ValueChanged<VoteDirection>? onVote;
+  final bool? effectiveSaved;
+  final VoidCallback? onSave;
 
   const _PostHeader({
     required this.post,
     required this.theme,
     this.effectiveVote,
     this.onVote,
+    this.effectiveSaved,
+    this.onSave,
   });
 
   @override
@@ -242,6 +272,19 @@ class _PostHeader extends StatelessWidget {
                   size: 16,
                   color: (effectiveVote ?? post.vote) == VoteDirection.downvote
                       ? Colors.blue
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 16),
+              InkWell(
+                onTap: onSave,
+                child: Icon(
+                  (effectiveSaved ?? post.isSaved)
+                      ? Icons.bookmark
+                      : Icons.bookmark_outline,
+                  size: 16,
+                  color: (effectiveSaved ?? post.isSaved)
+                      ? Colors.amber
                       : theme.colorScheme.onSurfaceVariant,
                 ),
               ),

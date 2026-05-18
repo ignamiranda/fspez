@@ -11,13 +11,16 @@ class CookieParser {
     return SessionCookie(
       value: match.group(1)!,
       expiresAt: DateTime.now().add(const Duration(days: 365)),
+      rawCookie: documentCookie,
     );
   }
 
-  SessionCookie fromValue(String cookieValue) {
+  SessionCookie fromValue(String cookieValue, {String? rawCookie, String? modhash}) {
     return SessionCookie(
       value: cookieValue,
       expiresAt: DateTime.now().add(const Duration(days: 365)),
+      rawCookie: rawCookie,
+      modhash: modhash,
     );
   }
 

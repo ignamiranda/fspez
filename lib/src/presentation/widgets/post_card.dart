@@ -6,6 +6,8 @@ class PostCard extends StatelessWidget {
   final Post post;
   final VoteDirection? effectiveVote;
   final ValueChanged<VoteDirection>? onVote;
+  final bool? effectiveSaved;
+  final VoidCallback? onSave;
   final VoidCallback? onTap;
 
   const PostCard({
@@ -13,6 +15,8 @@ class PostCard extends StatelessWidget {
     required this.post,
     this.effectiveVote,
     this.onVote,
+    this.effectiveSaved,
+    this.onSave,
     this.onTap,
   });
 
@@ -187,7 +191,13 @@ class PostCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           _ActionButton(
-            icon: post.isSaved ? Icons.bookmark : Icons.bookmark_outline,
+            icon: (effectiveSaved ?? post.isSaved)
+                ? Icons.bookmark
+                : Icons.bookmark_outline,
+            color: (effectiveSaved ?? post.isSaved)
+                ? Colors.amber
+                : null,
+            onTap: onSave,
           ),
         ],
       ),

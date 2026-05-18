@@ -30,19 +30,37 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
     _done = true;
     final username = await _extractUsername(cookie);
 
+    // Fetch modhash for save/unsave operations
+    final modhash = await _fetchModhash(cookie);
+    final cookieWithModhash = modhash != null
+        ? SessionCookie(value: cookie.value, expiresAt: cookie.expiresAt, rawCookie: cookie.rawCookie, modhash: modhash)
+        : cookie;
+
     final account = Account(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       username: username,
-      sessionCookie: cookie,
+      sessionCookie: cookieWithModhash,
       isDefault: true,
     );
 
     await ref.read(activeAccountProvider.notifier).addAccount(account);
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Logged in as $username')),
     );
     Navigator.of(context).pop();
+  }
+
+  Future<String?> _fetchModhash(SessionCookie cookie) async {
+    try {
+      final client = ref.read(redditClientProvider);
+      final me = await client.get('/api/me', sessionCookie: cookie);
+      final data = me['data'] as Map<String, dynamic>?;
+      final mh = data?['modhash'] as String?;
+      if (mh != null && mh.isNotEmpty) return mh;
+    } catch (_) {}
+    return null;
   }
 
   Future<String> _extractUsername(SessionCookie cookie) async {
@@ -126,6 +144,20 @@ class _CdpCookieProvider implements CookieProvider {
           return ck['value'] as String;
         }
       }
+    } catch (_) {}
+    return null;
+  }
+
+  @override
+  Future<String?> getCookieString() async {
+    try {
+      final r = await _controller.callDevToolsProtocolMethod(
+        methodName: 'Network.getCookies',
+        parameters: {},
+      );
+      if (r is! Map || r['cookies'] is! List) return null;
+      final cookies = (r['cookies'] as List).cast<Map>();
+      return cookies.map((c) => '${c['name']}=${c['value']}').join('; ');
     } catch (_) {}
     return null;
   }

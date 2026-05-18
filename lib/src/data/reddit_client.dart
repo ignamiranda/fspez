@@ -40,7 +40,10 @@ class RedditClient {
 
   Map<String, dynamic> _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.body.isEmpty) return {};
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return {};
     }
     throw RedditApiException(
       statusCode: response.statusCode,

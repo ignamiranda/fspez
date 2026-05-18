@@ -3,6 +3,7 @@ import 'cookie_parser.dart';
 
 abstract class CookieProvider {
   Future<String?> getRedditSessionValue();
+  Future<String?> getCookieString();
 }
 
 class SessionStore {
@@ -22,7 +23,8 @@ class SessionStore {
     for (var i = 0; i < maxAttempts; i++) {
       final value = await _cookieProvider.getRedditSessionValue();
       if (value != null) {
-        return _cookieParser.fromValue(value);
+        final raw = await _cookieProvider.getCookieString();
+        return _cookieParser.fromValue(value, rawCookie: raw);
       }
       if (i < maxAttempts - 1) {
         await Future.delayed(interval);

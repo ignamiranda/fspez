@@ -7,6 +7,8 @@ import '../data/subreddit_repository.dart';
 import '../data/comment_repository.dart';
 import '../data/vote_repository.dart';
 import '../data/vote_notifier.dart';
+import '../data/save_repository.dart';
+import '../data/save_notifier.dart';
 import '../domain/models/account.dart';
 import '../domain/models/feed.dart';
 import '../domain/enums/feed_sort.dart';
@@ -113,6 +115,17 @@ final voteProvider =
   final repo = ref.watch(voteRepositoryProvider);
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return VoteNotifier(repo, cookie);
+});
+
+final saveRepositoryProvider = Provider<SaveRepository>((ref) {
+  return SaveRepository();
+});
+
+final saveProvider =
+    StateNotifierProvider<SaveNotifier, Map<String, bool>>((ref) {
+  final repo = ref.watch(saveRepositoryProvider);
+  final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return SaveNotifier(repo, cookie);
 });
 
 

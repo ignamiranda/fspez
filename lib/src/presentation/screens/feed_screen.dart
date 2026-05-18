@@ -21,11 +21,26 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     ref.read(voteProvider.notifier).toggle(fullname, direction);
   }
 
+  Future<void> _handleSave(String fullname) async {
+    try {
+      await ref.read(saveProvider.notifier).toggle(fullname);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save failed: $e'),
+          duration: const Duration(seconds: 8),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeAccount = ref.watch(activeAccountProvider);
     final loggedIn = activeAccount != null;
     final voteOverrides = ref.watch(voteProvider);
+    final saveOverrides = ref.watch(saveProvider);
 
     final feedAsync = loggedIn
         ? ref.watch(homeFeedProvider((sort: _sort, after: null)))
@@ -53,7 +68,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         data: (feed) => _FeedList(
           posts: feed.posts,
           voteOverrides: voteOverrides,
+          saveOverrides: saveOverrides,
           onPostVote: _handleVote,
+          onPostSave: _handleSave,
           onPostTap: (post) => Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => PostDetailScreen(post: post),
@@ -87,13 +104,17 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 class _FeedList extends StatelessWidget {
   final List<Post> posts;
   final Map<String, VoteDirection> voteOverrides;
+  final Map<String, bool> saveOverrides;
   final void Function(String fullname, VoteDirection direction)? onPostVote;
+  final void Function(String fullname)? onPostSave;
   final void Function(Post post)? onPostTap;
 
   const _FeedList({
     required this.posts,
     this.voteOverrides = const {},
+    this.saveOverrides = const {},
     this.onPostVote,
+    this.onPostSave,
     this.onPostTap,
   });
 
@@ -114,6 +135,10 @@ class _FeedList extends StatelessWidget {
           effectiveVote: voteOverrides[fullname],
           onVote: onPostVote != null
               ? (dir) => onPostVote!(fullname, dir)
+              : null,
+          effectiveSaved: saveOverrides[fullname],
+          onSave: onPostSave != null
+              ? () => onPostSave!(fullname)
               : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
         );

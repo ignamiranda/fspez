@@ -6,12 +6,16 @@ class CommentTree extends StatelessWidget {
   final Comment comment;
   final Map<String, VoteDirection> voteOverrides;
   final void Function(String fullname, VoteDirection direction)? onVote;
+  final Map<String, bool> saveOverrides;
+  final void Function(String fullname)? onSave;
 
   const CommentTree({
     super.key,
     required this.comment,
     this.voteOverrides = const {},
     this.onVote,
+    this.saveOverrides = const {},
+    this.onSave,
   });
 
   @override
@@ -19,6 +23,7 @@ class CommentTree extends StatelessWidget {
     final theme = Theme.of(context);
     final fullname = 't1_${comment.id}';
     final effectiveVote = voteOverrides[fullname] ?? comment.vote;
+    final effectiveSaved = saveOverrides[fullname] ?? comment.isSaved;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,10 +121,17 @@ class CommentTree extends StatelessWidget {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 12),
-                          Icon(
-                            comment.isSaved ? Icons.bookmark : Icons.bookmark_outline,
-                            size: 16,
-                            color: theme.colorScheme.onSurfaceVariant,
+                          InkWell(
+                            onTap: () => onSave?.call(fullname),
+                            child: Icon(
+                              effectiveSaved
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_outline,
+                              size: 16,
+                              color: effectiveSaved
+                                  ? Colors.amber
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -135,6 +147,8 @@ class CommentTree extends StatelessWidget {
             comment: reply,
             voteOverrides: voteOverrides,
             onVote: onVote,
+            saveOverrides: saveOverrides,
+            onSave: onSave,
           )),
       ],
     );

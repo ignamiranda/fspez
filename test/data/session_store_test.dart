@@ -13,6 +13,9 @@ class _FakeCookieProvider implements CookieProvider {
     callCount++;
     return _value;
   }
+
+  @override
+  Future<String?> getCookieString() async => null;
 }
 
 class _DelayedCookieProvider implements CookieProvider {
@@ -28,6 +31,9 @@ class _DelayedCookieProvider implements CookieProvider {
     if (callCount >= _readyAfterAttempt) return _value;
     return null;
   }
+
+  @override
+  Future<String?> getCookieString() async => null;
 }
 
 void main() {
