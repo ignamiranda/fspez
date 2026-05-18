@@ -24,7 +24,6 @@ class Post with EquatableMixin {
   final DateTime createdAt;
   final String permalink;
   final double? upvoteRatio;
-  final List<MediaAttachment> media;
   final Post? crosspostParent;
 
   const Post({
@@ -47,7 +46,6 @@ class Post with EquatableMixin {
     required this.createdAt,
     required this.permalink,
     this.upvoteRatio,
-    this.media = const [],
     this.crosspostParent,
   });
 
@@ -72,22 +70,6 @@ class Post with EquatableMixin {
         createdAt,
         permalink,
         upvoteRatio,
-        media,
         crosspostParent,
       ];
-}
-
-class MediaAttachment with EquatableMixin {
-  final String url;
-  final int width;
-  final int height;
-
-  const MediaAttachment({
-    required this.url,
-    required this.width,
-    required this.height,
-  });
-
-  @override
-  List<Object?> get props => [url, width, height];
 }

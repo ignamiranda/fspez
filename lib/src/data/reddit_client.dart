@@ -6,40 +6,33 @@ class RedditClient {
   static const _baseUrl = 'https://www.reddit.com';
 
   final http.Client _httpClient;
-  SessionCookie? _sessionCookie;
 
   RedditClient({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
 
-  void setSessionCookie(SessionCookie cookie) {
-    _sessionCookie = cookie;
-  }
-
-  void clearSessionCookie() {
-    _sessionCookie = null;
-  }
-
-  Map<String, String> get _headers => {
+  Map<String, String> _headers(SessionCookie? sessionCookie) => {
         'User-Agent': 'fspez/0.1.0',
         'Content-Type': 'application/json',
-        if (_sessionCookie != null)
-          'Cookie': 'reddit_session=${_sessionCookie!.value}',
+        if (sessionCookie != null)
+          'Cookie': 'reddit_session=${sessionCookie.value}',
       };
 
   Future<Map<String, dynamic>> get(String path,
-      {Map<String, String>? queryParams}) async {
+      {Map<String, String>? queryParams,
+      SessionCookie? sessionCookie}) async {
     final uri = Uri.parse('$_baseUrl$path.json')
         .replace(queryParameters: queryParams);
-    final response = await _httpClient.get(uri, headers: _headers);
+    final response =
+        await _httpClient.get(uri, headers: _headers(sessionCookie));
     return _handleResponse(response);
   }
 
   Future<Map<String, dynamic>> post(String path,
-      {Map<String, dynamic>? body}) async {
+      {Map<String, dynamic>? body, SessionCookie? sessionCookie}) async {
     final uri = Uri.parse('$_baseUrl$path');
     final response = await _httpClient.post(
       uri,
-      headers: _headers,
+      headers: _headers(sessionCookie),
       body: body != null ? jsonEncode(body) : null,
     );
     return _handleResponse(response);

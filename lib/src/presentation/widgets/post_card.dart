@@ -179,12 +179,6 @@ class PostCard extends StatelessWidget {
           const SizedBox(width: 12),
           _ActionButton(
             icon: post.isSaved ? Icons.bookmark : Icons.bookmark_outline,
-            onTap: () {},
-          ),
-          const SizedBox(width: 4),
-          _ActionButton(
-            icon: Icons.more_horiz,
-            onTap: () {},
           ),
         ],
       ),

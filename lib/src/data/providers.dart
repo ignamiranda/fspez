@@ -5,6 +5,7 @@ import '../data/account_repository.dart';
 import '../data/feed_repository.dart';
 import '../data/subreddit_repository.dart';
 import '../domain/models/account.dart';
+import '../domain/models/session_cookie.dart';
 import '../domain/models/feed.dart';
 import '../domain/enums/feed_sort.dart';
 
@@ -26,7 +27,8 @@ final accountsProvider = Provider<List<Account>>((ref) {
   return ref.watch(accountRepositoryProvider).loadAll();
 });
 
-final activeAccountProvider = StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
+final activeAccountProvider =
+    StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
   return ActiveAccountNotifier(ref.watch(accountRepositoryProvider));
 });
 
@@ -51,12 +53,6 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
       state = _repository.loadActive();
     }
   }
-
-  Future<void> refreshSessionCookie() async {
-    final current = state;
-    if (current == null) return;
-    state = _repository.loadActive();
-  }
 }
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
@@ -68,22 +64,28 @@ final subredditRepositoryProvider = Provider<SubredditRepository>((ref) {
 });
 
 final homeFeedProvider =
-    FutureProvider.family<Feed, ({FeedSort sort, String? after})>((ref, params) async {
-  final client = ref.watch(redditClientProvider);
-  final active = ref.watch(activeAccountProvider);
-  if (active != null) {
-    client.setSessionCookie(active.sessionCookie);
-  }
+    FutureProvider.family<Feed, ({FeedSort sort, String? after})>(
+        (ref, params) async {
   final repo = ref.watch(feedRepositoryProvider);
-  return repo.fetchHome(sort: params.sort, after: params.after);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetchHome(
+      sort: params.sort, after: params.after, sessionCookie: sessionCookie);
 });
 
 final popularFeedProvider =
     FutureProvider.family<Feed, String?>((ref, after) async {
-  return ref.watch(feedRepositoryProvider).fetchPopular(after: after);
+  final repo = ref.watch(feedRepositoryProvider);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetchPopular(after: after, sessionCookie: sessionCookie);
 });
 
 final allFeedProvider =
-    FutureProvider.family<Feed, ({FeedSort sort, String? after})>((ref, params) async {
-  return ref.watch(feedRepositoryProvider).fetchAll(sort: params.sort, after: params.after);
+    FutureProvider.family<Feed, ({FeedSort sort, String? after})>(
+        (ref, params) async {
+  final repo = ref.watch(feedRepositoryProvider);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetchAll(
+      sort: params.sort, after: params.after, sessionCookie: sessionCookie);
 });
+
+

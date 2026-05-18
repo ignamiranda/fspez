@@ -14,7 +14,8 @@ class InboxScreen extends ConsumerWidget {
           children: [
             Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
             SizedBox(height: 16),
-            Text('No messages yet', style: TextStyle(color: Colors.grey)),
+            Text('Inbox — not yet implemented',
+                style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),

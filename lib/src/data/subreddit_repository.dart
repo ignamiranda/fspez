@@ -1,4 +1,5 @@
 import '../domain/models/subreddit.dart';
+import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
 
 class SubredditRepository {
@@ -6,8 +7,10 @@ class SubredditRepository {
 
   SubredditRepository(this._client);
 
-  Future<Subreddit> fetch(String subredditName) async {
-    final data = await _client.get('/r/$subredditName/about');
+  Future<Subreddit> fetch(String subredditName,
+      {SessionCookie? sessionCookie}) async {
+    final data =
+        await _client.get('/r/$subredditName/about', sessionCookie: sessionCookie);
     final about = data['data'] as Map<String, dynamic>;
 
     return Subreddit(
@@ -22,17 +25,17 @@ class SubredditRepository {
     );
   }
 
-  Future<void> subscribe(String subredditName) async {
-    await _client.post('/api/subscribe', body: {
-      'sr_name': subredditName,
-      'action': 'sub',
-    });
+  Future<void> subscribe(String subredditName,
+      {SessionCookie? sessionCookie}) async {
+    await _client.post('/api/subscribe',
+        body: {'sr_name': subredditName, 'action': 'sub'},
+        sessionCookie: sessionCookie);
   }
 
-  Future<void> unsubscribe(String subredditName) async {
-    await _client.post('/api/subscribe', body: {
-      'sr_name': subredditName,
-      'action': 'unsub',
-    });
+  Future<void> unsubscribe(String subredditName,
+      {SessionCookie? sessionCookie}) async {
+    await _client.post('/api/subscribe',
+        body: {'sr_name': subredditName, 'action': 'unsub'},
+        sessionCookie: sessionCookie);
   }
 }
