@@ -38,6 +38,9 @@ Use `controller.callDevToolsProtocolMethod('Runtime.evaluate', {awaitPromise: tr
 | `.opencode/skills/reddit-api-auth/SKILL.md` | Skill: debugging modhash-based auth 403s |
 | `opencode.json` | Custom `/learn` command to extract skills from sessions |
 
+## Auto-trigger: `/learn` on commit
+Whenever the user says "commit" (or "git commit", "time to commit", etc.), automatically run the `/learn` command first to extract reusable knowledge from the session before the commit is performed.
+
 ## Constraints
 - No OAuth, no Reddit app registration — all auth via session cookies
 - Save endpoints are stricter than vote (modhash + old.reddit.com + full cookie string)
