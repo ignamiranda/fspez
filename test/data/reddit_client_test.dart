@@ -10,6 +10,10 @@ void main() {
   late _MockHttpClient mockHttp;
   late RedditClient client;
 
+  setUpAll(() {
+    registerFallbackValue(Uri());
+  });
+
   setUp(() {
     mockHttp = _MockHttpClient();
     client = RedditClient(httpClient: mockHttp);

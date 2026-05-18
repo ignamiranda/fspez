@@ -48,6 +48,22 @@ class RedditClient {
     );
   }
 
+  Future<dynamic> getRaw(String path,
+      {Map<String, String>? queryParams,
+      SessionCookie? sessionCookie}) async {
+    final uri = Uri.parse('$_baseUrl$path.json')
+        .replace(queryParameters: queryParams);
+    final response =
+        await _httpClient.get(uri, headers: _headers(sessionCookie));
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    }
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
   void dispose() {
     _httpClient.close();
   }

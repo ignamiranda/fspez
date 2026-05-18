@@ -4,8 +4,8 @@ import '../data/reddit_client.dart';
 import '../data/account_repository.dart';
 import '../data/feed_repository.dart';
 import '../data/subreddit_repository.dart';
+import '../data/comment_repository.dart';
 import '../domain/models/account.dart';
-import '../domain/models/session_cookie.dart';
 import '../domain/models/feed.dart';
 import '../domain/enums/feed_sort.dart';
 
@@ -86,6 +86,19 @@ final allFeedProvider =
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetchAll(
       sort: params.sort, after: params.after, sessionCookie: sessionCookie);
+});
+
+final commentRepositoryProvider = Provider<CommentRepository>((ref) {
+  return CommentRepository(ref.watch(redditClientProvider));
+});
+
+final postDetailProvider =
+    FutureProvider.family<PostDetail, ({String subreddit, String postId})>(
+        (ref, params) async {
+  final repo = ref.watch(commentRepositoryProvider);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetchComments(params.subreddit, params.postId,
+      sessionCookie: sessionCookie);
 });
 
 

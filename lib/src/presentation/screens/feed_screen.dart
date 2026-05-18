@@ -4,6 +4,7 @@ import '../../data/providers.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../widgets/post_card.dart';
+import 'post_detail_screen.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
@@ -43,7 +44,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         ],
       ),
       body: feedAsync.when(
-        data: (feed) => _FeedList(posts: feed.posts),
+        data: (feed) => _FeedList(
+          posts: feed.posts,
+          onPostTap: (post) => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PostDetailScreen(post: post),
+            ),
+          ),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Padding(
@@ -70,8 +78,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
 class _FeedList extends StatelessWidget {
   final List<Post> posts;
+  final void Function(Post post)? onPostTap;
 
-  const _FeedList({required this.posts});
+  const _FeedList({required this.posts, this.onPostTap});
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +91,13 @@ class _FeedList extends StatelessWidget {
     return ListView.separated(
       itemCount: posts.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (context, index) => PostCard(post: posts[index]),
+      itemBuilder: (context, index) {
+        final post = posts[index];
+        return PostCard(
+          post: post,
+          onTap: onPostTap != null ? () => onPostTap!(post) : null,
+        );
+      },
     );
   }
 }
