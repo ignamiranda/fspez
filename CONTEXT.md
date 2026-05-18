@@ -77,6 +77,29 @@ _Avoid_: Mature content, 18+
 > **Dev:** "Can a user moderate a Subreddit from one Account while browsing with a different Account?"
 > **Domain expert:** "Only the active Account's moderation permissions apply. The user must switch to the Account that's listed as a moderator of that Subreddit."
 
+## Learned architecture
+
+### Modhash authentication
+Reddit's old-style API endpoints (`/api/save`, `/api/unsave`, etc.) require an `X-Modhash` header alongside the session cookie. The modhash is a per-session CSRF token embedded in every page response.
+
+**Where to get it:** `GET /api/me` returns `data.modhash` in its JSON response.
+**Where it's stored:** `SessionCookie.modhash`, extracted during the WebView login flow (`_fetchModhash` in `auth_webview_screen.dart`).
+
+**Critical details:**
+- The modhash is NOT a cookie — it's sent as `X-Modhash` header.
+- Different Reddit subdomains accept the same modhash.
+- For old Reddit endpoints (`old.reddit.com`), also send `X-Requested-With: XMLHttpRequest` and `Accept: */*`.
+- `www.reddit.com`'s `/api/save` returns 403; use `old.reddit.com` instead.
+- Send the full `rawCookie` string (all cookies via `; ` join), not just `reddit_session`.
+- `Content-Type` must include `charset=UTF-8` suffix.
+- Vote (`/api/vote`) works with just `reddit_session` and no modhash — save is stricter.
+
+### Debugging Reddit API 403s
+When a Reddit endpoint returns 403 for cookie-authenticated requests:
+1. Use the existing CDP infrastructure (`callDevToolsProtocolMethod`) with `Runtime.evaluate` + `awaitPromise` + `returnByValue` to make a same-origin `fetch()` call from within the WebView. This eliminates TLS fingerprint / HTTP stack differences.
+2. Override `XMLHttpRequest.prototype.open/send` and `XMLHttpRequest.prototype.setRequestHeader` to capture the exact request headers the browser's XHR sends.
+3. Compare against what the Dart `http` package sends. Key differences found this way: `X-Modhash`, `X-Requested-With`, `Accept`, full cookie string, `old.reddit.com` vs `www.reddit.com`.
+
 ## Flagged ambiguities
 
 - "User" was used to mean both a Reddit user (someone else's profile you're viewing) and an Account (your own logged-in identity). Resolved: **Account** for your own identity, **Reddit user** for others. The profile view shows a Reddit user; the settings view manages Accounts.
