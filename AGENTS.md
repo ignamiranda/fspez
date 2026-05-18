@@ -36,6 +36,7 @@ Use `controller.callDevToolsProtocolMethod('Runtime.evaluate', {awaitPromise: tr
 | `lib/src/data/save_notifier.dart` `vote_notifier.dart` | Optimistic state with revert-on-error |
 | `docs/adr/0001-cookie-only-auth.md` | Explains why no OAuth (API pricing changes) |
 | `.opencode/skills/reddit-api-auth/SKILL.md` | Skill: debugging modhash-based auth 403s |
+| `.opencode/skills/learn/SKILL.md` | Skill: extract reusable knowledge into new/updated skills |
 | `opencode.json` | Custom `/learn` command to extract skills from sessions |
 
 ## Auto-trigger: `/learn` on commit
