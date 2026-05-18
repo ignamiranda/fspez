@@ -1,82 +1,52 @@
-import 'dart:async';
-import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
+import 'dart:convert';
 import '../domain/models/session_cookie.dart';
 
-class AuthService {
-  final FlutterWebviewPlugin _webviewPlugin = FlutterWebviewPlugin();
-  final _cookieCompleter = Completer<SessionCookie>();
+SessionCookie? extractCookieFromJs(String documentCookie) {
+  if (!documentCookie.contains('reddit_session')) return null;
 
-  static const _loginUrl = 'https://www.reddit.com/login';
+  final match = RegExp(r'reddit_session=([^;]+)').firstMatch(documentCookie);
+  if (match == null) return null;
 
-  Stream<AuthState> get authState => _authStateController.stream;
-  final _authStateController = StreamController<AuthState>.broadcast();
-
-  Future<SessionCookie> login() async {
-    _authStateController.add(AuthState.inProgress);
-
-    _webviewPlugin.launch(
-      _loginUrl,
-      withJavascript: true,
-      withLocalStorage: true,
-      clearCookies: true,
-      hidden: false,
-    );
-
-    _webviewPlugin.onUrlChanged.listen((String url) {
-      if (url.contains('reddit.com') && !url.contains('/login')) {
-        _extractCookie();
-      }
-    });
-
-    return _cookieCompleter.future;
-  }
-
-  Future<void> _extractCookie() async {
-    try {
-      final cookies = await _webviewPlugin.evalJavascript(
-        'document.cookie',
-      );
-
-      if (cookies is String && cookies.contains('reddit_session')) {
-        final sessionMatch = RegExp(r'reddit_session=([^;]+)').firstMatch(cookies);
-        if (sessionMatch != null) {
-          final cookieValue = sessionMatch.group(1)!;
-
-          await _webviewPlugin.close();
-
-          final cookie = SessionCookie(
-            value: cookieValue,
-            expiresAt: DateTime.now().add(const Duration(days: 365)),
-          );
-
-          _cookieCompleter.complete(cookie);
-          _authStateController.add(AuthState.authenticated);
-          return;
-        }
-      }
-    } catch (e) {
-      _cookieCompleter.completeError(AuthException('Failed to extract cookie: $e'));
-      _authStateController.add(AuthState.error);
-    }
-  }
-
-  Future<void> logout() async {
-    await _webviewPlugin.close();
-    _authStateController.add(AuthState.unauthenticated);
-  }
-
-  void dispose() {
-    _webviewPlugin.dispose();
-    _authStateController.close();
-  }
+  return SessionCookie(
+    value: match.group(1)!,
+    expiresAt: DateTime.now().add(const Duration(days: 365)),
+  );
 }
 
-enum AuthState { unauthenticated, inProgress, authenticated, error }
+String extractUsername(String cookieValue) {
+  try {
+    final decoded = Uri.decodeComponent(cookieValue);
+    final sepPatterns = [':', '%3A', ',', '|'];
+    for (final sep in sepPatterns) {
+      final parts = decoded.split(sep);
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.isNotEmpty &&
+            trimmed.length < 30 &&
+            !RegExp(r'^t[0-9]+_').hasMatch(trimmed)) {
+          return trimmed;
+        }
+      }
+    }
 
-class AuthException implements Exception {
-  final String message;
-  const AuthException(this.message);
+    if (decoded.contains('.')) {
+      final parts = decoded.split('.');
+      if (parts.length >= 2) {
+        try {
+          final padded = base64Url.normalize(parts[1]);
+          final json = utf8.decode(base64Url.decode(padded));
+          final map = jsonDecode(json) as Map;
+          for (final key in ['sub', 'name', 'username', 'id']) {
+            if (map.containsKey(key) && map[key] is String && (map[key] as String).isNotEmpty) {
+              return map[key] as String;
+            }
+          }
+        } catch (_) {}
+      }
+    }
 
-  @override
-  String toString() => 'AuthException: $message';
+    return 'user_${cookieValue.hashCode.abs().toString().substring(0, 6)}';
+  } catch (_) {
+    return 'unknown';
+  }
 }

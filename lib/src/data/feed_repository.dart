@@ -11,7 +11,7 @@ class FeedRepository {
   FeedRepository(this._client);
 
   Future<Feed> fetchHome({FeedSort sort = FeedSort.best, String? after}) {
-    return _fetchFeed('/_api/home', sort, after, FeedKind.home);
+    return _fetchFeed('/best', sort, after, FeedKind.home);
   }
 
   Future<Feed> fetchPopular({String? after}) {

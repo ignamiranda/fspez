@@ -46,16 +46,21 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         data: (feed) => _FeedList(posts: feed.posts),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Failed to load feed'),
-              const SizedBox(height: 8),
-              FilledButton.tonal(
-                onPressed: () => setState(() {}),
-                child: const Text('Retry'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 40),
+                const SizedBox(height: 8),
+                Text('$err', style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                FilledButton.tonal(
+                  onPressed: () => setState(() {}),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
