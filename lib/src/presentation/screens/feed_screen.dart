@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/feed_sort.dart';
+import '../../domain/enums/vote_direction.dart';
 import '../widgets/post_card.dart';
 import 'post_detail_screen.dart';
 
@@ -16,10 +17,15 @@ class FeedScreen extends ConsumerStatefulWidget {
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   FeedSort _sort = FeedSort.hot;
 
+  void _handleVote(String fullname, VoteDirection direction) {
+    ref.read(voteProvider.notifier).toggle(fullname, direction);
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeAccount = ref.watch(activeAccountProvider);
     final loggedIn = activeAccount != null;
+    final voteOverrides = ref.watch(voteProvider);
 
     final feedAsync = loggedIn
         ? ref.watch(homeFeedProvider((sort: _sort, after: null)))
@@ -46,6 +52,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       body: feedAsync.when(
         data: (feed) => _FeedList(
           posts: feed.posts,
+          voteOverrides: voteOverrides,
+          onPostVote: _handleVote,
           onPostTap: (post) => Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => PostDetailScreen(post: post),
@@ -78,9 +86,16 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
 class _FeedList extends StatelessWidget {
   final List<Post> posts;
+  final Map<String, VoteDirection> voteOverrides;
+  final void Function(String fullname, VoteDirection direction)? onPostVote;
   final void Function(Post post)? onPostTap;
 
-  const _FeedList({required this.posts, this.onPostTap});
+  const _FeedList({
+    required this.posts,
+    this.voteOverrides = const {},
+    this.onPostVote,
+    this.onPostTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -93,8 +108,13 @@ class _FeedList extends StatelessWidget {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final post = posts[index];
+        final fullname = 't3_${post.id}';
         return PostCard(
           post: post,
+          effectiveVote: voteOverrides[fullname],
+          onVote: onPostVote != null
+              ? (dir) => onPostVote!(fullname, dir)
+              : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
         );
       },

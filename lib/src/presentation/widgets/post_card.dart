@@ -4,9 +4,17 @@ import '../../domain/enums/vote_direction.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
+  final VoteDirection? effectiveVote;
+  final ValueChanged<VoteDirection>? onVote;
   final VoidCallback? onTap;
 
-  const PostCard({super.key, required this.post, this.onTap});
+  const PostCard({
+    super.key,
+    required this.post,
+    this.effectiveVote,
+    this.onVote,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -150,25 +158,26 @@ class PostCard extends StatelessWidget {
   }
 
   Widget _buildActions(ThemeData theme) {
+    final vote = effectiveVote ?? post.vote;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _ActionButton(
-            icon: post.vote == VoteDirection.upvote
+            icon: vote == VoteDirection.upvote
                 ? Icons.arrow_upward
                 : Icons.arrow_upward_outlined,
             label: _formatCount(post.score),
-            color: post.vote == VoteDirection.upvote ? Colors.orange : null,
-            onTap: () {},
+            color: vote == VoteDirection.upvote ? Colors.orange : null,
+            onTap: () => onVote?.call(VoteDirection.upvote),
           ),
           const SizedBox(width: 4),
           _ActionButton(
-            icon: post.vote == VoteDirection.downvote
+            icon: vote == VoteDirection.downvote
                 ? Icons.arrow_downward
                 : Icons.arrow_downward_outlined,
-            color: post.vote == VoteDirection.downvote ? Colors.blue : null,
-            onTap: () {},
+            color: vote == VoteDirection.downvote ? Colors.blue : null,
+            onTap: () => onVote?.call(VoteDirection.downvote),
           ),
           const SizedBox(width: 12),
           _ActionButton(

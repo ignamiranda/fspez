@@ -5,9 +5,12 @@ import '../data/account_repository.dart';
 import '../data/feed_repository.dart';
 import '../data/subreddit_repository.dart';
 import '../data/comment_repository.dart';
+import '../data/vote_repository.dart';
+import '../data/vote_notifier.dart';
 import '../domain/models/account.dart';
 import '../domain/models/feed.dart';
 import '../domain/enums/feed_sort.dart';
+import '../domain/enums/vote_direction.dart';
 
 final redditClientProvider = Provider<RedditClient>((ref) {
   final client = RedditClient();
@@ -99,6 +102,17 @@ final postDetailProvider =
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetchComments(params.subreddit, params.postId,
       sessionCookie: sessionCookie);
+});
+
+final voteRepositoryProvider = Provider<VoteRepository>((ref) {
+  return VoteRepository(ref.watch(redditClientProvider));
+});
+
+final voteProvider =
+    StateNotifierProvider<VoteNotifier, Map<String, VoteDirection>>((ref) {
+  final repo = ref.watch(voteRepositoryProvider);
+  final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return VoteNotifier(repo, cookie);
 });
 
 

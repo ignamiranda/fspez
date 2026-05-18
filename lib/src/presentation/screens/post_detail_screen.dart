@@ -19,6 +19,11 @@ class PostDetailScreen extends ConsumerWidget {
         postId: post.id,
       )),
     );
+    final voteOverrides = ref.watch(voteProvider);
+
+    void handleVote(String fullname, VoteDirection direction) {
+      ref.read(voteProvider.notifier).toggle(fullname, direction);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -28,8 +33,13 @@ class PostDetailScreen extends ConsumerWidget {
         ),
       ),
       body: detailAsync.when(
-        data: (detail) => _buildBody(context, detail.comments),
-        loading: () => _buildBody(context, const []),
+        data: (detail) => _buildBody(
+          context,
+          detail.comments,
+          voteOverrides: voteOverrides,
+          onVote: handleVote,
+        ),
+        loading: () => _buildBody(context, const [], onVote: handleVote),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -48,12 +58,24 @@ class PostDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, List<Comment> comments) {
+  Widget _buildBody(
+    BuildContext context,
+    List<Comment> comments, {
+    Map<String, VoteDirection> voteOverrides = const {},
+    void Function(String fullname, VoteDirection direction)? onVote,
+  }) {
     final theme = Theme.of(context);
+    final postFullname = 't3_${post.id}';
+    final postEffectiveVote = voteOverrides[postFullname];
 
     return ListView(
       children: [
-        _PostHeader(post: post, theme: theme),
+        _PostHeader(
+          post: post,
+          theme: theme,
+          effectiveVote: postEffectiveVote,
+          onVote: (dir) => onVote?.call(postFullname, dir),
+        ),
         if (post.selftext != null && post.selftext!.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -91,7 +113,11 @@ class PostDetailScreen extends ConsumerWidget {
             child: Center(child: Text('No comments yet')),
           )
         else
-          ...comments.map((c) => CommentTree(comment: c)),
+          ...comments.map((c) => CommentTree(
+            comment: c,
+            voteOverrides: voteOverrides,
+            onVote: onVote,
+          )),
       ],
     );
   }
@@ -100,8 +126,15 @@ class PostDetailScreen extends ConsumerWidget {
 class _PostHeader extends StatelessWidget {
   final Post post;
   final ThemeData theme;
+  final VoteDirection? effectiveVote;
+  final ValueChanged<VoteDirection>? onVote;
 
-  const _PostHeader({required this.post, required this.theme});
+  const _PostHeader({
+    required this.post,
+    required this.theme,
+    this.effectiveVote,
+    this.onVote,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -180,14 +213,17 @@ class _PostHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(
-                post.vote == VoteDirection.upvote
-                    ? Icons.arrow_upward
-                    : Icons.arrow_upward_outlined,
-                size: 16,
-                color: post.vote == VoteDirection.upvote
-                    ? Colors.orange
-                    : theme.colorScheme.onSurfaceVariant,
+              InkWell(
+                onTap: () => onVote?.call(VoteDirection.upvote),
+                child: Icon(
+                  (effectiveVote ?? post.vote) == VoteDirection.upvote
+                      ? Icons.arrow_upward
+                      : Icons.arrow_upward_outlined,
+                  size: 16,
+                  color: (effectiveVote ?? post.vote) == VoteDirection.upvote
+                      ? Colors.orange
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(width: 4),
               Text(
@@ -197,14 +233,17 @@ class _PostHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(
-                post.vote == VoteDirection.downvote
-                    ? Icons.arrow_downward
-                    : Icons.arrow_downward_outlined,
-                size: 16,
-                color: post.vote == VoteDirection.downvote
-                    ? Colors.blue
-                    : theme.colorScheme.onSurfaceVariant,
+              InkWell(
+                onTap: () => onVote?.call(VoteDirection.downvote),
+                child: Icon(
+                  (effectiveVote ?? post.vote) == VoteDirection.downvote
+                      ? Icons.arrow_downward
+                      : Icons.arrow_downward_outlined,
+                  size: 16,
+                  color: (effectiveVote ?? post.vote) == VoteDirection.downvote
+                      ? Colors.blue
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(width: 16),
               const Icon(Icons.chat_bubble_outline, size: 16),

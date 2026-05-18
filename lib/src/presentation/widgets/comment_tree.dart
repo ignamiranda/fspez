@@ -4,12 +4,21 @@ import '../../domain/enums/vote_direction.dart';
 
 class CommentTree extends StatelessWidget {
   final Comment comment;
+  final Map<String, VoteDirection> voteOverrides;
+  final void Function(String fullname, VoteDirection direction)? onVote;
 
-  const CommentTree({super.key, required this.comment});
+  const CommentTree({
+    super.key,
+    required this.comment,
+    this.voteOverrides = const {},
+    this.onVote,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final fullname = 't1_${comment.id}';
+    final effectiveVote = voteOverrides[fullname] ?? comment.vote;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,24 +84,30 @@ class CommentTree extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(
-                            comment.vote == VoteDirection.upvote
-                                ? Icons.arrow_upward
-                                : Icons.arrow_upward_outlined,
-                            size: 16,
-                            color: comment.vote == VoteDirection.upvote
-                                ? Colors.orange
-                                : theme.colorScheme.onSurfaceVariant,
+                          InkWell(
+                            onTap: () => onVote?.call(fullname, VoteDirection.upvote),
+                            child: Icon(
+                              effectiveVote == VoteDirection.upvote
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_upward_outlined,
+                              size: 16,
+                              color: effectiveVote == VoteDirection.upvote
+                                  ? Colors.orange
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           const SizedBox(width: 12),
-                          Icon(
-                            comment.vote == VoteDirection.downvote
-                                ? Icons.arrow_downward
-                                : Icons.arrow_downward_outlined,
-                            size: 16,
-                            color: comment.vote == VoteDirection.downvote
-                                ? Colors.blue
-                                : theme.colorScheme.onSurfaceVariant,
+                          InkWell(
+                            onTap: () => onVote?.call(fullname, VoteDirection.downvote),
+                            child: Icon(
+                              effectiveVote == VoteDirection.downvote
+                                  ? Icons.arrow_downward
+                                  : Icons.arrow_downward_outlined,
+                              size: 16,
+                              color: effectiveVote == VoteDirection.downvote
+                                  ? Colors.blue
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Icon(
@@ -116,7 +131,11 @@ class CommentTree extends StatelessWidget {
           ),
         ),
         if (!comment.isCollapsed)
-          ...comment.replies.map((reply) => CommentTree(comment: reply)),
+          ...comment.replies.map((reply) => CommentTree(
+            comment: reply,
+            voteOverrides: voteOverrides,
+            onVote: onVote,
+          )),
       ],
     );
   }

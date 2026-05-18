@@ -64,6 +64,23 @@ class RedditClient {
     );
   }
 
+  Future<Map<String, dynamic>> postForm(String path,
+      {Map<String, String>? fields,
+      SessionCookie? sessionCookie}) async {
+    final uri = Uri.parse('$_baseUrl$path');
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        'User-Agent': 'fspez/0.1.0',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        if (sessionCookie != null)
+          'Cookie': 'reddit_session=${sessionCookie.value}',
+      },
+      body: fields != null ? Uri(queryParameters: fields).query : null,
+    );
+    return _handleResponse(response);
+  }
+
   void dispose() {
     _httpClient.close();
   }
