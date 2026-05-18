@@ -1,0 +1,93 @@
+import 'package:equatable/equatable.dart';
+import '../../domain/enums/vote_direction.dart';
+import 'subreddit.dart';
+
+enum PostType { link, self_, image, gallery, video, crosspost, poll }
+
+class Post with EquatableMixin {
+  final String id;
+  final String title;
+  final String? selftext;
+  final String? url;
+  final String? thumbnailUrl;
+  final PostType type;
+  final String author;
+  final Subreddit subreddit;
+  final int score;
+  final int commentCount;
+  final VoteDirection vote;
+  final bool isNsfw;
+  final bool isSpoiler;
+  final bool isSaved;
+  final bool isStickied;
+  final bool isLocked;
+  final DateTime createdAt;
+  final String permalink;
+  final double? upvoteRatio;
+  final List<MediaAttachment> media;
+  final Post? crosspostParent;
+
+  const Post({
+    required this.id,
+    required this.title,
+    this.selftext,
+    this.url,
+    this.thumbnailUrl,
+    required this.type,
+    required this.author,
+    required this.subreddit,
+    this.score = 0,
+    this.commentCount = 0,
+    this.vote = VoteDirection.none,
+    this.isNsfw = false,
+    this.isSpoiler = false,
+    this.isSaved = false,
+    this.isStickied = false,
+    this.isLocked = false,
+    required this.createdAt,
+    required this.permalink,
+    this.upvoteRatio,
+    this.media = const [],
+    this.crosspostParent,
+  });
+
+  @override
+  List<Object?> get props => [
+        id,
+        title,
+        selftext,
+        url,
+        thumbnailUrl,
+        type,
+        author,
+        subreddit,
+        score,
+        commentCount,
+        vote,
+        isNsfw,
+        isSpoiler,
+        isSaved,
+        isStickied,
+        isLocked,
+        createdAt,
+        permalink,
+        upvoteRatio,
+        media,
+        crosspostParent,
+      ];
+}
+
+class MediaAttachment with EquatableMixin {
+  final String url;
+  final int width;
+  final int height;
+
+  const MediaAttachment({
+    required this.url,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  List<Object?> get props => [url, width, height];
+}
