@@ -1,3 +1,6 @@
+## Auto-trigger: `/auto-skills` after every task
+Whenever a task completes (all requested changes are implemented, tests pass, and changes are committed), automatically run the `/auto-skills` command to extract any new pitfalls into agent skills before moving on.
+
 ## Commands
 - `flutter analyze` — lint + static analysis (all errors)
 - `flutter test` — unit tests only (no widget/integration tests yet)
@@ -31,7 +34,6 @@ Use `controller.callDevToolsProtocolMethod('Runtime.evaluate', {awaitPromise: tr
 | `lib/src/data/reddit_client.dart` | HTTP wrapper, now includes save/unsave for `old.reddit.com` |
 | `lib/src/data/providers.dart` | All Riverpod providers |
 | `lib/src/data/session_store.dart` | `CookieProvider` abstract class, `SessionStore.acquire()` polling |
-| `lib/src/data/save_repository.dart` | Delegates to `RedditClient` for save/unsave |
 | `lib/src/data/save_notifier.dart` `vote_notifier.dart` | Optimistic state with revert-on-error via `OptimisticStateNotifier` |
 | `lib/src/data/optimistic_state_notifier.dart` | Base class for optimistic-update `StateNotifier` |
 | `lib/src/data/account_notifier.dart` | `ActiveAccountNotifier` |
@@ -50,4 +52,4 @@ Use `controller.callDevToolsProtocolMethod('Runtime.evaluate', {awaitPromise: tr
 - Save endpoints are stricter than vote (modhash + old.reddit.com + full cookie string)
 - SDK `^3.4.0`, Flutter `^3.22.0`, `flutter_inappwebview` for WebView, `shared_preferences` for persistence
 - No `build_runner` / code generation output in repo (freezed/json_serializable listed but not run)
-- Test file `test/data/cookie_parser_test.dart` has a pre-existing failing test (`extractUsername falls back to generic name`)
+
