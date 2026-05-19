@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import 'auth_webview_screen.dart';
+import 'saved_screen.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -53,7 +54,11 @@ class AccountScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.bookmark_outline),
           title: const Text('Saved'),
-          onTap: () {},
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SavedScreen()),
+            );
+          },
         ),
         ListTile(
           leading: const Icon(Icons.history),

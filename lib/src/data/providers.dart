@@ -106,6 +106,14 @@ final postDetailProvider =
       sessionCookie: sessionCookie);
 });
 
+final savedFeedProvider =
+    FutureProvider.family<Feed, String?>((ref, after) async {
+  final repo = ref.watch(feedRepositoryProvider);
+  final account = ref.watch(activeAccountProvider);
+  return repo.fetchSaved(account!.username,
+      after: after, sessionCookie: account.sessionCookie);
+});
+
 final voteRepositoryProvider = Provider<VoteRepository>((ref) {
   return VoteRepository(ref.watch(redditClientProvider));
 });
