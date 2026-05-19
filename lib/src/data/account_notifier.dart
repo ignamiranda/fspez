@@ -14,6 +14,7 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
 
   Future<void> addAccount(Account account) async {
     await _repository.save(account);
+    await _repository.setActive(account.id);
     state = account;
   }
 
