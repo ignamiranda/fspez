@@ -1,11 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../domain/models/account.dart';
 import '../../domain/models/session_cookie.dart';
 import '../../data/providers.dart';
-import '../../data/session_store.dart';
-import '../../data/cookie_parser.dart';
+import '../../data/auth_session_acquirer.dart';
 import '../../data/cdp_cookie_provider.dart';
 
 class AuthWebViewScreen extends ConsumerStatefulWidget {
@@ -23,24 +23,21 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
     final c = _controller;
     if (c == null || _done) return;
 
-    final provider = CdpCookieProvider(c);
-    final store = SessionStore(cookieProvider: provider);
-    final cookie = await store.acquire();
+    final acquirer = AuthSessionAcquirer(
+      cookieProvider: CdpCookieProvider(c),
+      redditClient: ref.read(redditClientProvider),
+    );
+
+    final cookie = await acquirer.acquire();
     if (cookie == null || _done) return;
 
     _done = true;
     final username = await _extractUsername(cookie);
 
-    // Fetch modhash for save/unsave operations
-    final modhash = await _fetchModhash(cookie);
-    final cookieWithModhash = modhash != null
-        ? SessionCookie(value: cookie.value, expiresAt: cookie.expiresAt, rawCookie: cookie.rawCookie, modhash: modhash)
-        : cookie;
-
     final account = Account(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       username: username,
-      sessionCookie: cookieWithModhash,
+      sessionCookie: cookie,
       isDefault: true,
     );
 
@@ -51,17 +48,6 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
       SnackBar(content: Text('Logged in as $username')),
     );
     Navigator.of(context).pop();
-  }
-
-  Future<String?> _fetchModhash(SessionCookie cookie) async {
-    try {
-      final client = ref.read(redditClientProvider);
-      final me = await client.get('/api/me', sessionCookie: cookie);
-      final data = me['data'] as Map<String, dynamic>?;
-      final mh = data?['modhash'] as String?;
-      if (mh != null && mh.isNotEmpty) return mh;
-    } catch (_) {}
-    return null;
   }
 
   Future<String> _extractUsername(SessionCookie cookie) async {
@@ -98,7 +84,45 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
       }
     } catch (_) {}
 
-    return CookieParser().extractUsername(cookie.value);
+    return _extractUsernameFromCookie(cookie.value);
+  }
+
+  String _extractUsernameFromCookie(String cookieValue) {
+    try {
+      final decoded = Uri.decodeComponent(cookieValue);
+      final sepPatterns = [':', '%3A', ',', '|'];
+      for (final sep in sepPatterns) {
+        final parts = decoded.split(sep);
+        for (final part in parts) {
+          final trimmed = part.trim();
+          if (trimmed.isNotEmpty &&
+              trimmed.length < 30 &&
+              !RegExp(r'^t[0-9]+_').hasMatch(trimmed)) {
+            return trimmed;
+          }
+        }
+      }
+      if (decoded.contains('.')) {
+        final parts = decoded.split('.');
+        if (parts.length >= 2) {
+          try {
+            final padded = base64Url.normalize(parts[1]);
+            final json = utf8.decode(base64Url.decode(padded));
+            final map = jsonDecode(json) as Map;
+            for (final key in ['sub', 'name', 'username', 'id']) {
+              if (map.containsKey(key) &&
+                  map[key] is String &&
+                  (map[key] as String).isNotEmpty) {
+                return map[key] as String;
+              }
+            }
+          } catch (_) {}
+        }
+      }
+      return 'user_${cookieValue.hashCode.abs().toString().substring(0, 6)}';
+    } catch (_) {
+      return 'unknown';
+    }
   }
 
   @override
