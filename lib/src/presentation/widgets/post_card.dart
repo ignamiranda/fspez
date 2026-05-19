@@ -10,6 +10,7 @@ class PostCard extends StatelessWidget {
   final bool? effectiveSaved;
   final VoidCallback? onSave;
   final VoidCallback? onTap;
+  final VoidCallback? onSubredditTap;
 
   const PostCard({
     super.key,
@@ -19,6 +20,7 @@ class PostCard extends StatelessWidget {
     this.effectiveSaved,
     this.onSave,
     this.onTap,
+    this.onSubredditTap,
   });
 
   @override
@@ -120,12 +122,15 @@ class PostCard extends StatelessWidget {
           child: Row(
             children: [
               Flexible(
-                child: Text(
-                  'r/${post.subreddit.name}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                child: InkWell(
+                  onTap: onSubredditTap,
+                  child: Text(
+                    'r/${post.subreddit.name}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),

@@ -10,7 +10,10 @@ class PostList extends StatelessWidget {
   final void Function(String fullname, VoteDirection direction)? onPostVote;
   final void Function(String fullname)? onPostSave;
   final void Function(Post post)? onPostTap;
+  final void Function(Post post)? onSubredditTap;
   final String emptyMessage;
+  final ScrollController? scrollController;
+  final Widget? footer;
 
   const PostList({
     super.key,
@@ -20,7 +23,10 @@ class PostList extends StatelessWidget {
     this.onPostVote,
     this.onPostSave,
     this.onPostTap,
+    this.onSubredditTap,
     this.emptyMessage = 'No posts yet.',
+    this.scrollController,
+    this.footer,
   });
 
   @override
@@ -29,23 +35,34 @@ class PostList extends StatelessWidget {
       return Center(child: Text(emptyMessage));
     }
 
-    return ListView.separated(
-      itemCount: posts.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+    final hasFooter = footer != null;
+    return ListView.builder(
+      controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      itemCount: posts.length + (hasFooter ? 1 : 0),
       itemBuilder: (context, index) {
+        if (hasFooter && index == posts.length) return footer!;
         final post = posts[index];
         final fullname = 't3_${post.id}';
-        return PostCard(
-          post: post,
-          effectiveVote: voteOverrides[fullname],
-          onVote: onPostVote != null
-              ? (dir) => onPostVote!(fullname, dir)
-              : null,
-          effectiveSaved: saveOverrides[fullname],
-          onSave: onPostSave != null
-              ? () => onPostSave!(fullname)
-              : null,
-          onTap: onPostTap != null ? () => onPostTap!(post) : null,
+        return Column(
+          children: [
+            if (index > 0) const Divider(height: 1),
+            PostCard(
+              post: post,
+              effectiveVote: voteOverrides[fullname],
+              onVote: onPostVote != null
+                  ? (dir) => onPostVote!(fullname, dir)
+                  : null,
+              effectiveSaved: saveOverrides[fullname],
+              onSave: onPostSave != null
+                  ? () => onPostSave!(fullname)
+                  : null,
+              onTap: onPostTap != null ? () => onPostTap!(post) : null,
+              onSubredditTap: onSubredditTap != null
+                  ? () => onSubredditTap!(post)
+                  : null,
+            ),
+          ],
         );
       },
     );

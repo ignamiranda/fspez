@@ -12,6 +12,7 @@ import 'save_repository.dart';
 import 'save_notifier.dart';
 import '../domain/models/account.dart';
 import '../domain/models/feed.dart';
+import '../domain/models/subreddit.dart';
 import '../domain/enums/feed_sort.dart';
 import '../domain/enums/vote_direction.dart';
 
@@ -82,6 +83,22 @@ final postDetailProvider =
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetchComments(params.subreddit, params.postId,
       sessionCookie: sessionCookie);
+});
+
+final subredditFeedProvider =
+    FutureProvider.family<Feed, ({String subredditName, FeedSort sort, String? after})>(
+        (ref, params) async {
+  final repo = ref.watch(feedRepositoryProvider);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetchSubreddit(params.subredditName,
+      sort: params.sort, after: params.after, sessionCookie: sessionCookie);
+});
+
+final subredditInfoProvider =
+    FutureProvider.family<Subreddit, String>((ref, name) async {
+  final repo = ref.watch(subredditRepositoryProvider);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetch(name, sessionCookie: sessionCookie);
 });
 
 final savedFeedProvider =

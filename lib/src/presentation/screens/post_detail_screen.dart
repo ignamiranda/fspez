@@ -7,6 +7,7 @@ import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import '../utils/interaction_helpers.dart';
 import '../widgets/comment_tree.dart';
+import 'subreddit_feed_screen.dart';
 
 class PostDetailScreen extends ConsumerWidget {
   final Post post;
@@ -177,12 +178,21 @@ class _PostHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     Flexible(
-                      child: Text(
-                        'r/${post.subreddit.name}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => SubredditFeedScreen(
+                              subredditName: post.subreddit.name,
+                            ),
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        child: Text(
+                          'r/${post.subreddit.name}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
