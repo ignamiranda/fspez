@@ -156,6 +156,16 @@ class PostCard extends StatelessWidget {
             ],
           ),
         ),
+        if (post.isStickied)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.tertiary),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text('PINNED',
+                style: TextStyle(fontSize: 9, color: theme.colorScheme.tertiary)),
+          ),
         if (post.isNsfw)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
