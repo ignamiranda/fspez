@@ -4,8 +4,8 @@ import '../../data/providers.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../../domain/models/account.dart';
-import '../../domain/models/post.dart';
 import '../utils/interaction_helpers.dart';
+import '../widgets/feed_loader.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'search_screen.dart';
@@ -20,80 +20,39 @@ class FeedScreen extends ConsumerStatefulWidget {
 
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   FeedSort _sort = FeedSort.hot;
-  final _scrollController = ScrollController();
-
-  List<Post> _posts = [];
-  String? _after;
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
-
+  late FeedLoader _feeder;
   Account? _account;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitial());
+    _initFeeder();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _feeder.loadInitial());
+  }
+
+  void _initFeeder() {
+    _feeder = FeedLoader(
+      fetchPage: ({after}) {
+        final repo = ref.read(feedRepositoryProvider);
+        final cookie = ref.read(activeAccountProvider)?.sessionCookie;
+        return _account != null
+            ? repo.fetchHome(sort: _sort, after: after, sessionCookie: cookie)
+            : repo.fetchPopular(after: after, sessionCookie: cookie);
+      },
+    );
+    _feeder.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _feeder.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      _loadMore();
-    }
-  }
-
-  Future<void> _loadInitial() async {
-    setState(() {
-      _isLoading = true;
-      _isLoadingMore = false;
-      _posts = [];
-      _after = null;
-      _hasMore = true;
-    });
-    try {
-      final repo = ref.read(feedRepositoryProvider);
-      final cookie = _account?.sessionCookie;
-      final feed = _account != null
-          ? await repo.fetchHome(sort: _sort, sessionCookie: cookie)
-          : await repo.fetchPopular(sessionCookie: cookie);
-      setState(() {
-        _posts = feed.posts;
-        _after = feed.after;
-        _hasMore = feed.hasMorePages;
-        _isLoading = false;
-      });
-    } catch (_) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore) return;
-    setState(() => _isLoadingMore = true);
-    try {
-      final repo = ref.read(feedRepositoryProvider);
-      final cookie = _account?.sessionCookie;
-      final feed = _account != null
-          ? await repo.fetchHome(sort: _sort, after: _after, sessionCookie: cookie)
-          : await repo.fetchPopular(after: _after, sessionCookie: cookie);
-      setState(() {
-        _posts.addAll(feed.posts);
-        _after = feed.after;
-        _hasMore = feed.hasMorePages;
-        _isLoadingMore = false;
-      });
-    } catch (_) {
-      setState(() => _isLoadingMore = false);
-    }
+  void _reload() {
+    _feeder.dispose();
+    _initFeeder();
+    _feeder.loadInitial();
   }
 
   @override
@@ -105,7 +64,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
     if (account != _account) {
       _account = account;
-      _loadInitial();
+      _reload();
     }
 
     final title = loggedIn ? 'fspez' : 'Popular';
@@ -122,14 +81,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadInitial,
+            onPressed: _reload,
           ),
           if (loggedIn)
             PopupMenuButton<FeedSort>(
               icon: const Icon(Icons.sort),
               onSelected: (sort) {
                 setState(() => _sort = sort);
-                _loadInitial();
+                _reload();
               },
               itemBuilder: (_) => FeedSort.values.map((sort) {
                 return PopupMenuItem(
@@ -149,13 +108,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     Map<String, bool> saveOverrides,
     bool loggedIn,
   ) {
-    if (_isLoading) {
+    if (_feeder.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return PostList(
-      scrollController: _scrollController,
-      posts: _posts,
+      scrollController: _feeder.scrollController,
+      posts: _feeder.posts,
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
       onPostVote: (fullname, dir) =>
@@ -177,7 +136,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       emptyMessage: loggedIn
           ? 'No posts yet.'
           : 'No posts yet. Log in to see your home feed.',
-      footer: _isLoadingMore
+      footer: _feeder.isLoadingMore
           ? const Padding(
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),

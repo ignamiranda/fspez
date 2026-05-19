@@ -4,8 +4,9 @@ import '../../data/providers.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../../domain/models/subreddit.dart';
-import '../../domain/models/post.dart';
 import '../utils/interaction_helpers.dart';
+import '../utils/format_utils.dart';
+import '../widgets/feed_loader.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'submit_screen.dart';
@@ -22,80 +23,42 @@ class SubredditFeedScreen extends ConsumerStatefulWidget {
 
 class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
   FeedSort _sort = FeedSort.hot;
-  final _scrollController = ScrollController();
-
-  List<Post> _posts = [];
-  String? _after;
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
+  late FeedLoader _feeder;
   Subreddit? _subInfo;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _initFeeder();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitial();
+      _feeder.loadInitial();
       _loadSubInfo();
     });
   }
 
+  void _initFeeder() {
+    _feeder = FeedLoader(
+      fetchPage: ({after}) {
+        final repo = ref.read(feedRepositoryProvider);
+        final cookie = ref.read(activeAccountProvider)?.sessionCookie;
+        return repo.fetchSubreddit(widget.subredditName,
+            sort: _sort, after: after, sessionCookie: cookie);
+      },
+    );
+    _feeder.addListener(() => setState(() {}));
+  }
+
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _feeder.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      _loadMore();
-    }
-  }
-
-  Future<void> _loadInitial() async {
-    setState(() {
-      _isLoading = true;
-      _isLoadingMore = false;
-      _posts = [];
-      _after = null;
-      _hasMore = true;
-    });
-    try {
-      final repo = ref.read(feedRepositoryProvider);
-      final cookie = ref.read(activeAccountProvider)?.sessionCookie;
-      final feed = await repo.fetchSubreddit(widget.subredditName,
-          sort: _sort, sessionCookie: cookie);
-      setState(() {
-        _posts = feed.posts;
-        _after = feed.after;
-        _hasMore = feed.hasMorePages;
-        _isLoading = false;
-      });
-    } catch (_) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore) return;
-    setState(() => _isLoadingMore = true);
-    try {
-      final repo = ref.read(feedRepositoryProvider);
-      final cookie = ref.read(activeAccountProvider)?.sessionCookie;
-      final feed = await repo.fetchSubreddit(widget.subredditName,
-          sort: _sort, after: _after, sessionCookie: cookie);
-      setState(() {
-        _posts.addAll(feed.posts);
-        _after = feed.after;
-        _hasMore = feed.hasMorePages;
-        _isLoadingMore = false;
-      });
-    } catch (_) {
-      setState(() => _isLoadingMore = false);
-    }
+  void _reload() {
+    _feeder.dispose();
+    _initFeeder();
+    _feeder.loadInitial();
+    _loadSubInfo();
   }
 
   Future<void> _loadSubInfo() async {
@@ -119,16 +82,13 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _loadInitial();
-              _loadSubInfo();
-            },
+            onPressed: _reload,
           ),
           PopupMenuButton<FeedSort>(
             icon: const Icon(Icons.sort),
             onSelected: (sort) {
               setState(() => _sort = sort);
-              _loadInitial();
+              _reload();
             },
             itemBuilder: (_) => FeedSort.values.map((sort) {
               return PopupMenuItem(
@@ -156,7 +116,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
     Map<String, VoteDirection> voteOverrides,
     Map<String, bool> saveOverrides,
   ) {
-    if (_isLoading) {
+    if (_feeder.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -166,8 +126,8 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
           _SubredditHeader(sub: _subInfo!, ref: ref),
         Expanded(
           child: PostList(
-            scrollController: _scrollController,
-            posts: _posts,
+            scrollController: _feeder.scrollController,
+            posts: _feeder.posts,
             voteOverrides: voteOverrides,
             saveOverrides: saveOverrides,
             onPostVote: (fullname, dir) =>
@@ -188,7 +148,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
                 ),
               );
             },
-            footer: _isLoadingMore
+            footer: _feeder.isLoadingMore
                 ? const Padding(
                     padding: EdgeInsets.all(16),
                     child: Center(child: CircularProgressIndicator()),
@@ -245,7 +205,7 @@ class _SubredditHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_formatCount(sub.subscriberCount)} subscribers',
+                  '${formatCount(sub.subscriberCount)} subscribers',
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -271,11 +231,5 @@ class _SubredditHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return count.toString();
   }
 }
