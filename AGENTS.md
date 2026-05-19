@@ -8,13 +8,14 @@ Whenever a task completes (all requested changes are implemented, tests pass, an
 - `flutter build windows` — Windows release build
 
 ## Architecture
-- **`lib/src/data/`** — `RedditClient` (HTTP wrapper, now includes save/unsave), repositories (feed, comment, vote, save, subreddit), notifiers (`OptimisticStateNotifier` base class + `VoteNotifier`, `SaveNotifier`, `ActiveAccountNotifier`), parsers (feed, comment, cookie), `providers.dart` (all Riverpod providers), `session_store.dart` (WebView cookie polling), `cdp_cookie_provider.dart` (public CookieProvider adapter)
+- **`lib/src/data/`** — `RedditClient` (HTTP wrapper with `ApiEndpoint` enum for header config), `AuthAcquirer` (CDP cookie extraction + polling + modhash + username), repositories (feed, comment, vote, save, subreddit), notifiers (`OptimisticStateNotifier` base class + `VoteNotifier`, `SaveNotifier`, `ActiveAccountNotifier`, `FeedPageNotifier`), parsers (feed, comment, cookie, shared), `providers.dart` (all Riverpod providers)
 - **`lib/src/domain/`** — models (`Post`, `Comment`, `Feed`, `Account`, `SessionCookie`, `Subreddit`), enums (`FeedSort`, `VoteDirection`). Pure data objects, no logic.
-- **`lib/src/presentation/`** — `app.dart` (MaterialApp + bottom nav), screens (feed, inbox, account, auth_webview, post_detail, saved, search, subreddit_feed), widgets (`PostCard`, `CommentTree`, `PostList`), utils (`format_utils.dart`, `interaction_helpers.dart`)
+- **`lib/src/presentation/`** — `app.dart` (MaterialApp + bottom nav), screens (feed, inbox, account, auth_webview, post_detail, saved, search, subreddit_feed), widgets (`PostCard`, `PostHeader`, `PostActions`, `PostList`, `CommentTree`), utils (`format_utils.dart`, `interaction_helpers.dart`)
 - **Entrypoint**: `lib/main.dart` — initializes `SharedPreferences`, overrides into `ProviderScope`, launches `FspezApp`
-- **Riverpod**: All state managed via `StateNotifierProvider` (vote, save, active account) and `FutureProvider.family` (feed, post detail)
+- **Riverpod**: `StateNotifierProvider.family<FeedPageNotifier, FeedPageState, FeedPageConfig>` for paginated feeds, `StateNotifierProvider` for vote/save/active-account, `FutureProvider.family` for post detail.
 - **StateNotifier pattern**: `VoteNotifier` / `SaveNotifier` extend `OptimisticStateNotifier<String, V>` which provides `optimisticSet()` / `optimisticRevert()` / `effective()`. Both use optimistic updates; SaveNotifier reverts on any error and rethrows, VoteNotifier keeps optimistic state on error (swallows it).
-- **Auth**: No OAuth. `AuthWebViewScreen` opens WebView → user logs in → JS injection extracts `reddit_session` from CDP `Network.getCookies` → polls every 500ms up to 10 attempts → stores `SessionCookie` with `rawCookie` (all cookies) and `modhash` in `SharedPreferences` via `AccountRepository`
+- **Auth**: No OAuth. `AuthAcquirer` (single module) handles: CDP `Network.getCookies` polling up to 10 attempts at 500ms, modhash fetch via `GET /api/me`, username extraction (JS eval → API call → cookie heuristic). Screen only calls `acquirer.acquire(controller)` + `acquirer.extractUsername(cookie)`.
+- **Pagination**: `FeedPageNotifier` (StateNotifier) owns scroll controller, cursor/after, loading flags, and fetch dispatch. Screens provide `FeedPageConfig` (kind + sort + identifier) via single `feedPageProvider.family`. No FeedLoader, no initState/dispose boilerplate on screens.
 
 ## Save feature: Modhash requirement
 Save/unsave goes through `RedditClient.save()`/`RedditClient.unsave()` which hit `https://old.reddit.com/api/save` with browser-headers. Callers don't need to handle old.reddit.com specifics. Requirements:
@@ -33,13 +34,15 @@ Use `controller.callDevToolsProtocolMethod('Runtime.evaluate', {awaitPromise: tr
 |------|---------|
 | `lib/src/data/reddit_client.dart` | HTTP wrapper, now includes save/unsave for `old.reddit.com` |
 | `lib/src/data/providers.dart` | All Riverpod providers |
-| `lib/src/data/session_store.dart` | `CookieProvider` abstract class, `SessionStore.acquire()` polling |
+| `lib/src/data/auth_acquirer.dart` | Public `AuthAcquirer` — CDP cookie acquisition + polling + modhash + username |
 | `lib/src/data/save_notifier.dart` `vote_notifier.dart` | Optimistic state with revert-on-error via `OptimisticStateNotifier` |
 | `lib/src/data/optimistic_state_notifier.dart` | Base class for optimistic-update `StateNotifier` |
 | `lib/src/data/account_notifier.dart` | `ActiveAccountNotifier` |
-| `lib/src/data/cdp_cookie_provider.dart` | Public `CookieProvider` via CDP `Network.getCookies` |
-| `lib/src/presentation/screens/auth_webview_screen.dart` | WebView login flow, CDP cookie extraction, modhash fetch |
+| `lib/src/data/feed_pagination.dart` | `FeedPageNotifier` + `FeedPageConfig` + `FeedPageState` — paginated feed seam |
+| `lib/src/data/parsers/shared_parsers.dart` | Shared `parseVoteDirection()` / `postTypeFromMap()` |
+| `lib/src/presentation/screens/auth_webview_screen.dart` | WebView login flow, delegates to `AuthAcquirer` |
 | `lib/src/presentation/widgets/post_list.dart` | Shared `PostList` widget for PostCard lists |
+| `lib/src/presentation/widgets/post_actions.dart` | Shared `PostHeader` and `PostActions` widgets |
 | `lib/src/presentation/utils/interaction_helpers.dart` | Shared `handleVote()`/`handleSave()` |
 | `lib/src/presentation/utils/format_utils.dart` | Shared `formatCount()`/`timeAgo()` |
 | `docs/adr/0001-cookie-only-auth.md` | Explains why no OAuth (API pricing changes) |
