@@ -38,6 +38,26 @@ Send as `X-Modhash` header on every write request that needs it. It does NOT go 
 
 Reddit search is `GET https://www.reddit.com/search?q=<query>` (NOT `/api/search`). Returns standard listing format — compatible with `FeedParser.parseFeed`. The `.json` suffix is appended automatically by `RedditClient.get()`.
 
+## Submit (post creation)
+
+`/api/submit` requires old.reddit.com + full browser headers + modhash (same as save/unsave):
+
+- **Domain**: `https://old.reddit.com/api/submit`
+- **Headers**: Same as save (User-Agent: Mozilla, X-Modhash, X-Requested-With, full Cookie, Content-Type with charset)
+- **Body**: `kind=self|link&sr=<subreddit>&title=<title>&text=<text>&url=<url>&uh=<modhash>`
+
+Use `RedditClient.submit()` in `lib/src/data/reddit_client.dart`.
+
+## Comment (posting replies)
+
+`/api/comment` is simpler — uses `www.reddit.com` NOT old.reddit.com, and lighter headers:
+
+- **Domain**: `https://www.reddit.com/api/comment`
+- **Headers**: `User-Agent: fspez/0.1.0`, `Content-Type: application/x-www-form-urlencoded`, `Cookie: reddit_session=...`, `X-Modhash` (still needed)
+- **Body**: `thing_id=t3_xxx|t1_xxx&text=<comment>&uh=<modhash>`
+
+Use `RedditClient.comment()` in `lib/src/data/reddit_client.dart`.
+
 ## Vote vs Save
 
 `/api/vote` is less strict — works with just:

@@ -72,4 +72,35 @@ class CommentRepository {
       comments: comments,
     );
   }
+
+  Future<void> reply({
+    required String thingId,
+    required String text,
+    required SessionCookie sessionCookie,
+  }) async {
+    await _client.comment(
+      fields: {
+        'thing_id': thingId,
+        'text': text,
+        'uh': sessionCookie.modhash ?? '',
+      },
+      sessionCookie: sessionCookie,
+    );
+  }
+
+  Future<void> edit({
+    required String thingId,
+    required String text,
+    required SessionCookie sessionCookie,
+  }) async {
+    await _client.comment(
+      fields: {
+        'thing_id': thingId,
+        'text': text,
+        'uh': sessionCookie.modhash ?? '',
+        'm' : 'edit',
+      },
+      sessionCookie: sessionCookie,
+    );
+  }
 }

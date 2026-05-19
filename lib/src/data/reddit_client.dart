@@ -150,6 +150,33 @@ class RedditClient {
     );
   }
 
+  Future<Map<String, dynamic>> comment({
+    required Map<String, String> fields,
+    required SessionCookie sessionCookie,
+  }) async {
+    final cookie = sessionCookie.rawCookie ??
+        'reddit_session=${sessionCookie.value}';
+    final uri = Uri.parse('https://www.reddit.com/api/comment');
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        'User-Agent': 'fspez/0.1.0',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': cookie,
+        if (sessionCookie.modhash != null)
+          'X-Modhash': sessionCookie.modhash!,
+      },
+      body: Uri(queryParameters: fields).query,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return {'success': true};
+    }
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
   void dispose() {
     _httpClient.close();
   }

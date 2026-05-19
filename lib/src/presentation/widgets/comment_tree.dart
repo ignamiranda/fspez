@@ -8,6 +8,7 @@ class CommentTree extends StatelessWidget {
   final void Function(String fullname, VoteDirection direction)? onVote;
   final Map<String, bool> saveOverrides;
   final void Function(String fullname)? onSave;
+  final void Function(String commentId, String author)? onReply;
 
   const CommentTree({
     super.key,
@@ -16,6 +17,7 @@ class CommentTree extends StatelessWidget {
     this.onVote,
     this.saveOverrides = const {},
     this.onSave,
+    this.onReply,
   });
 
   @override
@@ -115,12 +117,20 @@ class CommentTree extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          Icon(
-                            Icons.reply_outlined,
-                            size: 16,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 12),
+                          if (onReply != null)
+                            InkWell(
+                              onTap: () => onReply!(comment.id, comment.author),
+                              child: const Icon(
+                                Icons.reply_outlined,
+                                size: 16,
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.reply_outlined,
+                              size: 16,
+                            ),
+                          const SizedBox(width: 16),
                           InkWell(
                             onTap: () => onSave?.call(fullname),
                             child: Icon(
@@ -149,6 +159,7 @@ class CommentTree extends StatelessWidget {
             onVote: onVote,
             saveOverrides: saveOverrides,
             onSave: onSave,
+            onReply: onReply,
           )),
       ],
     );

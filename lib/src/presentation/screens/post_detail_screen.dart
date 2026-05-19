@@ -9,17 +9,80 @@ import '../utils/interaction_helpers.dart';
 import '../widgets/comment_tree.dart';
 import 'subreddit_feed_screen.dart';
 
-class PostDetailScreen extends ConsumerWidget {
+class PostDetailScreen extends ConsumerStatefulWidget {
   final Post post;
 
   const PostDetailScreen({super.key, required this.post});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
+  final _commentController = TextEditingController();
+  bool _isSending = false;
+  String? _replyToId;
+  String? _replyToName;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+    final account = ref.read(activeAccountProvider);
+    if (account == null) return;
+
+    setState(() => _isSending = true);
+    try {
+      final repo = ref.read(commentRepositoryProvider);
+      await repo.reply(
+        thingId: _replyToId ?? 't3_${widget.post.id}',
+        text: text,
+        sessionCookie: account.sessionCookie,
+      );
+      _commentController.clear();
+      setState(() {
+        _isSending = false;
+        _replyToId = null;
+        _replyToName = null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Comment posted'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to post: $e')),
+        );
+      }
+      setState(() => _isSending = false);
+    }
+  }
+
+  void _replyToComment(String commentId, String author) {
+    setState(() {
+      _replyToId = commentId;
+      _replyToName = author;
+    });
+    _commentController.text = '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final account = ref.watch(activeAccountProvider);
     final detailAsync = ref.watch(
       postDetailProvider((
-        subreddit: post.subreddit.name,
-        postId: post.id,
+        subreddit: widget.post.subreddit.name,
+        postId: widget.post.id,
       )),
     );
     final voteOverrides = ref.watch(voteProvider);
@@ -28,7 +91,7 @@ class PostDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'r/${post.subreddit.name}',
+          'r/${widget.post.subreddit.name}',
           style: Theme.of(context).textTheme.titleSmall,
         ),
       ),
@@ -38,12 +101,10 @@ class PostDetailScreen extends ConsumerWidget {
           detail.comments,
           voteOverrides: voteOverrides,
           saveOverrides: saveOverrides,
-          onVote: (fullname, dir) => handleVote(ref.read(voteProvider.notifier), fullname, dir),
-          onSave: (fullname) => handleSave(ref.read(saveProvider.notifier), fullname, context),
+          loggedIn: account != null,
         ),
         loading: () => _buildBody(context, const [],
-            onVote: (fullname, dir) => handleVote(ref.read(voteProvider.notifier), fullname, dir),
-            onSave: (fullname) => handleSave(ref.read(saveProvider.notifier), fullname, context)),
+            voteOverrides: voteOverrides, saveOverrides: saveOverrides),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -67,69 +128,155 @@ class PostDetailScreen extends ConsumerWidget {
     List<Comment> comments, {
     Map<String, VoteDirection> voteOverrides = const {},
     Map<String, bool> saveOverrides = const {},
-    void Function(String fullname, VoteDirection direction)? onVote,
-    void Function(String fullname)? onSave,
+    bool loggedIn = false,
   }) {
     final theme = Theme.of(context);
-    final postFullname = 't3_${post.id}';
+    final postFullname = 't3_${widget.post.id}';
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
 
-    return ListView(
+    return Column(
       children: [
-        _PostHeader(
-          post: post,
-          theme: theme,
-          effectiveVote: postEffectiveVote,
-          onVote: (dir) => onVote?.call(postFullname, dir),
-          effectiveSaved: postEffectiveSaved,
-          onSave: onSave != null ? () => onSave(postFullname) : null,
-        ),
-        if (post.selftext != null && post.selftext!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              post.selftext!,
-              style: theme.textTheme.bodyMedium,
-            ),
+        Expanded(
+          child: ListView(
+            children: [
+              _PostHeader(
+                post: widget.post,
+                theme: theme,
+                effectiveVote: postEffectiveVote,
+                onVote: (dir) =>
+                    handleVote(ref.read(voteProvider.notifier), postFullname, dir),
+                effectiveSaved: postEffectiveSaved,
+                onSave: () => handleSave(
+                    ref.read(saveProvider.notifier), postFullname, context),
+              ),
+              if (widget.post.selftext != null &&
+                  widget.post.selftext!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    widget.post.selftext!,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              if (widget.post.type == PostType.image &&
+                  widget.post.url != null)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      widget.post.url!,
+                      width: double.infinity,
+                      fit: BoxFit.fitWidth,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+              const Divider(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  comments.isEmpty
+                      ? 'Comments'
+                      : 'Comments (${comments.length})',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (comments.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: Text('No comments yet')),
+                )
+              else
+                ...comments.map((c) => CommentTree(
+                      comment: c,
+                      voteOverrides: voteOverrides,
+                      onVote: (fullname, dir) => handleVote(
+                          ref.read(voteProvider.notifier), fullname, dir),
+                      saveOverrides: saveOverrides,
+                      onSave: (fullname) => handleSave(
+                          ref.read(saveProvider.notifier), fullname, context),
+                      onReply: loggedIn ? _replyToComment : null,
+                    )),
+              const SizedBox(height: 8),
+            ],
           ),
-        if (post.type == PostType.image && post.url != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                post.url!,
-                width: double.infinity,
-                fit: BoxFit.fitWidth,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        ),
+        if (loggedIn)
+          _buildInputBar(theme),
+      ],
+    );
+  }
+
+  Widget _buildInputBar(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: theme.dividerColor),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 8,
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
+      ),
+      child: Row(
+        children: [
+          if (_replyToName != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Chip(
+                label: Text('@$_replyToName',
+                    style: const TextStyle(fontSize: 12)),
+                deleteIcon: const Icon(Icons.close, size: 16),
+                onDeleted: () => setState(() {
+                  _replyToId = null;
+                  _replyToName = null;
+                }),
+                visualDensity: VisualDensity.compact,
               ),
             ),
-          ),
-        const Divider(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            comments.isEmpty ? 'Comments' : 'Comments (${comments.length})',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: TextField(
+              controller: _commentController,
+              decoration: InputDecoration(
+                hintText: _replyToName != null
+                    ? 'Reply to @$_replyToName...'
+                    : 'Add a comment...',
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              maxLines: 4,
+              minLines: 1,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendComment(),
             ),
           ),
-        ),
-        if (comments.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: Text('No comments yet')),
-          )
-        else
-          ...comments.map((c) => CommentTree(
-            comment: c,
-            voteOverrides: voteOverrides,
-            onVote: onVote,
-            saveOverrides: saveOverrides,
-            onSave: onSave,
-          )),
-      ],
+          if (_isSending)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: _sendComment,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -217,7 +364,8 @@ class _PostHeader extends StatelessWidget {
               ),
               if (post.isNsfw)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.red),
                     borderRadius: BorderRadius.circular(3),
@@ -295,5 +443,4 @@ class _PostHeader extends StatelessWidget {
       ),
     );
   }
-
 }
