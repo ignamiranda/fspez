@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
+import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
-import '../../domain/enums/vote_direction.dart';
 import '../../domain/models/subreddit.dart';
 import '../utils/interaction_helpers.dart';
 import '../utils/format_utils.dart';
-import '../widgets/feed_loader.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'submit_screen.dart';
@@ -23,42 +22,12 @@ class SubredditFeedScreen extends ConsumerStatefulWidget {
 
 class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
   FeedSort _sort = FeedSort.hot;
-  late FeedLoader _feeder;
   Subreddit? _subInfo;
 
   @override
   void initState() {
     super.initState();
-    _initFeeder();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _feeder.loadInitial();
-      _loadSubInfo();
-    });
-  }
-
-  void _initFeeder() {
-    _feeder = FeedLoader(
-      fetchPage: ({after}) {
-        final repo = ref.read(feedRepositoryProvider);
-        final cookie = ref.read(activeAccountProvider)?.sessionCookie;
-        return repo.fetchSubreddit(widget.subredditName,
-            sort: _sort, after: after, sessionCookie: cookie);
-      },
-    );
-    _feeder.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _feeder.dispose();
-    super.dispose();
-  }
-
-  void _reload() {
-    _feeder.dispose();
-    _initFeeder();
-    _feeder.loadInitial();
-    _loadSubInfo();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSubInfo());
   }
 
   Future<void> _loadSubInfo() async {
@@ -73,6 +42,9 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final config = FeedPageConfig.subreddit(widget.subredditName, sort: _sort);
+    final state = ref.watch(feedPageProvider(config));
+    final notifier = ref.read(feedPageProvider(config).notifier);
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
 
@@ -82,13 +54,12 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _reload,
+            onPressed: notifier.refresh,
           ),
           PopupMenuButton<FeedSort>(
             icon: const Icon(Icons.sort),
             onSelected: (sort) {
               setState(() => _sort = sort);
-              _reload();
             },
             itemBuilder: (_) => FeedSort.values.map((sort) {
               return PopupMenuItem(
@@ -108,55 +79,46 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
         ),
         child: const Icon(Icons.edit),
       ),
-      body: _buildBody(voteOverrides, saveOverrides),
-    );
-  }
-
-  Widget _buildBody(
-    Map<String, VoteDirection> voteOverrides,
-    Map<String, bool> saveOverrides,
-  ) {
-    if (_feeder.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return Column(
-      children: [
-        if (_subInfo != null)
-          _SubredditHeader(sub: _subInfo!, ref: ref),
-        Expanded(
-          child: PostList(
-            scrollController: _feeder.scrollController,
-            posts: _feeder.posts,
-            voteOverrides: voteOverrides,
-            saveOverrides: saveOverrides,
-            onPostVote: (fullname, dir) =>
-                handleVote(ref.read(voteProvider.notifier), fullname, dir),
-            onPostSave: (fullname) =>
-                handleSave(ref.read(saveProvider.notifier), fullname, context),
-            onPostTap: (post) => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PostDetailScreen(post: post),
-              ),
-            ),
-            onSubredditTap: (post) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => SubredditFeedScreen(
-                    subredditName: post.subreddit.name,
+      body: state.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                if (_subInfo != null)
+                  _SubredditHeader(sub: _subInfo!, ref: ref),
+                Expanded(
+                  child: PostList(
+                    scrollController: notifier.scrollController,
+                    posts: state.posts,
+                    voteOverrides: voteOverrides,
+                    saveOverrides: saveOverrides,
+                    onPostVote: (fullname, dir) =>
+                        handleVote(ref.read(voteProvider.notifier), fullname, dir),
+                    onPostSave: (fullname) =>
+                        handleSave(ref.read(saveProvider.notifier), fullname, context),
+                    onPostTap: (post) => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PostDetailScreen(post: post),
+                      ),
+                    ),
+                    onSubredditTap: (post) {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => SubredditFeedScreen(
+                            subredditName: post.subreddit.name,
+                          ),
+                        ),
+                      );
+                    },
+                    footer: state.isLoadingMore
+                        ? const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        : null,
                   ),
                 ),
-              );
-            },
-            footer: _feeder.isLoadingMore
-                ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : null,
-          ),
-        ),
-      ],
+              ],
+            ),
     );
   }
 }

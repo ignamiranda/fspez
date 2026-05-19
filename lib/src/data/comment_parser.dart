@@ -1,12 +1,7 @@
 import '../domain/models/comment.dart';
-import 'feed_parser.dart';
+import 'parsers/shared_parsers.dart';
 
 class CommentParser {
-  final FeedParser _feedParser;
-
-  CommentParser({FeedParser? feedParser})
-      : _feedParser = feedParser ?? FeedParser();
-
   List<Comment> parseComments(List<dynamic> children) {
     return children
         .whereType<Map<String, dynamic>>()
@@ -33,7 +28,7 @@ class CommentParser {
       body: data['body'] as String? ?? '',
       author: data['author'] as String? ?? '[deleted]',
       score: data['score'] as int? ?? 0,
-      vote: _feedParser.parseVote(data['likes']),
+      vote: parseVoteDirection(data['likes']),
       isSaved: data['saved'] as bool? ?? false,
       isSubmitter: data['is_submitter'] as bool? ?? false,
       isModerator: data['distinguished'] == 'moderator',

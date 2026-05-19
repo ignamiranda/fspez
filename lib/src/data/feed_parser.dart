@@ -3,6 +3,7 @@ import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/enums/feed_sort.dart';
 import '../domain/enums/vote_direction.dart';
+import 'parsers/shared_parsers.dart';
 
 class FeedParser {
   Feed parseFeed(
@@ -58,23 +59,9 @@ class FeedParser {
     );
   }
 
-  PostType parsePostType(Map<String, dynamic> data) {
-    final hint = data['post_hint'] as String?;
-    if (hint == 'image') return PostType.image;
-    if (hint == 'link') return PostType.link;
-    if (hint == 'hosted:video') return PostType.video;
-    if (hint == 'rich:video') return PostType.video;
-    if (data['is_gallery'] == true) return PostType.gallery;
-    if (data['is_self'] == true) return PostType.self_;
-    if (data['crosspost_parent'] != null) return PostType.crosspost;
-    return PostType.link;
-  }
+  PostType parsePostType(Map<String, dynamic> data) => postTypeFromMap(data);
 
-  VoteDirection parseVote(dynamic likes) {
-    if (likes == true) return VoteDirection.upvote;
-    if (likes == false) return VoteDirection.downvote;
-    return VoteDirection.none;
-  }
+  VoteDirection parseVote(dynamic likes) => parseVoteDirection(likes);
 
   String? _subredditIcon(Map<String, dynamic> data) {
     final srDetail = data['sr_detail'] as Map<String, dynamic>?;

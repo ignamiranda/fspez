@@ -4,6 +4,7 @@ import 'reddit_client.dart';
 import 'account_repository.dart';
 import 'account_notifier.dart';
 import 'feed_repository.dart';
+import 'feed_pagination.dart';
 import 'subreddit_repository.dart';
 import 'comment_repository.dart';
 import 'vote_repository.dart';
@@ -11,9 +12,7 @@ import 'vote_notifier.dart';
 import 'save_notifier.dart';
 import 'submit_repository.dart';
 import '../domain/models/account.dart';
-import '../domain/models/feed.dart';
 import '../domain/models/subreddit.dart';
-import '../domain/enums/feed_sort.dart';
 import '../domain/enums/vote_direction.dart';
 
 final redditClientProvider = Provider<RedditClient>((ref) {
@@ -43,33 +42,18 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(ref.watch(redditClientProvider));
 });
 
+final feedPageProvider =
+    StateNotifierProvider.family<FeedPageNotifier, FeedPageState, FeedPageConfig>(
+        (ref, config) {
+  final repo = ref.watch(feedRepositoryProvider);
+  final account = ref.watch(activeAccountProvider);
+  return FeedPageNotifier(
+    fetchPage: ({after}) => fetchForConfig(repo, account, config, after),
+  );
+});
+
 final subredditRepositoryProvider = Provider<SubredditRepository>((ref) {
   return SubredditRepository(ref.watch(redditClientProvider));
-});
-
-final homeFeedProvider =
-    FutureProvider.family<Feed, ({FeedSort sort, String? after})>(
-        (ref, params) async {
-  final repo = ref.watch(feedRepositoryProvider);
-  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return repo.fetchHome(
-      sort: params.sort, after: params.after, sessionCookie: sessionCookie);
-});
-
-final popularFeedProvider =
-    FutureProvider.family<Feed, String?>((ref, after) async {
-  final repo = ref.watch(feedRepositoryProvider);
-  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return repo.fetchPopular(after: after, sessionCookie: sessionCookie);
-});
-
-final allFeedProvider =
-    FutureProvider.family<Feed, ({FeedSort sort, String? after})>(
-        (ref, params) async {
-  final repo = ref.watch(feedRepositoryProvider);
-  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return repo.fetchAll(
-      sort: params.sort, after: params.after, sessionCookie: sessionCookie);
 });
 
 final commentRepositoryProvider = Provider<CommentRepository>((ref) {
@@ -85,28 +69,11 @@ final postDetailProvider =
       sessionCookie: sessionCookie);
 });
 
-final subredditFeedProvider =
-    FutureProvider.family<Feed, ({String subredditName, FeedSort sort, String? after})>(
-        (ref, params) async {
-  final repo = ref.watch(feedRepositoryProvider);
-  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return repo.fetchSubreddit(params.subredditName,
-      sort: params.sort, after: params.after, sessionCookie: sessionCookie);
-});
-
 final subredditInfoProvider =
     FutureProvider.family<Subreddit, String>((ref, name) async {
   final repo = ref.watch(subredditRepositoryProvider);
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetch(name, sessionCookie: sessionCookie);
-});
-
-final savedFeedProvider =
-    FutureProvider.family<Feed, String?>((ref, after) async {
-  final repo = ref.watch(feedRepositoryProvider);
-  final account = ref.watch(activeAccountProvider);
-  return repo.fetchSaved(account!.username,
-      after: after, sessionCookie: account.sessionCookie);
 });
 
 final voteRepositoryProvider = Provider<VoteRepository>((ref) {
@@ -130,5 +97,3 @@ final saveProvider =
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return SaveNotifier(client, cookie);
 });
-
-

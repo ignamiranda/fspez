@@ -32,7 +32,7 @@ void main() {
     });
 
     testWidgets('shows empty message when no posts', (tester) async {
-      await tester.pumpWidget(MaterialApp(
+      await tester.pumpWidget(const MaterialApp(
         home: Scaffold(
           body: PostList(
             posts: [],

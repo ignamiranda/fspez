@@ -86,7 +86,7 @@ void main() {
 
     testWidgets('reverts state on save failure', (tester) async {
       when(() => mockClient.save(any(), any()))
-          .thenThrow(RedditApiException(statusCode: 403, message: 'Forbidden'));
+          .thenThrow(const RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       late BuildContext ctx;
       await tester.pumpWidget(_app(Builder(builder: (c) {
@@ -101,7 +101,7 @@ void main() {
 
     testWidgets('does not propagate save failure to caller', (tester) async {
       when(() => mockClient.save(any(), any()))
-          .thenThrow(RedditApiException(statusCode: 403, message: 'Forbidden'));
+          .thenThrow(const RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       late BuildContext ctx;
       await tester.pumpWidget(_app(Builder(builder: (c) {

@@ -1,0 +1,155 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:equatable/equatable.dart';
+import '../domain/models/feed.dart';
+import '../domain/models/post.dart';
+import '../domain/models/account.dart';
+import '../domain/enums/feed_sort.dart';
+import 'feed_repository.dart';
+
+class FeedPageState with EquatableMixin {
+  final List<Post> posts;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final String? error;
+  final bool hasMore;
+
+  const FeedPageState({
+    this.posts = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.error,
+    this.hasMore = false,
+  });
+
+  @override
+  List<Object?> get props => [posts, isLoading, isLoadingMore, error, hasMore];
+}
+
+class FeedPageConfig with EquatableMixin {
+  final FeedPageKind kind;
+  final FeedSort sort;
+  final String? identifier;
+
+  const FeedPageConfig({
+    required this.kind,
+    this.sort = FeedSort.hot,
+    this.identifier,
+  });
+
+  const FeedPageConfig.home({FeedSort sort = FeedSort.hot})
+      : this(kind: FeedPageKind.home, sort: sort);
+
+  const FeedPageConfig.popular()
+      : this(kind: FeedPageKind.popular);
+
+  const FeedPageConfig.saved()
+      : this(kind: FeedPageKind.saved, sort: FeedSort.new_);
+
+  const FeedPageConfig.search(String query)
+      : this(kind: FeedPageKind.search, sort: FeedSort.new_, identifier: query);
+
+  const FeedPageConfig.subreddit(String name, {FeedSort sort = FeedSort.hot})
+      : this(kind: FeedPageKind.subreddit, sort: sort, identifier: name);
+
+  @override
+  List<Object?> get props => [kind, sort, identifier];
+}
+
+enum FeedPageKind { home, popular, saved, search, subreddit }
+
+class FeedPageNotifier extends StateNotifier<FeedPageState> {
+  final Future<Feed> Function({String? after}) _fetchPage;
+  final ScrollController _scrollController = ScrollController();
+
+  ScrollController get scrollController => _scrollController;
+  String? _after;
+
+  FeedPageNotifier({
+    required Future<Feed> Function({String? after}) fetchPage,
+    bool autoLoad = true,
+  }) : _fetchPage = fetchPage,
+       super(const FeedPageState(isLoading: true)) {
+    _scrollController.addListener(_onScroll);
+    if (autoLoad) {
+      Future.microtask(() => loadInitial());
+    }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
+      loadMore();
+    }
+  }
+
+  Future<void> loadInitial() async {
+    state = const FeedPageState(isLoading: true);
+    _after = null;
+    try {
+      final feed = await _fetchPage(after: null);
+      _after = feed.after;
+      state = FeedPageState(
+        posts: feed.posts,
+        isLoading: false,
+        hasMore: feed.hasMorePages,
+      );
+    } catch (e) {
+      state = FeedPageState(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+    state = FeedPageState(
+      posts: state.posts,
+      isLoading: false,
+      hasMore: state.hasMore,
+      isLoadingMore: true,
+    );
+    try {
+      final feed = await _fetchPage(after: _after);
+      _after = feed.after;
+      state = FeedPageState(
+        posts: [...state.posts, ...feed.posts],
+        isLoading: false,
+        hasMore: feed.hasMorePages,
+      );
+    } catch (e) {
+      state = FeedPageState(
+        posts: state.posts,
+        isLoading: false,
+        hasMore: state.hasMore,
+        error: e.toString(),
+      );
+    }
+  }
+
+  void refresh() => loadInitial();
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+}
+
+Future<Feed> fetchForConfig(
+  FeedRepository repo,
+  Account? account,
+  FeedPageConfig config,
+  String? after,
+) {
+  final cookie = account?.sessionCookie;
+  return switch (config.kind) {
+    FeedPageKind.home => repo.fetchHome(sort: config.sort, after: after, sessionCookie: cookie),
+    FeedPageKind.popular => repo.fetchPopular(after: after, sessionCookie: cookie),
+    FeedPageKind.saved => repo.fetchSaved(account!.username, after: after, sessionCookie: cookie),
+    FeedPageKind.search => repo.search(config.identifier!, after: after, sessionCookie: cookie),
+    FeedPageKind.subreddit => repo.fetchSubreddit(config.identifier!, sort: config.sort, after: after, sessionCookie: cookie),
+  };
+}

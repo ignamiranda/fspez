@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
+import '../../data/feed_pagination.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
-import '../widgets/feed_loader.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'subreddit_feed_screen.dart';
@@ -17,26 +17,11 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
-  late FeedLoader _feeder;
   bool _hasSearched = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _feeder = FeedLoader(
-      fetchPage: ({after}) {
-        final repo = ref.read(feedRepositoryProvider);
-        final cookie = ref.read(activeAccountProvider)?.sessionCookie;
-        return repo.search(_searchController.text.trim(),
-            after: after, sessionCookie: cookie);
-      },
-    );
-    _feeder.addListener(() => setState(() {}));
-  }
+  String _lastQuery = '';
 
   @override
   void dispose() {
-    _feeder.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -44,12 +29,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _search() {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
-    setState(() => _hasSearched = true);
-    _feeder.loadInitial();
+    setState(() {
+      _hasSearched = true;
+      _lastQuery = query;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final config = FeedPageConfig.search(_lastQuery);
+    final state = _hasSearched ? ref.watch(feedPageProvider(config)) : null;
+    final notifier = _hasSearched
+        ? ref.read(feedPageProvider(config).notifier)
+        : null;
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
 
@@ -72,27 +64,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ],
       ),
-      body: _buildBody(voteOverrides, saveOverrides),
+      body: _buildBody(state, notifier, voteOverrides, saveOverrides),
     );
   }
 
   Widget _buildBody(
+    FeedPageState? state,
+    FeedPageNotifier? notifier,
     Map<String, VoteDirection> voteOverrides,
     Map<String, bool> saveOverrides,
   ) {
-    if (_feeder.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     if (!_hasSearched) {
       return const Center(
         child: Text('Enter a query to search Reddit'),
       );
     }
 
+    if (state == null || state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return PostList(
-      scrollController: _feeder.scrollController,
-      posts: _feeder.posts,
+      scrollController: notifier!.scrollController,
+      posts: state.posts,
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
       onPostVote: (fullname, dir) =>
@@ -112,7 +106,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
       ),
       emptyMessage: 'No results found.',
-      footer: _feeder.isLoadingMore
+      footer: state.isLoadingMore
           ? const Padding(
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),

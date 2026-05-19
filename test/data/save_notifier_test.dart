@@ -64,7 +64,7 @@ void main() {
 
     test('reverts optimistic state and rethrows on client error', () async {
       when(() => mockClient.save(any(), any()))
-          .thenThrow(RedditApiException(statusCode: 403, message: 'Forbidden'));
+          .thenThrow(const RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       expect(notifier.state['t3_post1'], isNull);
       await expectLater(

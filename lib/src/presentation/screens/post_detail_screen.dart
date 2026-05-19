@@ -4,9 +4,9 @@ import '../../data/providers.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
-import '../utils/format_utils.dart';
 import '../utils/interaction_helpers.dart';
 import '../widgets/comment_tree.dart';
+import '../widgets/post_actions.dart';
 import 'subreddit_feed_screen.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
@@ -140,7 +140,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         Expanded(
           child: ListView(
             children: [
-              _PostHeader(
+              _PostDetailHeader(
                 post: widget.post,
                 theme: theme,
                 effectiveVote: postEffectiveVote,
@@ -281,7 +281,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 }
 
-class _PostHeader extends StatelessWidget {
+class _PostDetailHeader extends StatelessWidget {
   final Post post;
   final ThemeData theme;
   final VoteDirection? effectiveVote;
@@ -289,7 +289,7 @@ class _PostHeader extends StatelessWidget {
   final bool? effectiveSaved;
   final VoidCallback? onSave;
 
-  const _PostHeader({
+  const _PostDetailHeader({
     required this.post,
     required this.theme,
     this.effectiveVote,
@@ -305,75 +305,15 @@ class _PostHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Text(
-                  post.subreddit.name.isNotEmpty
-                      ? post.subreddit.name[0].toUpperCase()
-                      : 'r',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+          PostHeader(
+            post: post,
+            onSubredditTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SubredditFeedScreen(
+                  subredditName: post.subreddit.name,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => SubredditFeedScreen(
-                              subredditName: post.subreddit.name,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          'r/${post.subreddit.name}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        '· u/${post.author}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      timeAgo(post.createdAt),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (post.isNsfw)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: theme.colorScheme.error),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text('NSFW',
-                      style: TextStyle(fontSize: 9, color: theme.colorScheme.error)),
-                ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -383,61 +323,12 @@ class _PostHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-                InkWell(
-                  onTap: () => onVote?.call(VoteDirection.upvote),
-                  child: Icon(
-                    (effectiveVote ?? post.vote) == VoteDirection.upvote
-                        ? Icons.arrow_upward
-                        : Icons.arrow_upward_outlined,
-                    size: 16,
-                    color: (effectiveVote ?? post.vote) == VoteDirection.upvote
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  formatCount(post.score),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                InkWell(
-                  onTap: () => onVote?.call(VoteDirection.downvote),
-                  child: Icon(
-                    (effectiveVote ?? post.vote) == VoteDirection.downvote
-                        ? Icons.arrow_downward
-                        : Icons.arrow_downward_outlined,
-                    size: 16,
-                    color: (effectiveVote ?? post.vote) == VoteDirection.downvote
-                        ? theme.colorScheme.secondary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                InkWell(
-                  onTap: onSave,
-                  child: Icon(
-                    (effectiveSaved ?? post.isSaved)
-                        ? Icons.bookmark
-                        : Icons.bookmark_outline,
-                    size: 16,
-                    color: (effectiveSaved ?? post.isSaved)
-                        ? theme.colorScheme.tertiary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              const SizedBox(width: 16),
-              const Icon(Icons.chat_bubble_outline, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                formatCount(post.commentCount),
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
+          PostActions(
+            post: post,
+            effectiveVote: effectiveVote,
+            onVote: onVote,
+            effectiveSaved: effectiveSaved,
+            onSave: onSave,
           ),
         ],
       ),

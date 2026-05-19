@@ -2,20 +2,61 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../domain/models/session_cookie.dart';
 
+enum ApiEndpoint { json, form, oldReddit, comment, submit }
+
 class RedditClient {
   static const _baseUrl = 'https://www.reddit.com';
+  static const _browserUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
   final http.Client _httpClient;
 
   RedditClient({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
 
-  Map<String, String> _headers(SessionCookie? sessionCookie) => {
-        'User-Agent': 'fspez/0.1.0',
-        'Content-Type': 'application/json',
-        if (sessionCookie != null)
-          'Cookie': 'reddit_session=${sessionCookie.value}',
-      };
+  Map<String, String> _headersFor(ApiEndpoint kind, SessionCookie? cookie) {
+    switch (kind) {
+      case ApiEndpoint.json:
+        return {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/json',
+          if (cookie != null) 'Cookie': 'reddit_session=${cookie.value}',
+        };
+      case ApiEndpoint.form:
+        return {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          if (cookie != null) 'Cookie': 'reddit_session=${cookie.value}',
+        };
+      case ApiEndpoint.oldReddit:
+        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+        return {
+          'User-Agent': _browserUA,
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Accept': '*/*',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Cookie': c,
+          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
+        };
+      case ApiEndpoint.comment:
+        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+        return {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': c,
+          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
+        };
+      case ApiEndpoint.submit:
+        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+        return {
+          'User-Agent': _browserUA,
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Accept': '*/*',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Cookie': c,
+          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
+        };
+    }
+  }
 
   Future<Map<String, dynamic>> get(String path,
       {Map<String, String>? queryParams,
@@ -23,7 +64,7 @@ class RedditClient {
     final uri = Uri.parse('$_baseUrl$path.json')
         .replace(queryParameters: queryParams);
     final response =
-        await _httpClient.get(uri, headers: _headers(sessionCookie));
+        await _httpClient.get(uri, headers: _headersFor(ApiEndpoint.json, sessionCookie));
     return _handleResponse(response);
   }
 
@@ -32,7 +73,7 @@ class RedditClient {
     final uri = Uri.parse('$_baseUrl$path');
     final response = await _httpClient.post(
       uri,
-      headers: _headers(sessionCookie),
+      headers: _headersFor(ApiEndpoint.json, sessionCookie),
       body: body != null ? jsonEncode(body) : null,
     );
     return _handleResponse(response);
@@ -57,7 +98,7 @@ class RedditClient {
     final uri = Uri.parse('$_baseUrl$path.json')
         .replace(queryParameters: queryParams);
     final response =
-        await _httpClient.get(uri, headers: _headers(sessionCookie));
+        await _httpClient.get(uri, headers: _headersFor(ApiEndpoint.json, sessionCookie));
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
     }
@@ -73,12 +114,7 @@ class RedditClient {
     final uri = Uri.parse('$_baseUrl$path');
     final response = await _httpClient.post(
       uri,
-      headers: {
-        'User-Agent': 'fspez/0.1.0',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        if (sessionCookie != null)
-          'Cookie': 'reddit_session=${sessionCookie.value}',
-      },
+      headers: _headersFor(ApiEndpoint.form, sessionCookie),
       body: fields != null ? Uri(queryParameters: fields).query : null,
     );
     return _handleResponse(response);
@@ -88,21 +124,10 @@ class RedditClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final cookie = sessionCookie.rawCookie ??
-        'reddit_session=${sessionCookie.value}';
     final uri = Uri.parse('https://old.reddit.com/api/submit');
     final response = await _httpClient.post(
       uri,
-      headers: {
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Accept': '*/*',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Cookie': cookie,
-        if (sessionCookie.modhash != null)
-          'X-Modhash': sessionCookie.modhash!,
-      },
+      headers: _headersFor(ApiEndpoint.submit, sessionCookie),
       body: Uri(queryParameters: fields).query,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -126,18 +151,10 @@ class RedditClient {
   }
 
   Future<void> _oldRedditPost(String path, String fullname, SessionCookie sessionCookie) async {
-    final cookie = sessionCookie.rawCookie ?? 'reddit_session=${sessionCookie.value}';
     final uri = Uri.parse('https://old.reddit.com$path');
     final response = await _httpClient.post(
       uri,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Accept': '*/*',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Cookie': cookie,
-        if (sessionCookie.modhash != null) 'X-Modhash': sessionCookie.modhash!,
-      },
+      headers: _headersFor(ApiEndpoint.oldReddit, sessionCookie),
       body: 'id=$fullname',
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -154,18 +171,10 @@ class RedditClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final cookie = sessionCookie.rawCookie ??
-        'reddit_session=${sessionCookie.value}';
     final uri = Uri.parse('https://www.reddit.com/api/comment');
     final response = await _httpClient.post(
       uri,
-      headers: {
-        'User-Agent': 'fspez/0.1.0',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': cookie,
-        if (sessionCookie.modhash != null)
-          'X-Modhash': sessionCookie.modhash!,
-      },
+      headers: _headersFor(ApiEndpoint.comment, sessionCookie),
       body: Uri(queryParameters: fields).query,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
