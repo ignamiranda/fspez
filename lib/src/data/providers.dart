@@ -8,7 +8,6 @@ import 'subreddit_repository.dart';
 import 'comment_repository.dart';
 import 'vote_repository.dart';
 import 'vote_notifier.dart';
-import 'save_repository.dart';
 import 'save_notifier.dart';
 import 'submit_repository.dart';
 import '../domain/models/account.dart';
@@ -125,15 +124,11 @@ final submitRepositoryProvider = Provider<SubmitRepository>((ref) {
   return SubmitRepository(ref.watch(redditClientProvider));
 });
 
-final saveRepositoryProvider = Provider<SaveRepository>((ref) {
-  return SaveRepository(ref.watch(redditClientProvider));
-});
-
 final saveProvider =
     StateNotifierProvider<SaveNotifier, Map<String, bool>>((ref) {
-  final repo = ref.watch(saveRepositoryProvider);
+  final client = ref.watch(redditClientProvider);
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return SaveNotifier(repo, cookie);
+  return SaveNotifier(client, cookie);
 });
 
 

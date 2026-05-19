@@ -1,35 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/save_notifier.dart';
-import 'package:fspez/src/data/save_repository.dart' show SaveRepository, SaveException;
+import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/data/vote_notifier.dart';
 import 'package:fspez/src/data/vote_repository.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
+import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:fspez/src/presentation/utils/interaction_helpers.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockVoteRepository extends Mock implements VoteRepository {}
-class _MockSaveRepository extends Mock implements SaveRepository {}
+class _MockRedditClient extends Mock implements RedditClient {}
 
 Widget _app(Widget body) => MaterialApp(home: Scaffold(body: body));
 
 void main() {
   late _MockVoteRepository mockVoteRepo;
-  late _MockSaveRepository mockSaveRepo;
+  late _MockRedditClient mockClient;
   late VoteNotifier voteNotifier;
   late SaveNotifier saveNotifier;
 
+  setUpAll(() {
+    registerFallbackValue(SessionCookie(value: '', expiresAt: DateTime.now()));
+  });
+
   setUp(() {
     mockVoteRepo = _MockVoteRepository();
-    mockSaveRepo = _MockSaveRepository();
+    mockClient = _MockRedditClient();
     when(() => mockVoteRepo.vote(any(), any(), sessionCookie: any(named: 'sessionCookie')))
         .thenAnswer((_) async {});
-    when(() => mockSaveRepo.save(any(), sessionCookie: any(named: 'sessionCookie')))
-        .thenAnswer((_) async {});
-    when(() => mockSaveRepo.unsave(any(), sessionCookie: any(named: 'sessionCookie')))
-        .thenAnswer((_) async {});
+    when(() => mockClient.save(any(), any())).thenAnswer((_) async {});
+    when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
     voteNotifier = VoteNotifier(mockVoteRepo, null);
-    saveNotifier = SaveNotifier(mockSaveRepo, null);
+    final cookie = SessionCookie(value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
+    saveNotifier = SaveNotifier(mockClient, cookie);
   });
 
   group('handleVote', () {
@@ -81,8 +85,8 @@ void main() {
     });
 
     testWidgets('reverts state on save failure', (tester) async {
-      when(() => mockSaveRepo.save(any(), sessionCookie: any(named: 'sessionCookie')))
-          .thenThrow(SaveException(statusCode: 403, body: 'Forbidden'));
+      when(() => mockClient.save(any(), any()))
+          .thenThrow(RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       late BuildContext ctx;
       await tester.pumpWidget(_app(Builder(builder: (c) {
@@ -96,8 +100,8 @@ void main() {
     });
 
     testWidgets('does not propagate save failure to caller', (tester) async {
-      when(() => mockSaveRepo.save(any(), sessionCookie: any(named: 'sessionCookie')))
-          .thenThrow(SaveException(statusCode: 403, body: 'Forbidden'));
+      when(() => mockClient.save(any(), any()))
+          .thenThrow(RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       late BuildContext ctx;
       await tester.pumpWidget(_app(Builder(builder: (c) {

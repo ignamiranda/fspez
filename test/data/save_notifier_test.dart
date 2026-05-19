@@ -1,21 +1,32 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/save_notifier.dart';
-import 'package:fspez/src/data/save_repository.dart' show SaveRepository, SaveException;
+import 'package:fspez/src/data/reddit_client.dart';
+import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockSaveRepository extends Mock implements SaveRepository {}
+class _MockRedditClient extends Mock implements RedditClient {}
+
+SessionCookie _makeCookie() {
+  return SessionCookie(
+    value: 'abc',
+    expiresAt: DateTime.now().add(const Duration(days: 1)),
+  );
+}
 
 void main() {
-  late _MockSaveRepository mockRepo;
+  late _MockRedditClient mockClient;
   late SaveNotifier notifier;
+  final cookie = _makeCookie();
+
+  setUpAll(() {
+    registerFallbackValue(cookie);
+  });
 
   setUp(() {
-    mockRepo = _MockSaveRepository();
-    when(() => mockRepo.save(any(), sessionCookie: any(named: 'sessionCookie')))
-        .thenAnswer((_) async {});
-    when(() => mockRepo.unsave(any(), sessionCookie: any(named: 'sessionCookie')))
-        .thenAnswer((_) async {});
-    notifier = SaveNotifier(mockRepo, null);
+    mockClient = _MockRedditClient();
+    when(() => mockClient.save(any(), any())).thenAnswer((_) async {});
+    when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
+    notifier = SaveNotifier(mockClient, cookie);
   });
 
   group('toggle', () {
@@ -33,14 +44,14 @@ void main() {
     test('calls save when toggling to saved', () async {
       await notifier.toggle('t3_post1');
 
-      verify(() => mockRepo.save('t3_post1', sessionCookie: null)).called(1);
+      verify(() => mockClient.save('t3_post1', cookie)).called(1);
     });
 
     test('calls unsave when toggling to unsaved', () async {
       await notifier.toggle('t3_post1');
       await notifier.toggle('t3_post1');
 
-      verify(() => mockRepo.unsave('t3_post1', sessionCookie: null)).called(1);
+      verify(() => mockClient.unsave('t3_post1', cookie)).called(1);
     });
 
     test('maintains separate state for different fullnames', () async {
@@ -51,9 +62,9 @@ void main() {
       expect(notifier.state['t3_post2'], true);
     });
 
-    test('reverts optimistic state and rethrows on repository error', () async {
-      when(() => mockRepo.save(any(), sessionCookie: any(named: 'sessionCookie')))
-          .thenThrow(SaveException(statusCode: 403, body: 'Forbidden'));
+    test('reverts optimistic state and rethrows on client error', () async {
+      when(() => mockClient.save(any(), any()))
+          .thenThrow(RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       expect(notifier.state['t3_post1'], isNull);
       await expectLater(
@@ -61,6 +72,14 @@ void main() {
         throwsA(isA<SaveException>()),
       );
       expect(notifier.state['t3_post1'], false);
+    });
+
+    test('throws SaveException when no session', () async {
+      final noSession = SaveNotifier(mockClient, null);
+      await expectLater(
+        () => noSession.toggle('t3_post1'),
+        throwsA(isA<SaveException>()),
+      );
     });
   });
 
