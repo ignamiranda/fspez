@@ -8,6 +8,7 @@ import '../../domain/models/post.dart';
 import '../utils/interaction_helpers.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
+import 'submit_screen.dart';
 
 class SubredditFeedScreen extends ConsumerStatefulWidget {
   final String subredditName;
@@ -137,6 +138,15 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
             }).toList(),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'submit_fab',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SubmitScreen(subreddit: widget.subredditName),
+          ),
+        ),
+        child: const Icon(Icons.edit),
       ),
       body: _buildBody(voteOverrides, saveOverrides),
     );

@@ -84,6 +84,39 @@ class RedditClient {
     return _handleResponse(response);
   }
 
+  Future<Map<String, dynamic>> submit({
+    required Map<String, String> fields,
+    required SessionCookie sessionCookie,
+  }) async {
+    final cookie = sessionCookie.rawCookie ??
+        'reddit_session=${sessionCookie.value}';
+    final uri = Uri.parse('https://old.reddit.com/api/submit');
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Accept': '*/*',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Cookie': cookie,
+        if (sessionCookie.modhash != null)
+          'X-Modhash': sessionCookie.modhash!,
+      },
+      body: Uri(queryParameters: fields).query,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final ct = (response.headers['content-type'] ?? '').toLowerCase();
+      if (!ct.contains('text/html')) {
+        return {'success': true};
+      }
+    }
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
   Future<void> save(String fullname, SessionCookie sessionCookie) async {
     await _oldRedditPost('/api/save', fullname, sessionCookie);
   }
