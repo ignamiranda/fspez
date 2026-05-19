@@ -48,6 +48,23 @@ class FeedRepository {
     return _parser.parseFeed(data, FeedKind.home, sort);
   }
 
+  Future<Feed> search(
+    String query, {
+    String? after,
+    SessionCookie? sessionCookie,
+  }) async {
+    final data = await _client.get('/search',
+        queryParams: {
+          'q': query,
+          'restrict_sr': 'off',
+          'sort': 'relevance',
+          'limit': '25',
+          if (after != null) 'after': after,
+        },
+        sessionCookie: sessionCookie);
+    return _parser.parseFeed(data, FeedKind.popular, FeedSort.new_);
+  }
+
   Future<Feed> fetchSaved(
     String username, {
     String? after,

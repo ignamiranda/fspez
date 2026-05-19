@@ -34,6 +34,10 @@ Store on `SessionCookie.modhash` during the WebView login flow. Persist with `Ac
 ### Usage
 Send as `X-Modhash` header on every write request that needs it. It does NOT go in the Cookie header.
 
+## Search endpoint
+
+Reddit search is `GET https://www.reddit.com/search?q=<query>` (NOT `/api/search`). Returns standard listing format — compatible with `FeedParser.parseFeed`. The `.json` suffix is appended automatically by `RedditClient.get()`.
+
 ## Vote vs Save
 
 `/api/vote` is less strict — works with just:

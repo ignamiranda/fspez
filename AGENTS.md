@@ -7,7 +7,7 @@
 ## Architecture
 - **`lib/src/data/`** — `RedditClient` (HTTP wrapper, now includes save/unsave), repositories (feed, comment, vote, save, subreddit), notifiers (`OptimisticStateNotifier` base class + `VoteNotifier`, `SaveNotifier`, `ActiveAccountNotifier`), parsers (feed, comment, cookie), `providers.dart` (all Riverpod providers), `session_store.dart` (WebView cookie polling), `cdp_cookie_provider.dart` (public CookieProvider adapter)
 - **`lib/src/domain/`** — models (`Post`, `Comment`, `Feed`, `Account`, `SessionCookie`, `Subreddit`), enums (`FeedSort`, `VoteDirection`). Pure data objects, no logic.
-- **`lib/src/presentation/`** — `app.dart` (MaterialApp + bottom nav), screens (feed, inbox, account, auth_webview, post_detail, saved), widgets (`PostCard`, `CommentTree`, `PostList`), utils (`format_utils.dart`, `interaction_helpers.dart`)
+- **`lib/src/presentation/`** — `app.dart` (MaterialApp + bottom nav), screens (feed, inbox, account, auth_webview, post_detail, saved, search, subreddit_feed), widgets (`PostCard`, `CommentTree`, `PostList`), utils (`format_utils.dart`, `interaction_helpers.dart`)
 - **Entrypoint**: `lib/main.dart` — initializes `SharedPreferences`, overrides into `ProviderScope`, launches `FspezApp`
 - **Riverpod**: All state managed via `StateNotifierProvider` (vote, save, active account) and `FutureProvider.family` (feed, post detail)
 - **StateNotifier pattern**: `VoteNotifier` / `SaveNotifier` extend `OptimisticStateNotifier<String, V>` which provides `optimisticSet()` / `optimisticRevert()` / `effective()`. Both use optimistic updates; SaveNotifier reverts on any error and rethrows, VoteNotifier keeps optimistic state on error (swallows it).
@@ -44,9 +44,6 @@ Use `controller.callDevToolsProtocolMethod('Runtime.evaluate', {awaitPromise: tr
 | `.opencode/skills/reddit-api-auth/SKILL.md` | Skill: debugging modhash-based auth 403s |
 | `.opencode/skills/learn/SKILL.md` | Skill: extract reusable knowledge into new/updated skills |
 | `opencode.json` | Custom `/learn` command to extract skills from sessions |
-
-## Auto-trigger: `/learn` on commit
-Whenever the user says "commit" (or "git commit", "time to commit", etc.), automatically run the `/learn` command first to extract reusable knowledge from the session before the commit is performed.
 
 ## Constraints
 - No OAuth, no Reddit app registration — all auth via session cookies

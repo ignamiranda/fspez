@@ -1,46 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
-import '../../domain/enums/feed_sort.dart';
 import '../../domain/enums/vote_direction.dart';
-import '../../domain/models/account.dart';
 import '../../domain/models/post.dart';
 import '../utils/interaction_helpers.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
-import 'search_screen.dart';
 import 'subreddit_feed_screen.dart';
 
-class FeedScreen extends ConsumerStatefulWidget {
-  const FeedScreen({super.key});
+class SearchScreen extends ConsumerStatefulWidget {
+  const SearchScreen({super.key});
 
   @override
-  ConsumerState<FeedScreen> createState() => _FeedScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _FeedScreenState extends ConsumerState<FeedScreen> {
-  FeedSort _sort = FeedSort.hot;
+class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
 
   List<Post> _posts = [];
   String? _after;
-  bool _isLoading = true;
+  bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
-
-  Account? _account;
+  bool _hasSearched = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitial());
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -51,20 +47,25 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     }
   }
 
-  Future<void> _loadInitial() async {
+  void _search() {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+    _loadInitial(query);
+  }
+
+  Future<void> _loadInitial(String query) async {
     setState(() {
       _isLoading = true;
       _isLoadingMore = false;
       _posts = [];
       _after = null;
       _hasMore = true;
+      _hasSearched = true;
     });
     try {
       final repo = ref.read(feedRepositoryProvider);
-      final cookie = _account?.sessionCookie;
-      final feed = _account != null
-          ? await repo.fetchHome(sort: _sort, sessionCookie: cookie)
-          : await repo.fetchPopular(sessionCookie: cookie);
+      final cookie = ref.read(activeAccountProvider)?.sessionCookie;
+      final feed = await repo.search(query, sessionCookie: cookie);
       setState(() {
         _posts = feed.posts;
         _after = feed.after;
@@ -81,10 +82,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     setState(() => _isLoadingMore = true);
     try {
       final repo = ref.read(feedRepositoryProvider);
-      final cookie = _account?.sessionCookie;
-      final feed = _account != null
-          ? await repo.fetchHome(sort: _sort, after: _after, sessionCookie: cookie)
-          : await repo.fetchPopular(after: _after, sessionCookie: cookie);
+      final cookie = ref.read(activeAccountProvider)?.sessionCookie;
+      final feed = await repo.search(_searchController.text.trim(),
+          after: _after, sessionCookie: cookie);
       setState(() {
         _posts.addAll(feed.posts);
         _after = feed.after;
@@ -100,57 +100,42 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   Widget build(BuildContext context) {
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
-    final account = ref.watch(activeAccountProvider);
-    final loggedIn = account != null;
-
-    if (account != _account) {
-      _account = account;
-      _loadInitial();
-    }
-
-    final title = loggedIn ? 'fspez' : 'Popular';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Search Reddit...',
+            border: InputBorder.none,
+          ),
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _search(),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SearchScreen()),
-            ),
+            onPressed: _search,
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadInitial,
-          ),
-          if (loggedIn)
-            PopupMenuButton<FeedSort>(
-              icon: const Icon(Icons.sort),
-              onSelected: (sort) {
-                setState(() => _sort = sort);
-                _loadInitial();
-              },
-              itemBuilder: (_) => FeedSort.values.map((sort) {
-                return PopupMenuItem(
-                  value: sort,
-                  child: Text(sort.name),
-                );
-              }).toList(),
-            ),
         ],
       ),
-      body: _buildBody(voteOverrides, saveOverrides, loggedIn),
+      body: _buildBody(voteOverrides, saveOverrides),
     );
   }
 
   Widget _buildBody(
     Map<String, VoteDirection> voteOverrides,
     Map<String, bool> saveOverrides,
-    bool loggedIn,
   ) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_hasSearched) {
+      return const Center(
+        child: Text('Enter a query to search Reddit'),
+      );
     }
 
     return PostList(
@@ -174,9 +159,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           ),
         ),
       ),
-      emptyMessage: loggedIn
-          ? 'No posts yet.'
-          : 'No posts yet. Log in to see your home feed.',
+      emptyMessage: 'No results found.',
       footer: _isLoadingMore
           ? const Padding(
               padding: EdgeInsets.all(16),
