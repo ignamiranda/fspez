@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class FspezTheme {
   static ThemeData light() {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFFFF4500),
+      seedColor: const Color(0xFF1565C0),
       brightness: Brightness.light,
     );
     return _build(colorScheme);
@@ -11,7 +11,7 @@ class FspezTheme {
 
   static ThemeData dark() {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFFFF4500),
+      seedColor: const Color(0xFF1565C0),
       brightness: Brightness.dark,
     );
     return _build(colorScheme);
