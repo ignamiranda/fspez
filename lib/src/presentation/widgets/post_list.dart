@@ -43,7 +43,7 @@ class PostList extends StatelessWidget {
       itemBuilder: (context, index) {
         if (hasFooter && index == posts.length) return footer!;
         final post = posts[index];
-        final fullname = 't3_${post.id}';
+        final fullname = post.fullname;
         return Column(
           children: [
             if (index > 0) const Divider(height: 1),

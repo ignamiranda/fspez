@@ -23,7 +23,7 @@ class CommentTree extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fullname = 't1_${comment.id}';
+    final fullname = comment.fullname;
     final effectiveVote = voteOverrides[fullname] ?? comment.vote;
     final effectiveSaved = saveOverrides[fullname] ?? comment.isSaved;
 

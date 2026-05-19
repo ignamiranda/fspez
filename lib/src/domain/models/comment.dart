@@ -18,6 +18,8 @@ class Comment with EquatableMixin {
   final List<Comment> replies;
   final bool isCollapsed;
 
+  String get fullname => 't1_$id';
+
   const Comment({
     required this.id,
     required this.body,

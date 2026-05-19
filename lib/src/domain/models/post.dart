@@ -26,6 +26,8 @@ class Post with EquatableMixin {
   final double? upvoteRatio;
   final Post? crosspostParent;
 
+  String get fullname => 't3_$id';
+
   const Post({
     required this.id,
     required this.title,

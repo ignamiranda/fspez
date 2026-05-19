@@ -40,7 +40,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     try {
       final repo = ref.read(commentRepositoryProvider);
       await repo.reply(
-        thingId: _replyToId ?? 't3_${widget.post.id}',
+        thingId: _replyToId ?? widget.post.fullname,
         text: text,
         sessionCookie: account.sessionCookie,
       );
@@ -131,7 +131,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     bool loggedIn = false,
   }) {
     final theme = Theme.of(context);
-    final postFullname = 't3_${widget.post.id}';
+    final postFullname = widget.post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
 
