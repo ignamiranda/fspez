@@ -161,6 +161,25 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
   }
 }
 
+class _SubredditLetterAvatar extends StatelessWidget {
+  final String name;
+  final ThemeData theme;
+
+  const _SubredditLetterAvatar({required this.name, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: theme.colorScheme.primaryContainer,
+      alignment: Alignment.center,
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : 'r',
+        style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+      ),
+    );
+  }
+}
+
 class _SubredditHeader extends StatelessWidget {
   final Subreddit sub;
   final WidgetRef ref;
@@ -175,21 +194,19 @@ class _SubredditHeader extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          if (sub.iconUrl != null)
-            CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage(sub.iconUrl!),
-              onBackgroundImageError: (_, __) {},
-            )
-          else
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Text(
-                sub.name.isNotEmpty ? sub.name[0].toUpperCase() : 'r',
-                style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
-              ),
+          ClipOval(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: sub.iconUrl != null
+                  ? Image.network(
+                      sub.iconUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _SubredditLetterAvatar(name: sub.name, theme: theme),
+                    )
+                  : _SubredditLetterAvatar(name: sub.name, theme: theme),
             ),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
