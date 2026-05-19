@@ -73,8 +73,27 @@ class AccountScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.logout),
           title: const Text('Log Out'),
-          onTap: () {
-            ref.read(activeAccountProvider.notifier).removeAccount(account.id);
+          onTap: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Log Out'),
+                content: Text('Remove account ${account.username}?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text('Log Out'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              ref.read(activeAccountProvider.notifier).removeAccount(account.id);
+            }
           },
         ),
       ],
