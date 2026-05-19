@@ -367,11 +367,11 @@ class _PostHeader extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.red),
+                    border: Border.all(color: theme.colorScheme.error),
                     borderRadius: BorderRadius.circular(3),
                   ),
-                  child: const Text('NSFW',
-                      style: TextStyle(fontSize: 9, color: Colors.red)),
+                  child: Text('NSFW',
+                      style: TextStyle(fontSize: 9, color: theme.colorScheme.error)),
                 ),
             ],
           ),
@@ -385,51 +385,51 @@ class _PostHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              InkWell(
-                onTap: () => onVote?.call(VoteDirection.upvote),
-                child: Icon(
-                  (effectiveVote ?? post.vote) == VoteDirection.upvote
-                      ? Icons.arrow_upward
-                      : Icons.arrow_upward_outlined,
-                  size: 16,
-                  color: (effectiveVote ?? post.vote) == VoteDirection.upvote
-                      ? Colors.orange
-                      : theme.colorScheme.onSurfaceVariant,
+                InkWell(
+                  onTap: () => onVote?.call(VoteDirection.upvote),
+                  child: Icon(
+                    (effectiveVote ?? post.vote) == VoteDirection.upvote
+                        ? Icons.arrow_upward
+                        : Icons.arrow_upward_outlined,
+                    size: 16,
+                    color: (effectiveVote ?? post.vote) == VoteDirection.upvote
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                formatCount(post.score),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 4),
+                Text(
+                  formatCount(post.score),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              InkWell(
-                onTap: () => onVote?.call(VoteDirection.downvote),
-                child: Icon(
-                  (effectiveVote ?? post.vote) == VoteDirection.downvote
-                      ? Icons.arrow_downward
-                      : Icons.arrow_downward_outlined,
-                  size: 16,
-                  color: (effectiveVote ?? post.vote) == VoteDirection.downvote
-                      ? Colors.blue
-                      : theme.colorScheme.onSurfaceVariant,
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () => onVote?.call(VoteDirection.downvote),
+                  child: Icon(
+                    (effectiveVote ?? post.vote) == VoteDirection.downvote
+                        ? Icons.arrow_downward
+                        : Icons.arrow_downward_outlined,
+                    size: 16,
+                    color: (effectiveVote ?? post.vote) == VoteDirection.downvote
+                        ? theme.colorScheme.secondary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              InkWell(
-                onTap: onSave,
-                child: Icon(
-                  (effectiveSaved ?? post.isSaved)
-                      ? Icons.bookmark
-                      : Icons.bookmark_outline,
-                  size: 16,
-                  color: (effectiveSaved ?? post.isSaved)
-                      ? Colors.amber
-                      : theme.colorScheme.onSurfaceVariant,
+                const SizedBox(width: 16),
+                InkWell(
+                  onTap: onSave,
+                  child: Icon(
+                    (effectiveSaved ?? post.isSaved)
+                        ? Icons.bookmark
+                        : Icons.bookmark_outline,
+                    size: 16,
+                    color: (effectiveSaved ?? post.isSaved)
+                        ? theme.colorScheme.tertiary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
               const SizedBox(width: 16),
               const Icon(Icons.chat_bubble_outline, size: 16),
               const SizedBox(width: 4),

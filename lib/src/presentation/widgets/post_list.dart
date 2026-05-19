@@ -44,25 +44,20 @@ class PostList extends StatelessWidget {
         if (hasFooter && index == posts.length) return footer!;
         final post = posts[index];
         final fullname = post.fullname;
-        return Column(
-          children: [
-            if (index > 0) const Divider(height: 1),
-            PostCard(
-              post: post,
-              effectiveVote: voteOverrides[fullname],
-              onVote: onPostVote != null
-                  ? (dir) => onPostVote!(fullname, dir)
-                  : null,
-              effectiveSaved: saveOverrides[fullname],
-              onSave: onPostSave != null
-                  ? () => onPostSave!(fullname)
-                  : null,
-              onTap: onPostTap != null ? () => onPostTap!(post) : null,
-              onSubredditTap: onSubredditTap != null
-                  ? () => onSubredditTap!(post)
-                  : null,
-            ),
-          ],
+        return PostCard(
+          post: post,
+          effectiveVote: voteOverrides[fullname],
+          onVote: onPostVote != null
+              ? (dir) => onPostVote!(fullname, dir)
+              : null,
+          effectiveSaved: saveOverrides[fullname],
+          onSave: onPostSave != null
+              ? () => onPostSave!(fullname)
+              : null,
+          onTap: onPostTap != null ? () => onPostTap!(post) : null,
+          onSubredditTap: onSubredditTap != null
+              ? () => onSubredditTap!(post)
+              : null,
         );
       },
     );

@@ -27,75 +27,78 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(theme),
-            const SizedBox(height: 8),
-            Text(
-              post.title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (post.selftext != null && post.selftext!.isNotEmpty) ...[
-              const SizedBox(height: 4),
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(theme),
+              const SizedBox(height: 8),
               Text(
-                post.selftext!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                post.title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-            ],
-            if (post.type == PostType.image && post.url != null) ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.55,
+              if (post.selftext != null && post.selftext!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  post.selftext!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  child: Image.network(
-                    post.url!,
-                    width: double.infinity,
-                    fit: BoxFit.fitWidth,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (post.type == PostType.image && post.url != null) ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.55,
+                    ),
+                    child: Image.network(
+                      post.url!,
+                      width: double.infinity,
+                      fit: BoxFit.fitWidth,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
-              ),
-            ],
-            if (post.thumbnailUrl != null &&
-                post.thumbnailUrl != 'self' &&
-                post.thumbnailUrl != 'default' &&
-                post.thumbnailUrl != 'nsfw') ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 200,
-                    maxWidth: 300,
-                  ),
-                  child: Image.network(
-                    post.thumbnailUrl!,
-                    width: double.infinity,
-                    fit: BoxFit.fitWidth,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ],
+              if (post.thumbnailUrl != null &&
+                  post.thumbnailUrl != 'self' &&
+                  post.thumbnailUrl != 'default' &&
+                  post.thumbnailUrl != 'nsfw') ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 200,
+                      maxWidth: 300,
+                    ),
+                    child: Image.network(
+                      post.thumbnailUrl!,
+                      width: double.infinity,
+                      fit: BoxFit.fitWidth,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
-              ),
+              ],
+              const SizedBox(height: 8),
+              _buildActions(theme),
             ],
-            const SizedBox(height: 8),
-            _buildActions(theme),
-          ],
+          ),
         ),
       ),
     );
@@ -157,11 +160,11 @@ class PostCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.red),
+              border: Border.all(color: theme.colorScheme.error),
               borderRadius: BorderRadius.circular(3),
             ),
-            child: const Text('NSFW',
-                style: TextStyle(fontSize: 9, color: Colors.red)),
+            child: Text('NSFW',
+                style: TextStyle(fontSize: 9, color: theme.colorScheme.error)),
           ),
       ],
     );
@@ -178,7 +181,9 @@ class PostCard extends StatelessWidget {
                 ? Icons.arrow_upward
                 : Icons.arrow_upward_outlined,
             label: formatCount(post.score),
-            color: vote == VoteDirection.upvote ? Colors.orange : null,
+            color: vote == VoteDirection.upvote
+                ? theme.colorScheme.primary
+                : null,
             onTap: () => onVote?.call(VoteDirection.upvote),
           ),
           const SizedBox(width: 4),
@@ -186,7 +191,9 @@ class PostCard extends StatelessWidget {
             icon: vote == VoteDirection.downvote
                 ? Icons.arrow_downward
                 : Icons.arrow_downward_outlined,
-            color: vote == VoteDirection.downvote ? Colors.blue : null,
+            color: vote == VoteDirection.downvote
+                ? theme.colorScheme.secondary
+                : null,
             onTap: () => onVote?.call(VoteDirection.downvote),
           ),
           const SizedBox(width: 12),
@@ -201,7 +208,7 @@ class PostCard extends StatelessWidget {
                 ? Icons.bookmark
                 : Icons.bookmark_outline,
             color: (effectiveSaved ?? post.isSaved)
-                ? Colors.amber
+                ? theme.colorScheme.tertiary
                 : null,
             onTap: onSave,
           ),

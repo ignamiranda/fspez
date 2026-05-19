@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'theme.dart';
 import 'screens/feed_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/account_screen.dart';
@@ -11,21 +12,8 @@ class FspezApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'fspez',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF4500),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF4500),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: FspezTheme.light(),
+      darkTheme: FspezTheme.dark(),
       themeMode: ThemeMode.system,
       home: const _MainShell(),
     );

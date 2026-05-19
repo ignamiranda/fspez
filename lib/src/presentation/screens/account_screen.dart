@@ -18,13 +18,16 @@ class AccountScreen extends ConsumerWidget {
   }
 
   Widget _buildLoggedOut(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.person_outline, size: 64, color: Colors.grey),
+          Icon(Icons.person_outline, size: 64,
+              color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
-          const Text('Not logged in', style: TextStyle(color: Colors.grey)),
+          Text('Not logged in',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () {
@@ -41,6 +44,7 @@ class AccountScreen extends ConsumerWidget {
   }
 
   Widget _buildLoggedIn(BuildContext context, WidgetRef ref, account) {
+    final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -48,7 +52,7 @@ class AccountScreen extends ConsumerWidget {
           leading: CircleAvatar(child: Text(account.username[0].toUpperCase())),
           title: Text(account.username),
           subtitle: const Text('Active account'),
-          trailing: const Icon(Icons.check_circle, color: Colors.green),
+          trailing: Icon(Icons.check_circle, color: theme.colorScheme.tertiary),
         ),
         const Divider(),
         ListTile(

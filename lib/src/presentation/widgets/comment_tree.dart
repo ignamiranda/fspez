@@ -75,7 +75,7 @@ class CommentTree extends StatelessWidget {
                           ],
                           if (comment.isModerator) ...[
                             const SizedBox(width: 4),
-                            Icon(Icons.shield, size: 14, color: Colors.green[700]),
+                            Icon(Icons.shield, size: 14, color: theme.colorScheme.tertiary),
                           ],
                           const Spacer(),
                           Text(
@@ -99,7 +99,7 @@ class CommentTree extends StatelessWidget {
                                   : Icons.arrow_upward_outlined,
                               size: 16,
                               color: effectiveVote == VoteDirection.upvote
-                                  ? Colors.orange
+                                  ? theme.colorScheme.primary
                                   : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
@@ -112,7 +112,7 @@ class CommentTree extends StatelessWidget {
                                   : Icons.arrow_downward_outlined,
                               size: 16,
                               color: effectiveVote == VoteDirection.downvote
-                                  ? Colors.blue
+                                  ? theme.colorScheme.secondary
                                   : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
@@ -120,15 +120,17 @@ class CommentTree extends StatelessWidget {
                           if (onReply != null)
                             InkWell(
                               onTap: () => onReply!(comment.id, comment.author),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.reply_outlined,
                                 size: 16,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             )
                           else
-                            const Icon(
+                            Icon(
                               Icons.reply_outlined,
                               size: 16,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           const SizedBox(width: 16),
                           InkWell(
@@ -139,7 +141,7 @@ class CommentTree extends StatelessWidget {
                                   : Icons.bookmark_outline,
                               size: 16,
                               color: effectiveSaved
-                                  ? Colors.amber
+                                  ? theme.colorScheme.tertiary
                                   : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
