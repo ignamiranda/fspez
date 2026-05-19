@@ -6,6 +6,7 @@ import '../../domain/models/session_cookie.dart';
 import '../../data/providers.dart';
 import '../../data/session_store.dart';
 import '../../data/cookie_parser.dart';
+import '../../data/cdp_cookie_provider.dart';
 
 class AuthWebViewScreen extends ConsumerStatefulWidget {
   const AuthWebViewScreen({super.key});
@@ -22,7 +23,7 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
     final c = _controller;
     if (c == null || _done) return;
 
-    final provider = _CdpCookieProvider(c);
+    final provider = CdpCookieProvider(c);
     final store = SessionStore(cookieProvider: provider);
     final cookie = await store.acquire();
     if (cookie == null || _done) return;
@@ -123,42 +124,5 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
         },
       ),
     );
-  }
-}
-
-class _CdpCookieProvider implements CookieProvider {
-  final InAppWebViewController _controller;
-
-  _CdpCookieProvider(this._controller);
-
-  @override
-  Future<String?> getRedditSessionValue() async {
-    try {
-      final r = await _controller.callDevToolsProtocolMethod(
-        methodName: 'Network.getCookies',
-        parameters: {},
-      );
-      if (r is! Map || r['cookies'] is! List) return null;
-      for (final ck in r['cookies'] as List) {
-        if (ck is Map && ck['name'] == 'reddit_session') {
-          return ck['value'] as String;
-        }
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  @override
-  Future<String?> getCookieString() async {
-    try {
-      final r = await _controller.callDevToolsProtocolMethod(
-        methodName: 'Network.getCookies',
-        parameters: {},
-      );
-      if (r is! Map || r['cookies'] is! List) return null;
-      final cookies = (r['cookies'] as List).cast<Map>();
-      return cookies.map((c) => '${c['name']}=${c['value']}').join('; ');
-    } catch (_) {}
-    return null;
   }
 }

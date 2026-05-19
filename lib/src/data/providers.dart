@@ -1,14 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../data/reddit_client.dart';
-import '../data/account_repository.dart';
-import '../data/feed_repository.dart';
-import '../data/subreddit_repository.dart';
-import '../data/comment_repository.dart';
-import '../data/vote_repository.dart';
-import '../data/vote_notifier.dart';
-import '../data/save_repository.dart';
-import '../data/save_notifier.dart';
+import 'reddit_client.dart';
+import 'account_repository.dart';
+import 'account_notifier.dart';
+import 'feed_repository.dart';
+import 'subreddit_repository.dart';
+import 'comment_repository.dart';
+import 'vote_repository.dart';
+import 'vote_notifier.dart';
+import 'save_repository.dart';
+import 'save_notifier.dart';
 import '../domain/models/account.dart';
 import '../domain/models/feed.dart';
 import '../domain/enums/feed_sort.dart';
@@ -36,29 +37,6 @@ final activeAccountProvider =
     StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
   return ActiveAccountNotifier(ref.watch(accountRepositoryProvider));
 });
-
-class ActiveAccountNotifier extends StateNotifier<Account?> {
-  final AccountRepository _repository;
-
-  ActiveAccountNotifier(this._repository) : super(_repository.loadActive());
-
-  Future<void> setActive(Account account) async {
-    await _repository.setActive(account.id);
-    state = account;
-  }
-
-  Future<void> addAccount(Account account) async {
-    await _repository.save(account);
-    state = account;
-  }
-
-  Future<void> removeAccount(String accountId) async {
-    await _repository.remove(accountId);
-    if (state?.id == accountId) {
-      state = _repository.loadActive();
-    }
-  }
-}
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(ref.watch(redditClientProvider));
@@ -126,7 +104,7 @@ final voteProvider =
 });
 
 final saveRepositoryProvider = Provider<SaveRepository>((ref) {
-  return SaveRepository();
+  return SaveRepository(ref.watch(redditClientProvider));
 });
 
 final saveProvider =

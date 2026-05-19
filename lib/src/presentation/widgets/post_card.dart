@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
+import '../utils/format_utils.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -139,7 +140,7 @@ class PostCard extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                _timeAgo(post.createdAt),
+                timeAgo(post.createdAt),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -171,7 +172,7 @@ class PostCard extends StatelessWidget {
             icon: vote == VoteDirection.upvote
                 ? Icons.arrow_upward
                 : Icons.arrow_upward_outlined,
-            label: _formatCount(post.score),
+            label: formatCount(post.score),
             color: vote == VoteDirection.upvote ? Colors.orange : null,
             onTap: () => onVote?.call(VoteDirection.upvote),
           ),
@@ -186,7 +187,7 @@ class PostCard extends StatelessWidget {
           const SizedBox(width: 12),
           _ActionButton(
             icon: Icons.chat_bubble_outline,
-            label: _formatCount(post.commentCount),
+            label: formatCount(post.commentCount),
             onTap: onTap,
           ),
           const SizedBox(width: 12),
@@ -204,21 +205,6 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return count > 0 ? count.toString() : '';
-  }
-
-  String _timeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inSeconds < 60) return 'now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-    if (diff.inHours < 24) return '${diff.inHours}h';
-    if (diff.inDays < 30) return '${diff.inDays}d';
-    if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo';
-    return '${(diff.inDays / 365).floor()}y';
-  }
 }
 
 class _ActionButton extends StatelessWidget {

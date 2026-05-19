@@ -7,6 +7,8 @@ description: Use when debugging Reddit API 403 errors with cookie-based auth, or
 
 ## Save/Unsave requirements
 
+Save/unsave is handled by `RedditClient.save()` / `RedditClient.unsave()` in `lib/src/data/reddit_client.dart`. Callers use `SaveRepository` which delegates to `RedditClient` — they don't construct old.reddit.com requests or headers manually.
+
 `/api/save` and `/api/unsave` require ALL of these (any missing = 403):
 
 | Requirement | Detail |

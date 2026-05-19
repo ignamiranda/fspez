@@ -4,6 +4,8 @@ import '../../data/providers.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
+import '../utils/format_utils.dart';
+import '../utils/interaction_helpers.dart';
 import '../widgets/comment_tree.dart';
 
 class PostDetailScreen extends ConsumerWidget {
@@ -22,25 +24,6 @@ class PostDetailScreen extends ConsumerWidget {
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
 
-    void handleVote(String fullname, VoteDirection direction) {
-      ref.read(voteProvider.notifier).toggle(fullname, direction);
-    }
-
-    Future<void> handleSave(String fullname) async {
-      try {
-        await ref.read(saveProvider.notifier).toggle(fullname);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Save failed: $e'),
-              duration: const Duration(seconds: 8),
-            ),
-          );
-        }
-      }
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -54,11 +37,12 @@ class PostDetailScreen extends ConsumerWidget {
           detail.comments,
           voteOverrides: voteOverrides,
           saveOverrides: saveOverrides,
-          onVote: handleVote,
-          onSave: handleSave,
+          onVote: (fullname, dir) => handleVote(ref.read(voteProvider.notifier), fullname, dir),
+          onSave: (fullname) => handleSave(ref.read(saveProvider.notifier), fullname, context),
         ),
         loading: () => _buildBody(context, const [],
-            onVote: handleVote, onSave: handleSave),
+            onVote: (fullname, dir) => handleVote(ref.read(voteProvider.notifier), fullname, dir),
+            onSave: (fullname) => handleSave(ref.read(saveProvider.notifier), fullname, context)),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -213,7 +197,7 @@ class _PostHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _timeAgo(post.createdAt),
+                      timeAgo(post.createdAt),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -257,7 +241,7 @@ class _PostHeader extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                _formatCount(post.score),
+                formatCount(post.score),
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -292,7 +276,7 @@ class _PostHeader extends StatelessWidget {
               const Icon(Icons.chat_bubble_outline, size: 16),
               const SizedBox(width: 4),
               Text(
-                _formatCount(post.commentCount),
+                formatCount(post.commentCount),
                 style: theme.textTheme.bodySmall,
               ),
             ],
@@ -302,19 +286,4 @@ class _PostHeader extends StatelessWidget {
     );
   }
 
-  String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return count > 0 ? count.toString() : '';
-  }
-
-  String _timeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inSeconds < 60) return 'now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-    if (diff.inHours < 24) return '${diff.inHours}h';
-    if (diff.inDays < 30) return '${diff.inDays}d';
-    if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo';
-    return '${(diff.inDays / 365).floor()}y';
-  }
 }

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://opencode.ai/config.json",
   "command": {
     "learn": {
       "template": "Load the learn skill and follow its instructions to extract reusable knowledge from this session.",

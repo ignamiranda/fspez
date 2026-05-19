@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/session_store.dart';
-import 'package:fspez/src/domain/models/session_cookie.dart';
 
 class _FakeCookieProvider implements CookieProvider {
   final String? _value;
