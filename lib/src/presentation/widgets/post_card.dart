@@ -186,6 +186,15 @@ class PostCard extends StatelessWidget {
                 : null,
             onTap: () => onVote?.call(VoteDirection.upvote),
           ),
+          if (post.upvoteRatio != null) ...[
+            const SizedBox(width: 2),
+            Text(
+              '${(post.upvoteRatio! * 100).round()}%',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(width: 4),
           _ActionButton(
             icon: vote == VoteDirection.downvote
