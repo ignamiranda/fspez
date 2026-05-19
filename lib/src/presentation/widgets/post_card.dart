@@ -107,17 +107,17 @@ class PostCard extends StatelessWidget {
   Widget _buildHeader(ThemeData theme) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 12,
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Text(
-            post.subreddit.name.isNotEmpty
-                ? post.subreddit.name[0].toUpperCase()
-                : 'r',
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.colorScheme.onPrimaryContainer,
-            ),
+        ClipOval(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: post.subreddit.iconUrl != null
+                ? Image.network(
+                    post.subreddit.iconUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _letterAvatar(theme),
+                  )
+                : _letterAvatar(theme),
           ),
         ),
         const SizedBox(width: 8),
@@ -177,6 +177,22 @@ class PostCard extends StatelessWidget {
                 style: TextStyle(fontSize: 9, color: theme.colorScheme.error)),
           ),
       ],
+    );
+  }
+
+  Widget _letterAvatar(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.primaryContainer,
+      alignment: Alignment.center,
+      child: Text(
+        post.subreddit.name.isNotEmpty
+            ? post.subreddit.name[0].toUpperCase()
+            : 'r',
+        style: TextStyle(
+          fontSize: 12,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
     );
   }
 

@@ -115,6 +115,71 @@ void main() {
       expect(post.subreddit.name, '');
     });
 
+    test('parses subreddit icon from sr_detail', () {
+      final data = {
+        'id': 'abc',
+        'title': 'Post with icon',
+        'permalink': '/r/test/abc',
+        'created_utc': 1000000000,
+        'subreddit': 'flutter',
+        'sr_detail': {
+          'icon_img': 'https://example.com/icon.png',
+        },
+      };
+
+      final post = parser.parsePost(data);
+
+      expect(post.subreddit.iconUrl, 'https://example.com/icon.png');
+    });
+
+    test('parses subreddit community_icon fallback', () {
+      final data = {
+        'id': 'abc',
+        'title': 'Post with community icon',
+        'permalink': '/r/test/abc',
+        'created_utc': 1000000000,
+        'subreddit': 'flutter',
+        'sr_detail': {
+          'community_icon': 'https://example.com/community.png',
+        },
+      };
+
+      final post = parser.parsePost(data);
+
+      expect(post.subreddit.iconUrl, 'https://example.com/community.png');
+    });
+
+    test('cleans &amp; from icon URLs', () {
+      final data = {
+        'id': 'abc',
+        'title': 'Post with encoded URL',
+        'permalink': '/r/test/abc',
+        'created_utc': 1000000000,
+        'subreddit': 'flutter',
+        'sr_detail': {
+          'community_icon': 'https://example.com/icon.png?width=256&amp;s=abc123',
+        },
+      };
+
+      final post = parser.parsePost(data);
+
+      expect(post.subreddit.iconUrl, 'https://example.com/icon.png?width=256&s=abc123');
+    });
+
+    test('subreddit icon is null when no sr_detail', () {
+      final data = {
+        'id': 'abc',
+        'title': 'Post no icon',
+        'permalink': '/r/test/abc',
+        'created_utc': 1000000000,
+        'subreddit': 'flutter',
+      };
+
+      final post = parser.parsePost(data);
+
+      expect(post.subreddit.iconUrl, isNull);
+    });
+
     test('parses vote direction', () {
       final upvoted = parser.parsePost({
         'id': '1',

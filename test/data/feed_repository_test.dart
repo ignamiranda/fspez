@@ -66,7 +66,7 @@ void main() {
 
       verify(() => mockHttp.get(
             Uri.parse('https://www.reddit.com/user/testuser/saved.json'
-                '?limit=25'),
+                '?limit=25&sr_detail=true'),
             headers: any(named: 'headers'),
           )).called(1);
     });
@@ -83,7 +83,7 @@ void main() {
 
       verify(() => mockHttp.get(
             Uri.parse('https://www.reddit.com/user/testuser/saved.json'
-                '?after=t3_cursor&limit=25'),
+                '?after=t3_cursor&limit=25&sr_detail=true'),
             headers: any(named: 'headers'),
           )).called(1);
     });

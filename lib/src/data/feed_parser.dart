@@ -40,6 +40,7 @@ class FeedParser {
       subreddit: Subreddit(
         id: data['subreddit_id'] as String? ?? '',
         name: data['subreddit'] as String? ?? '',
+        iconUrl: _subredditIcon(data),
       ),
       score: data['score'] as int? ?? 0,
       commentCount: data['num_comments'] as int? ?? 0,
@@ -73,5 +74,19 @@ class FeedParser {
     if (likes == true) return VoteDirection.upvote;
     if (likes == false) return VoteDirection.downvote;
     return VoteDirection.none;
+  }
+
+  String? _subredditIcon(Map<String, dynamic> data) {
+    final srDetail = data['sr_detail'] as Map<String, dynamic>?;
+    if (srDetail == null) return null;
+    final icon = srDetail['icon_img'] as String?;
+    if (icon != null && icon.isNotEmpty) return _cleanUrl(icon);
+    final communityIcon = srDetail['community_icon'] as String?;
+    if (communityIcon != null && communityIcon.isNotEmpty) return _cleanUrl(communityIcon);
+    return null;
+  }
+
+  String _cleanUrl(String url) {
+    return url.replaceAll('&amp;', '&');
   }
 }

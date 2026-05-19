@@ -43,6 +43,7 @@ class FeedRepository {
           'sort': sort.name,
           if (after != null) 'after': after,
           'limit': '25',
+          'sr_detail': 'true',
         },
         sessionCookie: sessionCookie);
     return _parser.parseFeed(data, FeedKind.home, sort);
@@ -59,6 +60,7 @@ class FeedRepository {
           'restrict_sr': 'off',
           'sort': 'relevance',
           'limit': '25',
+          'sr_detail': 'true',
           if (after != null) 'after': after,
         },
         sessionCookie: sessionCookie);
@@ -74,6 +76,7 @@ class FeedRepository {
         queryParams: {
           if (after != null) 'after': after,
           'limit': '25',
+          'sr_detail': 'true',
         },
         sessionCookie: sessionCookie);
     return _parser.parseFeed(data, FeedKind.saved, FeedSort.new_);
@@ -92,6 +95,7 @@ class FeedRepository {
           'sort': sort.name,
           if (after != null) 'after': after,
           'limit': '25',
+          'sr_detail': 'true',
         },
         sessionCookie: sessionCookie);
     return _parser.parseFeed(data, kind, sort,
