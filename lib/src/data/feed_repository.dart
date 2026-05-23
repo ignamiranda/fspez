@@ -15,8 +15,19 @@ class FeedRepository {
       {FeedSort sort = FeedSort.best,
       String? after,
       SessionCookie? sessionCookie}) {
-    return _fetchFeed('/best', sort, after, FeedKind.home,
+    return _fetchFeed(_pathForSort(sort), sort, after, FeedKind.home,
         sessionCookie: sessionCookie);
+  }
+
+  String _pathForSort(FeedSort sort) {
+    return switch (sort) {
+      FeedSort.best => '/best',
+      FeedSort.hot => '/hot',
+      FeedSort.new_ => '/new',
+      FeedSort.top => '/top',
+      FeedSort.rising => '/rising',
+      FeedSort.controversial => '/controversial',
+    };
   }
 
   Future<Feed> fetchPopular({String? after, SessionCookie? sessionCookie}) {
@@ -40,7 +51,7 @@ class FeedRepository {
   }) async {
     final data = await _client.get('/r/$subredditName',
         queryParams: {
-          'sort': sort.name,
+          'sort': sort.label,
           if (after != null) 'after': after,
           'limit': '25',
           'sr_detail': 'true',
@@ -92,7 +103,7 @@ class FeedRepository {
   }) async {
     final data = await _client.get(path,
         queryParams: {
-          'sort': sort.name,
+          'sort': sort.label,
           if (after != null) 'after': after,
           'limit': '25',
           'sr_detail': 'true',

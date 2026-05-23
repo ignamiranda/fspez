@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
 
-class CommentTree extends StatelessWidget {
+class CommentTree extends StatefulWidget {
   final Comment comment;
   final Map<String, VoteDirection> voteOverrides;
   final void Function(String fullname, VoteDirection direction)? onVote;
@@ -21,170 +21,173 @@ class CommentTree extends StatelessWidget {
   });
 
   @override
+  State<CommentTree> createState() => _CommentTreeState();
+}
+
+class _CommentTreeState extends State<CommentTree> {
+  bool? _userCollapsed;
+
+  bool get _isCollapsed => _userCollapsed ?? widget.comment.isCollapsed;
+
+  void _toggleCollapse() {
+    setState(() {
+      _userCollapsed = !(_userCollapsed ?? widget.comment.isCollapsed);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fullname = comment.fullname;
-    final effectiveVote = voteOverrides[fullname] ?? comment.vote;
-    final effectiveSaved = saveOverrides[fullname] ?? comment.isSaved;
+    final fullname = widget.comment.fullname;
+    final effectiveVote = widget.voteOverrides[fullname] ?? widget.comment.vote;
+    final effectiveSaved = widget.saveOverrides[fullname] ?? widget.comment.isSaved;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (comment.depth > 0) ...[
-                SizedBox(
-                  width: comment.depth * 16.0,
-                  child: CustomPaint(
-                    painter: _DepthLinePainter(theme.colorScheme.outlineVariant),
-                  ),
-                ),
-              ],
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'u/${comment.author}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          if (comment.isSubmitter) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                              child: Text(
-                                'OP',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: theme.colorScheme.onPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (comment.isModerator) ...[
-                            const SizedBox(width: 4),
-                            Icon(Icons.shield, size: 14, color: theme.colorScheme.tertiary),
-                          ],
-                          const Spacer(),
-                          Text(
-                            '${comment.score} pts',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+        SizedBox(
+          width: double.infinity,
+          child: GestureDetector(
+            onTap: _toggleCollapse,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 36),
+              decoration: widget.comment.depth > 0
+                  ? BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                          width: widget.comment.depth * 16.0,
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(comment.body, style: theme.textTheme.bodyMedium),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          InkWell(
-                            onTap: () => onVote?.call(fullname, VoteDirection.upvote),
-                            child: Icon(
-                              effectiveVote == VoteDirection.upvote
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_upward_outlined,
-                              size: 16,
-                              color: effectiveVote == VoteDirection.upvote
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurfaceVariant,
+                    )
+                  : null,
+              padding: EdgeInsets.symmetric(
+                vertical: _isCollapsed ? 4 : 8,
+                horizontal: 12,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'u/${widget.comment.author}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (widget.comment.isSubmitter) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            'OP',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: theme.colorScheme.onPrimary,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          InkWell(
-                            onTap: () => onVote?.call(fullname, VoteDirection.downvote),
-                            child: Icon(
-                              effectiveVote == VoteDirection.downvote
-                                  ? Icons.arrow_downward
-                                  : Icons.arrow_downward_outlined,
-                              size: 16,
-                              color: effectiveVote == VoteDirection.downvote
-                                  ? theme.colorScheme.secondary
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
+                        ),
+                      ],
+                      if (widget.comment.isModerator) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.shield, size: 14, color: theme.colorScheme.tertiary),
+                      ],
+                      const Spacer(),
+                      if (_isCollapsed)
+                        Icon(Icons.unfold_more, size: 14,
+                            color: theme.colorScheme.onSurfaceVariant),
+                      Text(
+                        '${widget.comment.score} pts',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!_isCollapsed) ...[
+                    const SizedBox(height: 4),
+                    Text(widget.comment.body, style: theme.textTheme.bodyMedium),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () => widget.onVote?.call(fullname, VoteDirection.upvote),
+                          child: Icon(
+                            effectiveVote == VoteDirection.upvote
+                                ? Icons.arrow_upward
+                                : Icons.arrow_upward_outlined,
+                            size: 16,
+                            color: effectiveVote == VoteDirection.upvote
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 16),
-                          if (onReply != null)
-                            InkWell(
-                              onTap: () => onReply!(comment.id, comment.author),
-                              child: Icon(
-                                Icons.reply_outlined,
-                                size: 16,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            )
-                          else
-                            Icon(
+                        ),
+                        const SizedBox(width: 12),
+                        InkWell(
+                          onTap: () => widget.onVote?.call(fullname, VoteDirection.downvote),
+                          child: Icon(
+                            effectiveVote == VoteDirection.downvote
+                                ? Icons.arrow_downward
+                                : Icons.arrow_downward_outlined,
+                            size: 16,
+                            color: effectiveVote == VoteDirection.downvote
+                                ? theme.colorScheme.secondary
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        if (widget.onReply != null)
+                          InkWell(
+                            onTap: () => widget.onReply!(widget.comment.id, widget.comment.author),
+                            child: Icon(
                               Icons.reply_outlined,
                               size: 16,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
-                          const SizedBox(width: 16),
-                          InkWell(
-                            onTap: () => onSave?.call(fullname),
-                            child: Icon(
-                              effectiveSaved
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_outline,
-                              size: 16,
-                              color: effectiveSaved
-                                  ? theme.colorScheme.tertiary
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
+                          )
+                        else
+                          Icon(
+                            Icons.reply_outlined,
+                            size: 16,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(width: 16),
+                        InkWell(
+                          onTap: () => widget.onSave?.call(fullname),
+                          child: Icon(
+                            effectiveSaved
+                                ? Icons.bookmark
+                                : Icons.bookmark_outline,
+                            size: 16,
+                            color: effectiveSaved
+                                ? theme.colorScheme.tertiary
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
           ),
         ),
-        if (!comment.isCollapsed)
-          ...comment.replies.map((reply) => CommentTree(
+        if (!_isCollapsed)
+          ...widget.comment.replies.map((reply) => CommentTree(
             comment: reply,
-            voteOverrides: voteOverrides,
-            onVote: onVote,
-            saveOverrides: saveOverrides,
-            onSave: onSave,
-            onReply: onReply,
+            voteOverrides: widget.voteOverrides,
+            onVote: widget.onVote,
+            saveOverrides: widget.saveOverrides,
+            onSave: widget.onSave,
+            onReply: widget.onReply,
           )),
       ],
     );
   }
-}
-
-class _DepthLinePainter extends CustomPainter {
-  final Color color;
-
-  _DepthLinePainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-    canvas.drawLine(
-      Offset(size.width - 8, 0),
-      Offset(size.width - 8, size.height),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

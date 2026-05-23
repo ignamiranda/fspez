@@ -23,6 +23,8 @@ class SubredditFeedScreen extends ConsumerStatefulWidget {
 class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
   FeedSort _sort = FeedSort.hot;
   Subreddit? _subInfo;
+  bool _isSubscribed = false;
+  bool _togglingSub = false;
 
   @override
   void initState() {
@@ -36,8 +38,30 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
       final cookie = ref.read(activeAccountProvider)?.sessionCookie;
       final sub = await repo.fetch(widget.subredditName,
           sessionCookie: cookie);
-      setState(() => _subInfo = sub);
+      setState(() {
+        _subInfo = sub;
+        _isSubscribed = sub.isSubscribed;
+      });
     } catch (_) {}
+  }
+
+  Future<void> _toggleSubscribe() async {
+    setState(() => _togglingSub = true);
+    final repo = ref.read(subredditRepositoryProvider);
+    final cookie = ref.read(activeAccountProvider)?.sessionCookie;
+    try {
+      if (_isSubscribed) {
+        await repo.unsubscribe(widget.subredditName, sessionCookie: cookie);
+      } else {
+        await repo.subscribe(widget.subredditName, sessionCookie: cookie);
+      }
+      setState(() {
+        _isSubscribed = !_isSubscribed;
+        _togglingSub = false;
+      });
+    } catch (_) {
+      setState(() => _togglingSub = false);
+    }
   }
 
   @override
@@ -64,7 +88,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
             itemBuilder: (_) => FeedSort.values.map((sort) {
               return PopupMenuItem(
                 value: sort,
-                child: Text(sort.name),
+                child: Text(sort.label),
               );
             }).toList(),
           ),
@@ -84,11 +108,17 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
           : Column(
               children: [
                 if (_subInfo != null)
-                  _SubredditHeader(sub: _subInfo!, ref: ref),
+                  _SubredditHeader(
+                    sub: _subInfo!,
+                    isSubscribed: _isSubscribed,
+                    loading: _togglingSub,
+                    onToggle: _toggleSubscribe,
+                  ),
                 Expanded(
                   child: PostList(
                     scrollController: notifier.scrollController,
                     posts: state.posts,
+                    onRefresh: () async => notifier.refresh(),
                     voteOverrides: voteOverrides,
                     saveOverrides: saveOverrides,
                     onPostVote: (fullname, dir) =>
@@ -144,9 +174,16 @@ class _SubredditLetterAvatar extends StatelessWidget {
 
 class _SubredditHeader extends StatelessWidget {
   final Subreddit sub;
-  final WidgetRef ref;
+  final bool isSubscribed;
+  final bool loading;
+  final VoidCallback onToggle;
 
-  const _SubredditHeader({required this.sub, required this.ref});
+  const _SubredditHeader({
+    required this.sub,
+    required this.isSubscribed,
+    required this.loading,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -194,18 +231,14 @@ class _SubredditHeader extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           FilledButton.tonal(
-            onPressed: () {
-              final action = sub.isSubscribed ? 'unsubscribe' : 'subscribe';
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(action == 'subscribe'
-                      ? 'Subscribed to r/${sub.name}'
-                      : 'Unsubscribed from r/${sub.name}'),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            child: Text(sub.isSubscribed ? 'Joined' : 'Join'),
+            onPressed: loading ? null : onToggle,
+            child: loading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(isSubscribed ? 'Joined' : 'Join'),
           ),
         ],
       ),

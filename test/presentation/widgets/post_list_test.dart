@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/post.dart';
@@ -57,6 +58,84 @@ void main() {
 
       await tester.tap(find.text('Test Post'));
       expect(tapped?.id, '1');
+    });
+
+    testWidgets('calls onRefresh when dragged past the top', (tester) async {
+      var refreshed = false;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: PostList(
+            posts: [_createPost('1')],
+            onRefresh: () async {
+              refreshed = true;
+            },
+          ),
+        ),
+      ));
+
+      await tester.drag(find.byType(ListView), const Offset(0, 300));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+
+      expect(refreshed, isTrue);
+    });
+
+    testWidgets('calls onRefresh when wheel scrolling upward at the top', (tester) async {
+      var refreshed = false;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: PostList(
+            posts: [_createPost('1')],
+            onRefresh: () async {
+              refreshed = true;
+            },
+          ),
+        ),
+      ));
+
+      for (var i = 0; i < 6; i++) {
+        await tester.sendEventToBinding(const PointerScrollEvent(
+          position: Offset(200, 200),
+          scrollDelta: Offset(0, -30),
+        ));
+      }
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+
+      expect(refreshed, isTrue);
+    });
+
+    testWidgets('shows refresh indicator while overscrolling', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: PostList(
+            posts: [_createPost('1')],
+            onRefresh: () async {},
+          ),
+        ),
+      ));
+
+      await tester.sendEventToBinding(const PointerScrollEvent(
+        position: Offset(200, 200),
+        scrollDelta: Offset(0, -30),
+      ));
+      await tester.pump();
+
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows empty state and still allows onRefresh', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: PostList(
+            posts: [],
+            onRefresh: () async {},
+            emptyMessage: 'No posts.',
+          ),
+        ),
+      ));
+
+      expect(find.text('No posts.'), findsOneWidget);
     });
 
     testWidgets('calls onPostVote when vote button is tapped', (tester) async {

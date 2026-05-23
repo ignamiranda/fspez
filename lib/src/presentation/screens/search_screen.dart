@@ -87,6 +87,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return PostList(
       scrollController: notifier!.scrollController,
       posts: state.posts,
+      onRefresh: () async => notifier.refresh(),
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
       onPostVote: (fullname, dir) =>

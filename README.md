@@ -1,16 +1,17 @@
 # fspez
 
-A new Flutter project.
+Flutter Reddit client.
+
+## Features
+
+- Cookie-based login via WebView
+- Feed sorting with readable labels
+- Desktop pull-to-refresh with visible overscroll feedback
+- Collapsed comment rows with full-width tap targets
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+See the Flutter docs for setup and development guidance:
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- https://docs.flutter.dev/get-started/codelab
+- https://docs.flutter.dev/cookbook

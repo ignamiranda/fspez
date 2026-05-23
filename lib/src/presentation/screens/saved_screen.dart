@@ -33,6 +33,7 @@ class SavedScreen extends ConsumerWidget {
           : PostList(
               scrollController: notifier.scrollController,
               posts: state.posts,
+              onRefresh: () async => notifier.refresh(),
               voteOverrides: voteOverrides,
               saveOverrides: saveOverrides,
               onPostVote: (fullname, dir) =>

@@ -4,5 +4,7 @@ enum FeedSort {
   top,
   rising,
   controversial,
-  best,
+  best;
+
+  String get label => name.replaceAll('_', '');
 }
