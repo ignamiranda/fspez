@@ -1,5 +1,5 @@
-## Auto-trigger: `/auto-skills` after every task
-Whenever a task completes (all requested changes are implemented, tests pass, and changes are committed), automatically run the `/auto-skills` command to extract any new pitfalls into agent skills before moving on.
+## Auto-trigger: `/learn` after every task
+Whenever a task completes (all requested changes are implemented, tests pass, and changes are committed), automatically run the `/learn` command to extract any new pitfalls into agent skills before moving on.
 
 ## Commands
 - `flutter analyze` — lint + static analysis (all errors)
@@ -55,4 +55,3 @@ Use `controller.callDevToolsProtocolMethod('Runtime.evaluate', {awaitPromise: tr
 - Save endpoints are stricter than vote (modhash + old.reddit.com + full cookie string)
 - SDK `^3.4.0`, Flutter `^3.22.0`, `flutter_inappwebview` for WebView, `shared_preferences` for persistence
 - No `build_runner` / code generation output in repo (freezed/json_serializable listed but not run)
-
