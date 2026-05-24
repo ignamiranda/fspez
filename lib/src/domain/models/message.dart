@@ -1,0 +1,62 @@
+import 'package:equatable/equatable.dart';
+import '../../domain/enums/vote_direction.dart';
+
+class Message with EquatableMixin {
+  final String id;
+  final String subject;
+  final String body;
+  final String author;
+  final String dest;
+  final DateTime createdAt;
+  final bool isNew;
+  final bool isComment;
+  final String? parentId;
+  final List<Message> replies;
+  final String? subreddit;
+  final String? distinguished;
+  final VoteDirection vote;
+  final int score;
+  final String? context;
+  final String? firstMessageName;
+
+  String get fullname => 't4_$id';
+
+  const Message({
+    required this.id,
+    required this.subject,
+    required this.body,
+    required this.author,
+    required this.dest,
+    required this.createdAt,
+    this.isNew = false,
+    this.isComment = false,
+    this.parentId,
+    this.replies = const [],
+    this.subreddit,
+    this.distinguished,
+    this.vote = VoteDirection.none,
+    this.score = 0,
+    this.context,
+    this.firstMessageName,
+  });
+
+  @override
+  List<Object?> get props => [
+        id,
+        subject,
+        body,
+        author,
+        dest,
+        createdAt,
+        isNew,
+        isComment,
+        parentId,
+        replies,
+        subreddit,
+        distinguished,
+        vote,
+        score,
+        context,
+        firstMessageName,
+      ];
+}

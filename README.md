@@ -8,6 +8,8 @@ Flutter Reddit client.
 - Feed sorting with readable labels
 - Desktop pull-to-refresh with visible overscroll feedback
 - Collapsed comment rows with full-width tap targets
+- Inbox with All / Unread / Sent tabs
+- Expandable message threads with inline replies
 
 ## Getting Started
 

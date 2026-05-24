@@ -11,6 +11,8 @@ import 'vote_repository.dart';
 import 'vote_notifier.dart';
 import 'save_notifier.dart';
 import 'submit_repository.dart';
+import 'inbox_repository.dart';
+import 'inbox_notifier.dart';
 import '../domain/models/account.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/enums/vote_direction.dart';
@@ -96,4 +98,15 @@ final saveProvider =
   final client = ref.watch(redditClientProvider);
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return SaveNotifier(client, cookie);
+});
+
+final inboxRepositoryProvider = Provider<InboxRepository>((ref) {
+  return InboxRepository(ref.watch(redditClientProvider));
+});
+
+final inboxProvider =
+    StateNotifierProvider<InboxNotifier, InboxState>((ref) {
+  final repo = ref.watch(inboxRepositoryProvider);
+  final account = ref.watch(activeAccountProvider);
+  return InboxNotifier(repo, account);
 });
