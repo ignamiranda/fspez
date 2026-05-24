@@ -62,8 +62,8 @@ class _CommentTreeState extends State<CommentTree> {
                       ),
                     )
                   : null,
-              padding: EdgeInsets.symmetric(
-                vertical: _isCollapsed ? 4 : 8,
+              padding: const EdgeInsets.symmetric(
+                vertical: 8,
                 horizontal: 12,
               ),
               child: Column(
@@ -177,6 +177,11 @@ class _CommentTreeState extends State<CommentTree> {
               ),
             ),
           ),
+        ),
+        Divider(
+          height: 1,
+          thickness: 0.5,
+          color: theme.colorScheme.outlineVariant,
         ),
         if (!_isCollapsed)
           ...widget.comment.replies.map((reply) => CommentTree(
