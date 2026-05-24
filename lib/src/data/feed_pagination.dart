@@ -52,11 +52,14 @@ class FeedPageConfig with EquatableMixin {
   const FeedPageConfig.subreddit(String name, {FeedSort sort = FeedSort.hot})
       : this(kind: FeedPageKind.subreddit, sort: sort, identifier: name);
 
+  const FeedPageConfig.user(String username, {FeedSort sort = FeedSort.new_})
+      : this(kind: FeedPageKind.user, sort: sort, identifier: username);
+
   @override
   List<Object?> get props => [kind, sort, identifier];
 }
 
-enum FeedPageKind { home, popular, saved, search, subreddit }
+enum FeedPageKind { home, popular, saved, search, subreddit, user }
 
 class FeedPageNotifier extends StateNotifier<FeedPageState> {
   final Future<Feed> Function({String? after}) _fetchPage;
@@ -151,5 +154,6 @@ Future<Feed> fetchForConfig(
     FeedPageKind.saved => repo.fetchSaved(account!.username, after: after, sessionCookie: cookie),
     FeedPageKind.search => repo.search(config.identifier!, after: after, sessionCookie: cookie),
     FeedPageKind.subreddit => repo.fetchSubreddit(config.identifier!, sort: config.sort, after: after, sessionCookie: cookie),
+    FeedPageKind.user => repo.fetchUserPosts(config.identifier!, sort: config.sort, after: after, sessionCookie: cookie),
   };
 }

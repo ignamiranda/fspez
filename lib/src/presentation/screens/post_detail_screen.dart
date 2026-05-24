@@ -8,6 +8,7 @@ import '../utils/interaction_helpers.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/post_actions.dart';
 import 'subreddit_feed_screen.dart';
+import 'user_profile_screen.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final Post post;
@@ -201,6 +202,16 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onSave: (fullname) => handleSave(
                           ref.read(saveProvider.notifier), fullname, context),
                       onReply: loggedIn ? _replyToComment : null,
+                      onAuthorTap: (author) {
+                        if (author != '[deleted]') {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  UserProfileScreen(username: author),
+                            ),
+                          );
+                        }
+                      },
                     )),
               const SizedBox(height: 8),
             ],
@@ -314,6 +325,14 @@ class _PostDetailHeader extends StatelessWidget {
                 ),
               ),
             ),
+            onAuthorTap: post.author != '[deleted]'
+                ? () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            UserProfileScreen(username: post.author),
+                      ),
+                    )
+                : null,
           ),
           const SizedBox(height: 8),
           Text(

@@ -13,6 +13,7 @@ class PostList extends StatefulWidget {
   final void Function(String fullname)? onPostSave;
   final void Function(Post post)? onPostTap;
   final void Function(Post post)? onSubredditTap;
+  final void Function(Post post)? onAuthorTap;
   final String emptyMessage;
   final ScrollController? scrollController;
   final Widget? footer;
@@ -27,6 +28,7 @@ class PostList extends StatefulWidget {
     this.onPostSave,
     this.onPostTap,
     this.onSubredditTap,
+    this.onAuthorTap,
     this.emptyMessage = 'No posts yet.',
     this.scrollController,
     this.footer,
@@ -167,6 +169,9 @@ class _PostListState extends State<PostList> {
                   onTap: widget.onPostTap != null ? () => widget.onPostTap!(post) : null,
                   onSubredditTap: widget.onSubredditTap != null
                       ? () => widget.onSubredditTap!(post)
+                      : null,
+                  onAuthorTap: widget.onAuthorTap != null
+                      ? () => widget.onAuthorTap!(post)
                       : null,
                 );
               },

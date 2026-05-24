@@ -6,6 +6,7 @@ import '../utils/interaction_helpers.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'subreddit_feed_screen.dart';
+import 'user_profile_screen.dart';
 
 class SavedScreen extends ConsumerWidget {
   const SavedScreen({super.key});
@@ -45,14 +46,23 @@ class SavedScreen extends ConsumerWidget {
                   builder: (_) => PostDetailScreen(post: post),
                 ),
               ),
-              onSubredditTap: (post) => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => SubredditFeedScreen(
-                    subredditName: post.subreddit.name,
-                  ),
-                ),
-              ),
-              emptyMessage: 'No saved posts yet.',
+      onSubredditTap: (post) => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SubredditFeedScreen(
+            subredditName: post.subreddit.name,
+          ),
+        ),
+      ),
+      onAuthorTap: (post) {
+        if (post.author != '[deleted]') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => UserProfileScreen(username: post.author),
+            ),
+          );
+        }
+      },
+      emptyMessage: 'No saved posts yet.',
               footer: state.isLoadingMore
                   ? const Padding(
                       padding: EdgeInsets.all(16),

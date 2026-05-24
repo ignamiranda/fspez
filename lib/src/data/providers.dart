@@ -13,8 +13,10 @@ import 'save_notifier.dart';
 import 'submit_repository.dart';
 import 'inbox_repository.dart';
 import 'inbox_notifier.dart';
+import 'user_repository.dart';
 import '../domain/models/account.dart';
 import '../domain/models/subreddit.dart';
+import '../domain/models/user_profile.dart';
 import '../domain/enums/vote_direction.dart';
 
 final redditClientProvider = Provider<RedditClient>((ref) {
@@ -109,4 +111,15 @@ final inboxProvider =
   final repo = ref.watch(inboxRepositoryProvider);
   final account = ref.watch(activeAccountProvider);
   return InboxNotifier(repo, account);
+});
+
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  return UserRepository(ref.watch(redditClientProvider));
+});
+
+final userProfileProvider =
+    FutureProvider.family<UserProfile, String>((ref, username) async {
+  final repo = ref.watch(userRepositoryProvider);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetchProfile(username, sessionCookie: sessionCookie);
 });

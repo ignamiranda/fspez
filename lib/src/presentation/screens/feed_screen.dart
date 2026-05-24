@@ -8,6 +8,7 @@ import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'search_screen.dart';
 import 'subreddit_feed_screen.dart';
+import 'user_profile_screen.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
@@ -79,6 +80,15 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                   ),
                 ),
               ),
+              onAuthorTap: (post) {
+                if (post.author != '[deleted]') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => UserProfileScreen(username: post.author),
+                    ),
+                  );
+                }
+              },
               footer: state.isLoadingMore
                   ? const Padding(
                       padding: EdgeInsets.all(16),

@@ -9,6 +9,7 @@ class CommentTree extends StatefulWidget {
   final Map<String, bool> saveOverrides;
   final void Function(String fullname)? onSave;
   final void Function(String commentId, String author)? onReply;
+  final void Function(String author)? onAuthorTap;
 
   const CommentTree({
     super.key,
@@ -18,6 +19,7 @@ class CommentTree extends StatefulWidget {
     this.saveOverrides = const {},
     this.onSave,
     this.onReply,
+    this.onAuthorTap,
   });
 
   @override
@@ -71,10 +73,16 @@ class _CommentTreeState extends State<CommentTree> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'u/${widget.comment.author}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                      InkWell(
+                        onTap: () {
+                          _toggleCollapse();
+                          widget.onAuthorTap?.call(widget.comment.author);
+                        },
+                        child: Text(
+                          'u/${widget.comment.author}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       if (widget.comment.isSubmitter) ...[
@@ -208,6 +216,7 @@ class _CommentTreeState extends State<CommentTree> {
                     saveOverrides: widget.saveOverrides,
                     onSave: widget.onSave,
                     onReply: widget.onReply,
+                    onAuthorTap: widget.onAuthorTap,
                   )).toList(),
                 ),
         ),

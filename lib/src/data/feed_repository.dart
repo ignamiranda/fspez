@@ -78,6 +78,23 @@ class FeedRepository {
     return _parser.parseFeed(data, FeedKind.popular, FeedSort.new_);
   }
 
+  Future<Feed> fetchUserPosts(
+    String username, {
+    FeedSort sort = FeedSort.new_,
+    String? after,
+    SessionCookie? sessionCookie,
+  }) async {
+    final data = await _client.get('/user/$username/submitted',
+        queryParams: {
+          'sort': sort.label,
+          if (after != null) 'after': after,
+          'limit': '25',
+          'sr_detail': 'true',
+        },
+        sessionCookie: sessionCookie);
+    return _parser.parseFeed(data, FeedKind.user, sort);
+  }
+
   Future<Feed> fetchSaved(
     String username, {
     String? after,

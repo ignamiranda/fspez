@@ -211,5 +211,19 @@ void main() {
         isNot(FeedPageConfig.search('bar')),
       );
     });
+
+    test('user configs differ by username', () {
+      expect(
+        FeedPageConfig.user('alice'),
+        isNot(FeedPageConfig.user('bob')),
+      );
+    });
+
+    test('user config equals same username', () {
+      expect(
+        FeedPageConfig.user('alice'),
+        equals(FeedPageConfig.user('alice')),
+      );
+    });
   });
 }

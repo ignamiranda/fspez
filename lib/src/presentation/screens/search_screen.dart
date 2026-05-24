@@ -7,6 +7,7 @@ import '../utils/interaction_helpers.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'subreddit_feed_screen.dart';
+import 'user_profile_screen.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -106,6 +107,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       ),
+      onAuthorTap: (post) {
+        if (post.author != '[deleted]') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => UserProfileScreen(username: post.author),
+            ),
+          );
+        }
+      },
       emptyMessage: 'No results found.',
       footer: state.isLoadingMore
           ? const Padding(

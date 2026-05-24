@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import 'auth_webview_screen.dart';
 import 'saved_screen.dart';
+import 'user_profile_screen.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -67,7 +68,13 @@ class AccountScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.history),
           title: const Text('History'),
-          onTap: () {},
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => UserProfileScreen(username: account.username),
+              ),
+            );
+          },
         ),
         const Divider(),
         ListTile(

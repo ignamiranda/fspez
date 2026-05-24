@@ -6,11 +6,13 @@ import '../utils/format_utils.dart';
 class PostHeader extends StatelessWidget {
   final Post post;
   final VoidCallback? onSubredditTap;
+  final VoidCallback? onAuthorTap;
 
   const PostHeader({
     super.key,
     required this.post,
     this.onSubredditTap,
+    this.onAuthorTap,
   });
 
   @override
@@ -51,12 +53,15 @@ class PostHeader extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Flexible(
-                child: Text(
-                  '· u/${post.author}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                child: InkWell(
+                  onTap: onAuthorTap,
+                  child: Text(
+                    '· u/${post.author}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),

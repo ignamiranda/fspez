@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../domain/enums/feed_sort.dart';
 import 'post.dart';
 
-enum FeedKind { home, popular, all_, multireddit, saved }
+enum FeedKind { home, popular, all_, multireddit, saved, user }
 
 class Feed with EquatableMixin {
   final FeedKind kind;

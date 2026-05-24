@@ -11,6 +11,7 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onSave;
   final VoidCallback? onTap;
   final VoidCallback? onSubredditTap;
+  final VoidCallback? onAuthorTap;
 
   const PostCard({
     super.key,
@@ -21,6 +22,7 @@ class PostCard extends StatelessWidget {
     this.onSave,
     this.onTap,
     this.onSubredditTap,
+    this.onAuthorTap,
   });
 
   @override
@@ -36,7 +38,7 @@ class PostCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              PostHeader(post: post, onSubredditTap: onSubredditTap),
+              PostHeader(post: post, onSubredditTap: onSubredditTap, onAuthorTap: onAuthorTap),
               const SizedBox(height: 8),
               Text(
                 post.title,

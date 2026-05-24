@@ -10,6 +10,7 @@ Flutter Reddit client.
 - Collapsed comment rows with full-width tap targets
 - Inbox with All / Unread / Sent tabs
 - Expandable message threads with inline replies
+- User profiles with Posts / Comments / About tabs
 
 ## Getting Started
 

@@ -9,6 +9,7 @@ import '../utils/format_utils.dart';
 import '../widgets/post_list.dart';
 import 'post_detail_screen.dart';
 import 'submit_screen.dart';
+import 'user_profile_screen.dart';
 
 class SubredditFeedScreen extends ConsumerStatefulWidget {
   final String subredditName;
@@ -138,6 +139,15 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
                           ),
                         ),
                       );
+                    },
+                    onAuthorTap: (post) {
+                      if (post.author != '[deleted]') {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => UserProfileScreen(username: post.author),
+                          ),
+                        );
+                      }
                     },
                     footer: state.isLoadingMore
                         ? const Padding(
