@@ -11,6 +11,9 @@ Flutter Reddit client.
 - Inbox with All / Unread / Sent tabs
 - Expandable message threads with inline replies
 - User profiles with Posts / Comments / About tabs
+- Multi-account support with account switcher UI
+- Account deduplication (prevents duplicate entries per username)
+- Delete accounts with confirmation dialog
 
 ## Getting Started
 

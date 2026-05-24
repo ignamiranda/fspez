@@ -33,13 +33,22 @@ final accountRepositoryProvider = Provider<AccountRepository>((ref) {
   return AccountRepository(ref.watch(sharedPrefsProvider));
 });
 
+final accountListVersionProvider =
+    StateNotifierProvider<AccountListVersionNotifier, int>((ref) {
+  return AccountListVersionNotifier();
+});
+
 final accountsProvider = Provider<List<Account>>((ref) {
+  ref.watch(accountListVersionProvider);
   return ref.watch(accountRepositoryProvider).loadAll();
 });
 
 final activeAccountProvider =
     StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
-  return ActiveAccountNotifier(ref.watch(accountRepositoryProvider));
+  return ActiveAccountNotifier(
+    ref.watch(accountRepositoryProvider),
+    ref.watch(accountListVersionProvider.notifier),
+  );
 });
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {

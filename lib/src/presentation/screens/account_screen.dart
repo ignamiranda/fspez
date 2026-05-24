@@ -11,10 +11,13 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeAccount = ref.watch(activeAccountProvider);
+    final accounts = ref.watch(accountsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Account')),
-      body: activeAccount == null ? _buildLoggedOut(context) : _buildLoggedIn(context, ref, activeAccount),
+      body: activeAccount == null
+          ? _buildLoggedOut(context)
+          : _buildLoggedIn(context, ref, accounts, activeAccount),
     );
   }
 
@@ -44,16 +47,54 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoggedIn(BuildContext context, WidgetRef ref, account) {
+  Widget _buildLoggedIn(BuildContext context, WidgetRef ref,
+      List<dynamic> accounts, dynamic activeAccount) {
     final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Text('Accounts',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            )),
+        const SizedBox(height: 8),
+        for (final account in accounts) ...[
+          ListTile(
+            leading: CircleAvatar(
+              child: Text(account.username[0].toUpperCase()),
+            ),
+            title: Text(account.username),
+            subtitle: account.id == activeAccount.id
+                ? Text('Active',
+                    style: TextStyle(color: theme.colorScheme.tertiary))
+                : null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (account.id == activeAccount.id)
+                  Icon(Icons.check_circle, color: theme.colorScheme.tertiary),
+                IconButton(
+                  icon: Icon(Icons.delete_outline,
+                      color: theme.colorScheme.error),
+                  onPressed: () => _removeAccount(context, ref, account),
+                ),
+              ],
+            ),
+            onTap: account.id == activeAccount.id
+                ? null
+                : () => _switchAccount(ref, account),
+          ),
+          if (account != accounts.last) const Divider(height: 1),
+        ],
+        const SizedBox(height: 8),
         ListTile(
-          leading: CircleAvatar(child: Text(account.username[0].toUpperCase())),
-          title: Text(account.username),
-          subtitle: const Text('Active account'),
-          trailing: Icon(Icons.check_circle, color: theme.colorScheme.tertiary),
+          leading: const Icon(Icons.person_add),
+          title: const Text('Add Account'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
+            );
+          },
         ),
         const Divider(),
         ListTile(
@@ -71,21 +112,23 @@ class AccountScreen extends ConsumerWidget {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => UserProfileScreen(username: account.username),
+                builder: (_) =>
+                    UserProfileScreen(username: activeAccount.username),
               ),
             );
           },
         ),
         const Divider(),
         ListTile(
-          leading: const Icon(Icons.logout),
-          title: const Text('Log Out'),
+          leading: Icon(Icons.logout, color: theme.colorScheme.error),
+          title: Text('Log Out',
+              style: TextStyle(color: theme.colorScheme.error)),
           onTap: () async {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
                 title: const Text('Log Out'),
-                content: Text('Remove account ${account.username}?'),
+                content: Text('Remove account ${activeAccount.username}?'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(ctx).pop(false),
@@ -99,11 +142,41 @@ class AccountScreen extends ConsumerWidget {
               ),
             );
             if (confirmed == true) {
-              ref.read(activeAccountProvider.notifier).removeAccount(account.id);
+              ref
+                  .read(activeAccountProvider.notifier)
+                  .removeAccount(activeAccount.id);
             }
           },
         ),
       ],
     );
+  }
+
+  void _switchAccount(WidgetRef ref, dynamic account) {
+    ref.read(activeAccountProvider.notifier).setActive(account);
+  }
+
+  Future<void> _removeAccount(
+      BuildContext context, WidgetRef ref, dynamic account) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Account'),
+        content: Text('Remove ${account.username}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      ref.read(activeAccountProvider.notifier).removeAccount(account.id);
+    }
   }
 }

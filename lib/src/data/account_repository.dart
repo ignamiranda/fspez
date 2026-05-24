@@ -36,14 +36,30 @@ class AccountRepository {
 
   Future<void> save(Account account) async {
     final accounts = loadAll();
-    final index = accounts.indexWhere((a) => a.id == account.id);
+    final idIndex = accounts.indexWhere((a) => a.id == account.id);
+    if (idIndex >= 0) {
+      accounts[idIndex] = account;
+      await _persistAll(accounts);
+      return;
+    }
 
-    if (index >= 0) {
-      accounts[index] = account;
+    final usernameIndex = accounts.indexWhere((a) => a.username == account.username);
+    if (usernameIndex >= 0) {
+      accounts[usernameIndex] = account;
     } else {
       accounts.add(account);
     }
 
+    await _persistAll(accounts);
+  }
+
+  Future<void> clearAllExcept(String accountId) async {
+    final accounts = loadAll();
+    final active = accounts.where((a) => a.id == accountId).toList();
+    await _persistAll(active);
+  }
+
+  Future<void> replaceAll(List<Account> accounts) async {
     await _persistAll(accounts);
   }
 
