@@ -110,69 +110,79 @@ class _CommentTreeState extends State<CommentTree> {
                       ),
                     ],
                   ),
-                  if (!_isCollapsed) ...[
-                    const SizedBox(height: 4),
-                    Text(widget.comment.body, style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        InkWell(
-                          onTap: () => widget.onVote?.call(fullname, VoteDirection.upvote),
-                          child: Icon(
-                            effectiveVote == VoteDirection.upvote
-                                ? Icons.arrow_upward
-                                : Icons.arrow_upward_outlined,
-                            size: 16,
-                            color: effectiveVote == VoteDirection.upvote
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    alignment: Alignment.topCenter,
+                    child: _isCollapsed
+                        ? const SizedBox.shrink()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(widget.comment.body, style: theme.textTheme.bodyMedium),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  InkWell(
+                                    onTap: () => widget.onVote?.call(fullname, VoteDirection.upvote),
+                                    child: Icon(
+                                      effectiveVote == VoteDirection.upvote
+                                          ? Icons.arrow_upward
+                                          : Icons.arrow_upward_outlined,
+                                      size: 16,
+                                      color: effectiveVote == VoteDirection.upvote
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  InkWell(
+                                    onTap: () => widget.onVote?.call(fullname, VoteDirection.downvote),
+                                    child: Icon(
+                                      effectiveVote == VoteDirection.downvote
+                                          ? Icons.arrow_downward
+                                          : Icons.arrow_downward_outlined,
+                                      size: 16,
+                                      color: effectiveVote == VoteDirection.downvote
+                                          ? theme.colorScheme.secondary
+                                          : theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  if (widget.onReply != null)
+                                    InkWell(
+                                      onTap: () => widget.onReply!(widget.comment.id, widget.comment.author),
+                                      child: Icon(
+                                        Icons.reply_outlined,
+                                        size: 16,
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    )
+                                  else
+                                    Icon(
+                                      Icons.reply_outlined,
+                                      size: 16,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  const SizedBox(width: 16),
+                                  InkWell(
+                                    onTap: () => widget.onSave?.call(fullname),
+                                    child: Icon(
+                                      effectiveSaved
+                                          ? Icons.bookmark
+                                          : Icons.bookmark_outline,
+                                      size: 16,
+                                      color: effectiveSaved
+                                          ? theme.colorScheme.tertiary
+                                          : theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        InkWell(
-                          onTap: () => widget.onVote?.call(fullname, VoteDirection.downvote),
-                          child: Icon(
-                            effectiveVote == VoteDirection.downvote
-                                ? Icons.arrow_downward
-                                : Icons.arrow_downward_outlined,
-                            size: 16,
-                            color: effectiveVote == VoteDirection.downvote
-                                ? theme.colorScheme.secondary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        if (widget.onReply != null)
-                          InkWell(
-                            onTap: () => widget.onReply!(widget.comment.id, widget.comment.author),
-                            child: Icon(
-                              Icons.reply_outlined,
-                              size: 16,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          )
-                        else
-                          Icon(
-                            Icons.reply_outlined,
-                            size: 16,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        const SizedBox(width: 16),
-                        InkWell(
-                          onTap: () => widget.onSave?.call(fullname),
-                          child: Icon(
-                            effectiveSaved
-                                ? Icons.bookmark
-                                : Icons.bookmark_outline,
-                            size: 16,
-                            color: effectiveSaved
-                                ? theme.colorScheme.tertiary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -183,15 +193,24 @@ class _CommentTreeState extends State<CommentTree> {
           thickness: 0.5,
           color: theme.colorScheme.outlineVariant,
         ),
-        if (!_isCollapsed)
-          ...widget.comment.replies.map((reply) => CommentTree(
-            comment: reply,
-            voteOverrides: widget.voteOverrides,
-            onVote: widget.onVote,
-            saveOverrides: widget.saveOverrides,
-            onSave: widget.onSave,
-            onReply: widget.onReply,
-          )),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _isCollapsed
+              ? const SizedBox.shrink()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.comment.replies.map((reply) => CommentTree(
+                    comment: reply,
+                    voteOverrides: widget.voteOverrides,
+                    onVote: widget.onVote,
+                    saveOverrides: widget.saveOverrides,
+                    onSave: widget.onSave,
+                    onReply: widget.onReply,
+                  )).toList(),
+                ),
+        ),
       ],
     );
   }
