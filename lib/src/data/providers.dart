@@ -7,10 +7,8 @@ import 'feed_repository.dart';
 import 'feed_pagination.dart';
 import 'subreddit_repository.dart';
 import 'comment_repository.dart';
-import 'vote_repository.dart';
 import 'vote_notifier.dart';
 import 'save_notifier.dart';
-import 'submit_repository.dart';
 import 'inbox_repository.dart';
 import 'inbox_notifier.dart';
 import 'user_repository.dart';
@@ -89,19 +87,11 @@ final subredditInfoProvider =
   return repo.fetch(name, sessionCookie: sessionCookie);
 });
 
-final voteRepositoryProvider = Provider<VoteRepository>((ref) {
-  return VoteRepository(ref.watch(redditClientProvider));
-});
-
 final voteProvider =
     StateNotifierProvider<VoteNotifier, Map<String, VoteDirection>>((ref) {
-  final repo = ref.watch(voteRepositoryProvider);
+  final client = ref.watch(redditClientProvider);
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return VoteNotifier(repo, cookie);
-});
-
-final submitRepositoryProvider = Provider<SubmitRepository>((ref) {
-  return SubmitRepository(ref.watch(redditClientProvider));
+  return VoteNotifier(client, cookie);
 });
 
 final saveProvider =

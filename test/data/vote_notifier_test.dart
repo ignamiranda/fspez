@@ -1,20 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/vote_notifier.dart';
-import 'package:fspez/src/data/vote_repository.dart';
+import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:http/http.dart' as http;
 
-class _MockVoteRepository extends Mock implements VoteRepository {}
+class _MockHttpClient extends Mock implements http.Client {}
 
 void main() {
-  late _MockVoteRepository mockRepo;
+  late _MockHttpClient mockHttp;
+  late RedditClient client;
   late VoteNotifier notifier;
 
+  setUpAll(() {
+    registerFallbackValue(Uri());
+  });
+
   setUp(() {
-    mockRepo = _MockVoteRepository();
-    when(() => mockRepo.vote(any(), any(), sessionCookie: any(named: 'sessionCookie')))
-        .thenAnswer((_) async {});
-    notifier = VoteNotifier(mockRepo, null);
+    mockHttp = _MockHttpClient();
+    when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
+        .thenAnswer((_) async => http.Response('{}', 200));
+    client = RedditClient(httpClient: mockHttp);
+    notifier = VoteNotifier(client, null);
   });
 
   group('vote', () {
@@ -29,20 +36,34 @@ void main() {
       expect(notifier.state['t3_post1'], VoteDirection.downvote);
     });
 
-    test('calls repository with correct parameters', () async {
+    test('calls api/vote with correct parameters', () async {
       await notifier.vote('t3_post1', VoteDirection.upvote);
 
-      verify(() => mockRepo.vote('t3_post1', 1, sessionCookie: null)).called(1);
+      verify(() => mockHttp.post(
+        Uri.parse('https://www.reddit.com/api/vote'),
+        headers: {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'id=t3_post1&dir=1',
+      )).called(1);
     });
 
-    test('calls repository with downvote direction', () async {
+    test('calls api/vote with downvote direction', () async {
       await notifier.vote('t3_post1', VoteDirection.downvote);
 
-      verify(() => mockRepo.vote('t3_post1', -1, sessionCookie: null)).called(1);
+      verify(() => mockHttp.post(
+        Uri.parse('https://www.reddit.com/api/vote'),
+        headers: {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'id=t3_post1&dir=-1',
+      )).called(1);
     });
 
-    test('keeps optimistic state even if repository throws', () async {
-      when(() => mockRepo.vote(any(), any(), sessionCookie: any(named: 'sessionCookie')))
+    test('keeps optimistic state even if api throws', () async {
+      when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
           .thenThrow(Exception('API error'));
 
       await notifier.vote('t3_post1', VoteDirection.upvote);

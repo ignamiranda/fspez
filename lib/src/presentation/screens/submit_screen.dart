@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
-import '../../data/submit_repository.dart';
 
 class SubmitScreen extends ConsumerStatefulWidget {
   final String? subreddit;
@@ -45,15 +44,20 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      final repo = ref.read(submitRepositoryProvider);
-      await repo.submit(
-        kind: _isLink ? SubmitKind.link : SubmitKind.self,
-        subreddit: subreddit,
-        title: title,
-        text: _isLink ? null : _textController.text.trim(),
-        url: _isLink ? _urlController.text.trim() : null,
-        sessionCookie: account.sessionCookie,
-      );
+      final client = ref.read(redditClientProvider);
+      final fields = <String, String>{
+        'kind': _isLink ? 'link' : 'self',
+        'sr': subreddit,
+        'title': title,
+        'uh': account.sessionCookie.modhash ?? '',
+      };
+      if (!_isLink && _textController.text.trim().isNotEmpty) {
+        fields['text'] = _textController.text.trim();
+      }
+      if (_isLink && _urlController.text.trim().isNotEmpty) {
+        fields['url'] = _urlController.text.trim();
+      }
+      await client.submit(fields: fields, sessionCookie: account.sessionCookie);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

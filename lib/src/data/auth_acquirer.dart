@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
+import 'cdp_cookie_provider.dart';
+import 'session_store.dart';
 
 class AuthAcquirer {
   final RedditClient _redditClient;
@@ -14,54 +16,18 @@ class AuthAcquirer {
     int maxAttempts = 10,
     Duration interval = const Duration(milliseconds: 500),
   }) async {
-    for (var i = 0; i < maxAttempts; i++) {
-      final value = await _getRedditSessionValue(controller);
-      if (value != null) {
-        final raw = await _getCookieString(controller);
-        var cookie = SessionCookie.fromValue(value, rawCookie: raw);
-        final modhash = await _fetchModhash(cookie);
-        cookie = SessionCookie(
-          value: cookie.value,
-          expiresAt: cookie.expiresAt,
-          rawCookie: cookie.rawCookie,
-          modhash: modhash ?? cookie.modhash,
-        );
-        return cookie;
-      }
-      if (i < maxAttempts - 1) {
-        await Future.delayed(interval);
-      }
-    }
-    return null;
-  }
+    final provider = CdpCookieProvider(controller);
+    final store = SessionStore(cookieProvider: provider);
+    final cookie = await store.acquire(maxAttempts: maxAttempts, interval: interval);
+    if (cookie == null) return null;
 
-  Future<String?> _getRedditSessionValue(InAppWebViewController controller) async {
-    try {
-      final r = await controller.callDevToolsProtocolMethod(
-        methodName: 'Network.getCookies',
-        parameters: {},
-      );
-      if (r is! Map || r['cookies'] is! List) return null;
-      for (final ck in r['cookies'] as List) {
-        if (ck is Map && ck['name'] == 'reddit_session') {
-          return ck['value'] as String;
-        }
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  Future<String?> _getCookieString(InAppWebViewController controller) async {
-    try {
-      final r = await controller.callDevToolsProtocolMethod(
-        methodName: 'Network.getCookies',
-        parameters: {},
-      );
-      if (r is! Map || r['cookies'] is! List) return null;
-      final cookies = (r['cookies'] as List).cast<Map>();
-      return cookies.map((c) => '${c['name']}=${c['value']}').join('; ');
-    } catch (_) {}
-    return null;
+    final modhash = await _fetchModhash(cookie);
+    return SessionCookie(
+      value: cookie.value,
+      expiresAt: cookie.expiresAt,
+      rawCookie: cookie.rawCookie,
+      modhash: modhash ?? cookie.modhash,
+    );
   }
 
   Future<String?> _fetchModhash(SessionCookie cookie) async {

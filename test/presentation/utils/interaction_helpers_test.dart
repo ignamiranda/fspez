@@ -3,35 +3,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/save_notifier.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/data/vote_notifier.dart';
-import 'package:fspez/src/data/vote_repository.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:fspez/src/presentation/utils/interaction_helpers.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:http/http.dart' as http;
 
-class _MockVoteRepository extends Mock implements VoteRepository {}
+class _MockHttpClient extends Mock implements http.Client {}
 class _MockRedditClient extends Mock implements RedditClient {}
 
 Widget _app(Widget body) => MaterialApp(home: Scaffold(body: body));
 
 void main() {
-  late _MockVoteRepository mockVoteRepo;
+  late _MockHttpClient mockHttp;
   late _MockRedditClient mockClient;
   late VoteNotifier voteNotifier;
   late SaveNotifier saveNotifier;
 
   setUpAll(() {
+    registerFallbackValue(Uri());
     registerFallbackValue(SessionCookie(value: '', expiresAt: DateTime.now()));
   });
 
   setUp(() {
-    mockVoteRepo = _MockVoteRepository();
+    mockHttp = _MockHttpClient();
     mockClient = _MockRedditClient();
-    when(() => mockVoteRepo.vote(any(), any(), sessionCookie: any(named: 'sessionCookie')))
-        .thenAnswer((_) async {});
+    when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
+        .thenAnswer((_) async => http.Response('{}', 200));
     when(() => mockClient.save(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
-    voteNotifier = VoteNotifier(mockVoteRepo, null);
+    voteNotifier = VoteNotifier(RedditClient(httpClient: mockHttp), null);
     final cookie = SessionCookie(value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
     saveNotifier = SaveNotifier(mockClient, cookie);
   });

@@ -81,10 +81,8 @@ void main() {
     });
 
     test('loadMore appends posts and updates cursor', () async {
-      var callCount = 0;
       final notifier = FeedPageNotifier(
         fetchPage: ({after}) {
-          callCount++;
           return Future.value(Feed(
             kind: FeedKind.home, sort: FeedSort.hot,
             posts: after == null ? [_post('1')] : [_post('2')],

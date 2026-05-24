@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equatable/equatable.dart';
 import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
 import '../domain/models/account.dart';
 import '../domain/enums/feed_sort.dart';
 import 'feed_repository.dart';
+import 'cursor_paginated_notifier.dart';
 
 class FeedPageState with EquatableMixin {
   final List<Post> posts;
@@ -61,84 +60,68 @@ class FeedPageConfig with EquatableMixin {
 
 enum FeedPageKind { home, popular, saved, search, subreddit, user }
 
-class FeedPageNotifier extends StateNotifier<FeedPageState> {
+class FeedPageNotifier
+    extends CursorPaginatedNotifier<FeedPageState, Feed> {
   final Future<Feed> Function({String? after}) _fetchPage;
-  final ScrollController _scrollController = ScrollController();
-
-  ScrollController get scrollController => _scrollController;
-  String? _after;
 
   FeedPageNotifier({
     required Future<Feed> Function({String? after}) fetchPage,
     bool autoLoad = true,
   }) : _fetchPage = fetchPage,
-       super(const FeedPageState(isLoading: true)) {
-    _scrollController.addListener(_onScroll);
-    if (autoLoad) {
-      Future.microtask(() => loadInitial());
-    }
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      loadMore();
-    }
-  }
-
-  Future<void> loadInitial() async {
-    state = const FeedPageState(isLoading: true);
-    _after = null;
-    try {
-      final feed = await _fetchPage(after: null);
-      _after = feed.after;
-      state = FeedPageState(
-        posts: feed.posts,
-        isLoading: false,
-        hasMore: feed.hasMorePages,
-      );
-    } catch (e) {
-      state = FeedPageState(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore) return;
-    state = FeedPageState(
-      posts: state.posts,
-      isLoading: false,
-      hasMore: state.hasMore,
-      isLoadingMore: true,
-    );
-    try {
-      final feed = await _fetchPage(after: _after);
-      _after = feed.after;
-      state = FeedPageState(
-        posts: [...state.posts, ...feed.posts],
-        isLoading: false,
-        hasMore: feed.hasMorePages,
-      );
-    } catch (e) {
-      state = FeedPageState(
-        posts: state.posts,
-        isLoading: false,
-        hasMore: state.hasMore,
-        error: e.toString(),
-      );
-    }
-  }
-
-  void refresh() => loadInitial();
+       super(const FeedPageState(isLoading: true), autoLoad: autoLoad);
 
   @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
+  Future<Feed> fetchPage({String? after}) => _fetchPage(after: after);
+
+  @override
+  String? extractAfter(Feed page) => page.after;
+
+  @override
+  FeedPageState buildLoadingState(FeedPageState current) =>
+      const FeedPageState(isLoading: true);
+
+  @override
+  FeedPageState buildSuccessState(Feed page) => FeedPageState(
+        posts: page.posts,
+        isLoading: false,
+        hasMore: page.hasMorePages,
+      );
+
+  @override
+  FeedPageState buildLoadingMoreState(FeedPageState current) =>
+      FeedPageState(
+        posts: current.posts,
+        isLoading: false,
+        hasMore: current.hasMore,
+        isLoadingMore: true,
+      );
+
+  @override
+  FeedPageState buildAppendedState(FeedPageState current, Feed page) =>
+      FeedPageState(
+        posts: [...current.posts, ...page.posts],
+        isLoading: false,
+        hasMore: page.hasMorePages,
+      );
+
+  @override
+  FeedPageState buildErrorState(String error) =>
+      FeedPageState(isLoading: false, error: error);
+
+  @override
+  FeedPageState buildErrorWithState(FeedPageState current, String error) =>
+      FeedPageState(
+        posts: current.posts,
+        isLoading: false,
+        hasMore: current.hasMore,
+        error: error,
+      );
+
+  @override
+  bool getIsLoadingMore(FeedPageState state) => state.isLoadingMore;
+
+  @override
+  bool getHasMore(FeedPageState state) => state.hasMore;
 }
 
 Future<Feed> fetchForConfig(

@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equatable/equatable.dart';
 import '../domain/models/message.dart';
 import '../domain/models/message_feed.dart';
 import '../domain/models/account.dart';
 import 'inbox_repository.dart';
+import 'cursor_paginated_notifier.dart';
 
 class InboxState with EquatableMixin {
   final InboxTab tab;
@@ -47,34 +46,24 @@ class InboxState with EquatableMixin {
       [tab, messages, isLoading, isLoadingMore, error, hasMore];
 }
 
-class InboxNotifier extends StateNotifier<InboxState> {
+class InboxNotifier
+    extends CursorPaginatedNotifier<InboxState, MessageFeed> {
   final InboxRepository _repository;
   final Account? _account;
-  final ScrollController scrollController = ScrollController();
-
-  String? _after;
 
   InboxNotifier(this._repository, this._account, {bool autoLoad = true})
-      : super(const InboxState(isLoading: true)) {
-    scrollController.addListener(_onScroll);
+      : super(const InboxState(isLoading: true), autoLoad: false) {
     if (autoLoad) {
       Future.microtask(() => loadTab(InboxTab.inbox));
     }
   }
 
-  void _onScroll() {
-    if (scrollController.position.pixels >=
-        scrollController.position.maxScrollExtent - 300) {
-      loadMore();
-    }
-  }
-
   Future<void> loadTab(InboxTab tab) async {
     state = state.copyWith(tab: tab, isLoading: true, clearError: true);
-    _after = null;
+    after = null;
     try {
-      final feed = await _fetch(tab);
-      _after = feed.after;
+      final feed = await _fetch(tab, after: null);
+      after = feed.after;
       state = state.copyWith(
         messages: feed.messages,
         isLoading: false,
@@ -88,27 +77,6 @@ class InboxNotifier extends StateNotifier<InboxState> {
     }
   }
 
-  Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore) return;
-    state = state.copyWith(isLoadingMore: true);
-    try {
-      final feed = await _fetch(state.tab, after: _after);
-      _after = feed.after;
-      state = state.copyWith(
-        messages: [...state.messages, ...feed.messages],
-        isLoadingMore: false,
-        hasMore: feed.hasMorePages,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoadingMore: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  Future<void> refresh() => loadTab(state.tab);
-
   Future<MessageFeed> _fetch(InboxTab tab, {String? after}) {
     final cookie = _account?.sessionCookie;
     return switch (tab) {
@@ -119,9 +87,47 @@ class InboxNotifier extends StateNotifier<InboxState> {
   }
 
   @override
-  void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
+  Future<MessageFeed> fetchPage({String? after}) =>
+      _fetch(state.tab, after: after);
+
+  @override
+  String? extractAfter(MessageFeed page) => page.after;
+
+  @override
+  InboxState buildLoadingState(InboxState current) =>
+      InboxState(isLoading: true, tab: current.tab);
+
+  @override
+  InboxState buildSuccessState(MessageFeed page) => InboxState(
+        tab: page.tab,
+        messages: page.messages,
+        isLoading: false,
+        hasMore: page.hasMorePages,
+      );
+
+  @override
+  InboxState buildLoadingMoreState(InboxState current) =>
+      current.copyWith(isLoadingMore: true);
+
+  @override
+  InboxState buildAppendedState(InboxState current, MessageFeed page) =>
+      current.copyWith(
+        messages: [...current.messages, ...page.messages],
+        isLoadingMore: false,
+        hasMore: page.hasMorePages,
+      );
+
+  @override
+  InboxState buildErrorState(String error) =>
+      InboxState(isLoading: false, error: error);
+
+  @override
+  InboxState buildErrorWithState(InboxState current, String error) =>
+      current.copyWith(isLoadingMore: false, error: error);
+
+  @override
+  bool getIsLoadingMore(InboxState state) => state.isLoadingMore;
+
+  @override
+  bool getHasMore(InboxState state) => state.hasMore;
 }
