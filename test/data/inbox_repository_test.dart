@@ -187,4 +187,39 @@ void main() {
           )).called(1);
     });
   });
+
+  group('reply', () {
+    test('sends comment to www.reddit.com with thing_id and text', () async {
+      when(() => mockHttp.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            '{"success": true}', 200));
+
+      final cookie = SessionCookie(
+        value: 'session_val',
+        expiresAt: DateTime.now().add(const Duration(days: 1)),
+        rawCookie: 'reddit_session=session_val; loggedin=1',
+        modhash: 'modhash123',
+      );
+
+      await repository.reply(
+        fullname: 't4_msg1',
+        text: 'Reply text',
+        sessionCookie: cookie,
+      );
+
+      verify(() => mockHttp.post(
+        Uri.parse('https://www.reddit.com/api/comment'),
+        headers: {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': 'reddit_session=session_val; loggedin=1',
+          'X-Modhash': 'modhash123',
+        },
+        body: 'thing_id=t4_msg1&text=Reply+text&uh=modhash123',
+      )).called(1);
+    });
+  });
 }

@@ -5,6 +5,7 @@ import '../../data/inbox_notifier.dart';
 import '../../domain/models/message.dart';
 import '../../domain/models/message_feed.dart';
 import '../utils/format_utils.dart';
+import 'compose_screen.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
   const InboxScreen({super.key});
@@ -74,11 +75,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.small(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Compose — coming soon')),
-          );
-        },
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const ComposeScreen(),
+          ),
+        ),
         child: const Icon(Icons.edit_outlined),
       ),
     );
@@ -138,17 +139,32 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               child: Center(child: CircularProgressIndicator()),
             );
           }
+          final msg = state.messages[index];
           return _MessageTile(
-            message: state.messages[index],
-            isExpanded: _expandedIds.contains(state.messages[index].id),
+            message: msg,
+            isExpanded: _expandedIds.contains(msg.id),
             onToggle: () => setState(() {
-              final id = state.messages[index].id;
+              final id = msg.id;
               if (_expandedIds.contains(id)) {
                 _expandedIds.remove(id);
               } else {
                 _expandedIds.add(id);
               }
             }),
+            onReply: msg.isComment
+                ? null
+                : () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ComposeScreen(
+                          replyTo: msg.author,
+                          replySubject: msg.subject.startsWith('re:')
+                              ? msg.subject
+                              : 're: ${msg.subject}',
+                        ),
+                      ),
+                    );
+                  },
           );
         },
       ),
@@ -160,11 +176,13 @@ class _MessageTile extends StatelessWidget {
   final Message message;
   final bool isExpanded;
   final VoidCallback onToggle;
+  final VoidCallback? onReply;
 
   const _MessageTile({
     required this.message,
     required this.isExpanded,
     required this.onToggle,
+    this.onReply,
   });
 
   @override
@@ -255,7 +273,9 @@ class _MessageTile extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
-          child: isExpanded ? _MessageBody(message: message) : const SizedBox.shrink(),
+          child: isExpanded
+              ? _MessageBody(message: message, onReply: onReply)
+              : const SizedBox.shrink(),
         ),
         const Divider(height: 1, indent: 16),
       ],
@@ -265,8 +285,9 @@ class _MessageTile extends StatelessWidget {
 
 class _MessageBody extends StatelessWidget {
   final Message message;
+  final VoidCallback? onReply;
 
-  const _MessageBody({required this.message});
+  const _MessageBody({required this.message, this.onReply});
 
   @override
   Widget build(BuildContext context) {
@@ -290,6 +311,21 @@ class _MessageBody extends StatelessWidget {
             message.body,
             style: theme.textTheme.bodyMedium,
           ),
+          if (onReply != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 32,
+              child: OutlinedButton.icon(
+                onPressed: onReply,
+                icon: const Icon(Icons.reply, size: 16),
+                label: const Text('Reply', style: TextStyle(fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+          ],
           if (message.replies.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(

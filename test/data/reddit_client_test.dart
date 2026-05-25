@@ -122,6 +122,42 @@ void main() {
     });
   });
 
+  group('compose', () {
+    test('sends POST to /api/compose with correct headers and modhash', () async {
+      when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
+          .thenAnswer((_) async => http.Response('{"json":{"errors":[]}}', 200, headers: {'content-type': 'application/json'}));
+
+      final cookie = SessionCookie(
+        value: 'session_val',
+        expiresAt: DateTime.now().add(const Duration(days: 1)),
+        rawCookie: 'reddit_session=session_val; loggedin=1',
+        modhash: 'abc123modhash',
+      );
+
+      await client.compose(
+        fields: {
+          'to': 'someone',
+          'subject': 'Hello',
+          'text': 'Body',
+          'uh': 'abc123modhash',
+          'api_type': 'json',
+        },
+        sessionCookie: cookie,
+      );
+
+      verify(() => mockHttp.post(
+            Uri.parse('https://www.reddit.com/api/compose'),
+            headers: {
+              'User-Agent': 'fspez/0.1.0',
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Cookie': 'reddit_session=session_val; loggedin=1',
+              'X-Modhash': 'abc123modhash',
+            },
+            body: 'to=someone&subject=Hello&text=Body&uh=abc123modhash&api_type=json',
+          )).called(1);
+    });
+  });
+
   group('save', () {
     test('sends POST to old.reddit.com with browser headers and modhash', () async {
       when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))

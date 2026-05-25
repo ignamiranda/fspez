@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../domain/models/session_cookie.dart';
 
-enum ApiEndpoint { json, form, oldReddit, comment, submit }
+enum ApiEndpoint { json, form, oldReddit, comment, submit, compose }
 
 class RedditClient {
   static const _baseUrl = 'https://www.reddit.com';
@@ -52,6 +52,14 @@ class RedditClient {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
           'Accept': '*/*',
           'X-Requested-With': 'XMLHttpRequest',
+          'Cookie': c,
+          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
+        };
+      case ApiEndpoint.compose:
+        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+        return {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Cookie': c,
           if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
         };
@@ -178,6 +186,40 @@ class RedditClient {
       body: Uri(queryParameters: fields).query,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      return {'success': true};
+    }
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
+  Future<Map<String, dynamic>> compose({
+    required Map<String, String> fields,
+    required SessionCookie sessionCookie,
+  }) async {
+    final uri = Uri.parse('https://www.reddit.com/api/compose');
+    final response = await _httpClient.post(
+      uri,
+      headers: _headersFor(ApiEndpoint.compose, sessionCookie),
+      body: Uri(queryParameters: fields).query,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final jsonField = decoded['json'];
+          if (jsonField is Map) {
+            final errors = jsonField['errors'];
+            if (errors is List && errors.isNotEmpty) {
+              throw RedditApiException(statusCode: response.statusCode, message: response.body);
+            }
+          }
+          if (decoded['error'] != null) {
+            throw RedditApiException(statusCode: response.statusCode, message: response.body);
+          }
+        }
+      } catch (_) {}
       return {'success': true};
     }
     throw RedditApiException(

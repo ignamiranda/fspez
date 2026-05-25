@@ -4,6 +4,8 @@ import 'theme.dart';
 import 'screens/feed_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/account_screen.dart';
+import 'screens/login_screen.dart';
+import '../data/providers.dart';
 
 class FspezApp extends ConsumerWidget {
   const FspezApp({super.key});
@@ -15,8 +17,34 @@ class FspezApp extends ConsumerWidget {
       theme: FspezTheme.light(),
       darkTheme: FspezTheme.dark(),
       themeMode: ThemeMode.system,
-      home: const _MainShell(),
+      home: const _AppGate(),
     );
+  }
+}
+
+class _AppGate extends ConsumerStatefulWidget {
+  const _AppGate();
+
+  @override
+  ConsumerState<_AppGate> createState() => _AppGateState();
+}
+
+class _AppGateState extends ConsumerState<_AppGate> {
+  bool? _wasLoggedIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final account = ref.watch(activeAccountProvider);
+    final isLoggedIn = account != null;
+
+    if (_wasLoggedIn != null && _wasLoggedIn != isLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+      });
+    }
+    _wasLoggedIn = isLoggedIn;
+
+    return isLoggedIn ? const _MainShell() : const LoginScreen();
   }
 }
 

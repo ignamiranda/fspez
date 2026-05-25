@@ -70,17 +70,18 @@ class InboxRepository {
     }, sessionCookie: sessionCookie);
   }
 
-  Future<void> compose({
-    required String to,
-    required String subject,
+  Future<void> reply({
+    required String fullname,
     required String text,
     required SessionCookie sessionCookie,
   }) async {
-    await _client.postForm('/api/compose', fields: {
-      'to': to,
-      'subject': subject,
-      'text': text,
-      'uh': sessionCookie.modhash ?? '',
-    }, sessionCookie: sessionCookie);
+    await _client.comment(
+      fields: {
+        'thing_id': fullname,
+        'text': text,
+        'uh': sessionCookie.modhash ?? '',
+      },
+      sessionCookie: sessionCookie,
+    );
   }
 }
