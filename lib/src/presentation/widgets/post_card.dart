@@ -9,6 +9,7 @@ class PostCard extends StatelessWidget {
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
   final VoidCallback? onSave;
+  final VoidCallback? onDelete;
   final VoidCallback? onTap;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
@@ -20,6 +21,7 @@ class PostCard extends StatelessWidget {
     this.onVote,
     this.effectiveSaved,
     this.onSave,
+    this.onDelete,
     this.onTap,
     this.onSubredditTap,
     this.onAuthorTap,
@@ -104,6 +106,7 @@ class PostCard extends StatelessWidget {
                 onVote: onVote,
                 effectiveSaved: effectiveSaved,
                 onSave: onSave,
+                onDelete: onDelete,
                 onTap: onTap,
               ),
             ],

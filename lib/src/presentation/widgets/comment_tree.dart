@@ -10,6 +10,7 @@ class CommentTree extends StatefulWidget {
   final void Function(String fullname)? onSave;
   final void Function(String commentId, String author)? onReply;
   final void Function(String author)? onAuthorTap;
+  final void Function(String fullname)? onDelete;
 
   const CommentTree({
     super.key,
@@ -20,6 +21,7 @@ class CommentTree extends StatefulWidget {
     this.onSave,
     this.onReply,
     this.onAuthorTap,
+    this.onDelete,
   });
 
   @override
@@ -186,6 +188,17 @@ class _CommentTreeState extends State<CommentTree> {
                                           : theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
+                                  if (widget.onDelete != null) ...[
+                                    const SizedBox(width: 16),
+                                    InkWell(
+                                      onTap: () => widget.onDelete!(fullname),
+                                      child: Icon(
+                                        Icons.delete_outline,
+                                        size: 16,
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ],
@@ -217,6 +230,7 @@ class _CommentTreeState extends State<CommentTree> {
                     onSave: widget.onSave,
                     onReply: widget.onReply,
                     onAuthorTap: widget.onAuthorTap,
+                    onDelete: widget.onDelete,
                   )).toList(),
                 ),
         ),

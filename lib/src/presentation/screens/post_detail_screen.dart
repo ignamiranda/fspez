@@ -4,6 +4,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
+import '../../data/reddit_client_provider.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
@@ -138,6 +139,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postFullname = widget.post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
+    final client = ref.read(redditClientProvider);
+    final session = ref.read(activeAccountProvider)?.sessionCookie;
+    final username = session != null ? ref.read(activeAccountProvider)?.username : null;
 
     return Column(
       children: [
@@ -153,6 +157,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 effectiveSaved: postEffectiveSaved,
                 onSave: () => handleSave(
                     ref.read(saveProvider.notifier), postFullname, context),
+                onDelete: username != null && widget.post.author == username
+                    ? () => handleDelete(context, client, postFullname, session!)
+                    : null,
               ),
               if (widget.post.selftext != null &&
                   widget.post.selftext!.isNotEmpty)
@@ -239,6 +246,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           );
                         }
                       },
+                      onDelete: username != null
+                          ? (fullname) {
+                              if (c.author == username) {
+                                handleDelete(context, client, fullname, session!);
+                              }
+                            }
+                          : null,
                     )),
               const SizedBox(height: 8),
             ],
@@ -326,6 +340,7 @@ class _PostDetailHeader extends StatelessWidget {
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
   final VoidCallback? onSave;
+  final VoidCallback? onDelete;
 
   const _PostDetailHeader({
     required this.post,
@@ -334,6 +349,7 @@ class _PostDetailHeader extends StatelessWidget {
     this.onVote,
     this.effectiveSaved,
     this.onSave,
+    this.onDelete,
   });
 
   @override
@@ -375,6 +391,7 @@ class _PostDetailHeader extends StatelessWidget {
             onVote: onVote,
             effectiveSaved: effectiveSaved,
             onSave: onSave,
+            onDelete: onDelete,
           ),
         ],
       ),

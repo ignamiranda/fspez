@@ -231,6 +231,10 @@ class RedditClient {
   void dispose() {
     _httpClient.close();
   }
+
+  Future<void> deleteContent(String fullname, SessionCookie sessionCookie) async {
+    await postForm('/api/del', fields: {'id': fullname}, sessionCookie: sessionCookie);
+  }
 }
 
 class RedditApiException implements Exception {

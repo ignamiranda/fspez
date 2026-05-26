@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/feed_providers.dart';
 import '../../data/write_providers.dart';
+import '../../data/reddit_client_provider.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../utils/interaction_helpers.dart';
@@ -112,8 +113,16 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               saveOverrides: saveOverrides,
               onPostVote: (fullname, dir) =>
                   handleVote(ref.read(voteProvider.notifier), fullname, dir),
-              onPostSave: (fullname) =>
+               onPostSave: (fullname) =>
                   handleSave(ref.read(saveProvider.notifier), fullname, context),
+              onPostDelete: account != null
+                  ? (post) {
+                      if (post.author == account.username) {
+                        handleDelete(context, ref.read(redditClientProvider),
+                            post.fullname, account.sessionCookie);
+                      }
+                    }
+                  : null,
               onPostTap: (post) => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => PostDetailScreen(post: post),

@@ -5,6 +5,7 @@ import '../../data/feed_providers.dart';
 import '../../data/user_providers.dart';
 import '../../data/write_providers.dart';
 import '../../data/feed_pagination.dart';
+import '../../data/reddit_client_provider.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/user_profile.dart';
@@ -113,6 +114,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     final notifier = ref.read(feedPageProvider(config).notifier);
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
+    final account = ref.watch(activeAccountProvider);
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -128,6 +130,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
           handleVote(ref.read(voteProvider.notifier), fullname, dir),
       onPostSave: (fullname) =>
           handleSave(ref.read(saveProvider.notifier), fullname, context),
+      onPostDelete: account != null
+          ? (post) {
+              if (post.author == account.username) {
+                handleDelete(context, ref.read(redditClientProvider),
+                    post.fullname, account.sessionCookie);
+              }
+            }
+          : null,
       onPostTap: (post) => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PostDetailScreen(post: post),
