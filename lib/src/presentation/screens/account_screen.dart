@@ -98,6 +98,19 @@ class AccountScreen extends ConsumerWidget {
         ),
         const Divider(),
         ListTile(
+          leading: const Icon(Icons.person),
+          title: const Text('My Profile'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    UserProfileScreen(username: activeAccount.username),
+              ),
+            );
+          },
+        ),
+        const Divider(),
+        ListTile(
           leading: const Icon(Icons.bookmark_outline),
           title: const Text('Saved'),
           onTap: () {
