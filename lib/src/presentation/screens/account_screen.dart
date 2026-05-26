@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import 'auth_webview_screen.dart';
 import 'saved_screen.dart';
+import 'hidden_screen.dart';
 import 'user_profile_screen.dart';
 
 class AccountScreen extends ConsumerWidget {
@@ -116,6 +117,15 @@ class AccountScreen extends ConsumerWidget {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SavedScreen()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.visibility_off_outlined),
+          title: const Text('Hidden'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const HiddenScreen()),
             );
           },
         ),

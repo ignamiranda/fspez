@@ -121,6 +121,21 @@ class FeedRepository {
     return _parser.parseFeed(data, FeedKind.saved, FeedSort.new_);
   }
 
+  Future<Feed> fetchHidden(
+    String username, {
+    String? after,
+    SessionCookie? sessionCookie,
+  }) async {
+    final data = await _client.get('/user/$username/hidden',
+        queryParams: {
+          if (after != null) 'after': after,
+          'limit': '25',
+          'sr_detail': 'true',
+        },
+        sessionCookie: sessionCookie);
+    return _parser.parseFeed(data, FeedKind.saved, FeedSort.new_);
+  }
+
   Future<Feed> _fetchFeed(
     String path,
     FeedSort sort,

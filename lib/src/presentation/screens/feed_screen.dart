@@ -65,6 +65,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     final notifier = ref.read(feedPageProvider(config).notifier);
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
+    final hidden = ref.watch(hideProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -122,6 +123,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                     }
                   : null,
               currentUsername: account?.username,
+              hiddenFullnames: hidden,
+              onPostHide: (post) =>
+                  ref.read(hideProvider.notifier).toggle(post.fullname),
               onPostTap: (post) => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => PostDetailScreen(post: post),

@@ -11,15 +11,15 @@ import 'post_detail_screen.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
 
-class SavedScreen extends ConsumerStatefulWidget {
-  const SavedScreen({super.key});
+class HiddenScreen extends ConsumerStatefulWidget {
+  const HiddenScreen({super.key});
 
   @override
-  ConsumerState<SavedScreen> createState() => _SavedScreenState();
+  ConsumerState<HiddenScreen> createState() => _HiddenScreenState();
 }
 
-class _SavedScreenState extends ConsumerState<SavedScreen> {
-  static const _config = FeedPageConfig.saved();
+class _HiddenScreenState extends ConsumerState<HiddenScreen> {
+  static const _config = FeedPageConfig.hidden();
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -50,7 +50,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saved'),
+        title: const Text('Hidden'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -85,29 +85,23 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                   builder: (_) => PostDetailScreen(post: post),
                 ),
               ),
-      onSubredditTap: (post) => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => SubredditFeedScreen(
-            subredditName: post.subreddit.name,
-          ),
-        ),
-      ),
-      onAuthorTap: (post) {
-        if (post.author != '[deleted]') {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => UserProfileScreen(username: post.author),
-            ),
-          );
-        }
-      },
-      emptyMessage: 'No saved posts yet.',
-              footer: state.isLoadingMore
-                  ? const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : null,
+              onSubredditTap: (post) => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SubredditFeedScreen(
+                    subredditName: post.subreddit.name,
+                  ),
+                ),
+              ),
+              onAuthorTap: (post) {
+                if (post.author != '[deleted]') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => UserProfileScreen(username: post.author),
+                    ),
+                  );
+                }
+              },
+              emptyMessage: 'No hidden posts.',
             ),
     );
   }
