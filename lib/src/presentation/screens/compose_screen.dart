@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
+import '../../data/reddit_client_provider.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyTo;

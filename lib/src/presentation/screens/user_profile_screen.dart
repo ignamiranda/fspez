@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
+import '../../data/feed_providers.dart';
+import '../../data/user_providers.dart';
+import '../../data/write_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
@@ -27,17 +30,26 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   List<UserComment> _comments = [];
   bool _commentsLoading = true;
   String? _commentsError;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 300) {
+        final config = FeedPageConfig.user(widget.username);
+        ref.read(feedPageProvider(config).notifier).loadMore();
+      }
+    });
     _loadComments();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -107,7 +119,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     }
 
     return PostList(
-      scrollController: notifier.scrollController,
+      scrollController: _scrollController,
       posts: state.posts,
       onRefresh: () async => notifier.refresh(),
       voteOverrides: voteOverrides,

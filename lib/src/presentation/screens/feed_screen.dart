@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
+import '../../data/feed_providers.dart';
+import '../../data/write_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../utils/interaction_helpers.dart';
@@ -19,6 +21,33 @@ class FeedScreen extends ConsumerStatefulWidget {
 
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   FeedSort _sort = FeedSort.hot;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 300) {
+        final config = _buildConfig();
+        ref.read(feedPageProvider(config).notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  FeedPageConfig _buildConfig() {
+    final account = ref.read(activeAccountProvider);
+    final loggedIn = account != null;
+    return loggedIn
+        ? FeedPageConfig.home(sort: _sort)
+        : const FeedPageConfig.popular();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +88,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : PostList(
-              scrollController: notifier.scrollController,
+              scrollController: _scrollController,
               posts: state.posts,
               onRefresh: () async => notifier.refresh(),
               voteOverrides: voteOverrides,

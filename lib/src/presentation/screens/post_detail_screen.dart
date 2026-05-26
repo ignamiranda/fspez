@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
+import '../../data/comment_providers.dart';
+import '../../data/write_providers.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';

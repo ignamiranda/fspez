@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
+import '../../data/inbox_providers.dart';
 import '../../data/inbox_notifier.dart';
 import '../../domain/models/message.dart';
 import '../../domain/models/message_feed.dart';
@@ -16,6 +17,24 @@ class InboxScreen extends ConsumerStatefulWidget {
 
 class _InboxScreenState extends ConsumerState<InboxScreen> {
   final Set<String> _expandedIds = {};
+  final ScrollController _inboxScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _inboxScrollController.addListener(() {
+      if (_inboxScrollController.position.pixels >=
+          _inboxScrollController.position.maxScrollExtent - 300) {
+        ref.read(inboxProvider.notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _inboxScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +149,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         notifier.refresh();
       },
       child: ListView.builder(
-        controller: notifier.scrollController,
+        controller: _inboxScrollController,
         itemCount: state.messages.length + (state.hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index >= state.messages.length) {

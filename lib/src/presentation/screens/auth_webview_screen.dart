@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../domain/models/account.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
+import '../../data/reddit_client_provider.dart';
 import '../../data/auth_acquirer.dart';
 
 class AuthWebViewScreen extends ConsumerStatefulWidget {

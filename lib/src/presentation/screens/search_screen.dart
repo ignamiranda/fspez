@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/feed_providers.dart';
+import '../../data/write_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
@@ -20,10 +21,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
   bool _hasSearched = false;
   String _lastQuery = '';
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (!_hasSearched) return;
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 300) {
+        ref.read(feedPageProvider(FeedPageConfig.search(_lastQuery)).notifier).loadMore();
+      }
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -86,9 +101,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     return PostList(
-      scrollController: notifier!.scrollController,
+      scrollController: _scrollController,
       posts: state.posts,
-      onRefresh: () async => notifier.refresh(),
+      onRefresh: () async => notifier!.refresh(),
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
       onPostVote: (fullname, dir) =>

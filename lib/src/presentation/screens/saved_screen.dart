@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/feed_providers.dart';
+import '../../data/write_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../utils/interaction_helpers.dart';
 import '../widgets/post_list.dart';
@@ -8,14 +9,38 @@ import 'post_detail_screen.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
 
-class SavedScreen extends ConsumerWidget {
+class SavedScreen extends ConsumerStatefulWidget {
   const SavedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    const config = FeedPageConfig.saved();
-    final state = ref.watch(feedPageProvider(config));
-    final notifier = ref.read(feedPageProvider(config).notifier);
+  ConsumerState<SavedScreen> createState() => _SavedScreenState();
+}
+
+class _SavedScreenState extends ConsumerState<SavedScreen> {
+  static const _config = FeedPageConfig.saved();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 300) {
+        ref.read(feedPageProvider(_config).notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(feedPageProvider(_config));
+    final notifier = ref.read(feedPageProvider(_config).notifier);
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
 
@@ -32,7 +57,7 @@ class SavedScreen extends ConsumerWidget {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : PostList(
-              scrollController: notifier.scrollController,
+              scrollController: _scrollController,
               posts: state.posts,
               onRefresh: () async => notifier.refresh(),
               voteOverrides: voteOverrides,

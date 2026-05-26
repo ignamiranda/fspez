@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'src/data/providers.dart';
+import 'src/data/auth_providers.dart';
 import 'src/presentation/app.dart';
 import 'src/presentation/screens/compose_autotest_screen.dart';
 

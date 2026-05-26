@@ -5,7 +5,7 @@ import 'screens/feed_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/login_screen.dart';
-import '../data/providers.dart';
+import '../data/auth_providers.dart';
 
 class FspezApp extends ConsumerWidget {
   const FspezApp({super.key});

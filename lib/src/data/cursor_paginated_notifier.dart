@@ -1,23 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 abstract class CursorPaginatedNotifier<T, TPage>
     extends StateNotifier<T> {
-  final ScrollController scrollController = ScrollController();
   String? after;
 
   CursorPaginatedNotifier(T initialState, {bool autoLoad = true})
       : super(initialState) {
-    scrollController.addListener(_onScroll);
     if (autoLoad) {
       Future.microtask(() => loadInitial());
-    }
-  }
-
-  void _onScroll() {
-    if (scrollController.position.pixels >=
-        scrollController.position.maxScrollExtent - 300) {
-      loadMore();
     }
   }
 
@@ -46,13 +36,6 @@ abstract class CursorPaginatedNotifier<T, TPage>
   }
 
   void refresh() => loadInitial();
-
-  @override
-  void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
 
   Future<TPage> fetchPage({String? after});
   String? extractAfter(TPage page);

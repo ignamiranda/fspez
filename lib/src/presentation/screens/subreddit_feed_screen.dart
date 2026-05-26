@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
+import '../../data/feed_providers.dart';
+import '../../data/comment_providers.dart';
+import '../../data/write_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../../domain/models/subreddit.dart';
@@ -26,11 +29,25 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
   Subreddit? _subInfo;
   bool _isSubscribed = false;
   bool _togglingSub = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadSubInfo());
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 300) {
+        final config = FeedPageConfig.subreddit(widget.subredditName, sort: _sort);
+        ref.read(feedPageProvider(config).notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSubInfo() async {
@@ -117,7 +134,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
                   ),
                 Expanded(
                   child: PostList(
-                    scrollController: notifier.scrollController,
+                    scrollController: _scrollController,
                     posts: state.posts,
                     onRefresh: () async => notifier.refresh(),
                     voteOverrides: voteOverrides,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/providers.dart';
+import '../../data/auth_providers.dart';
 import 'auth_webview_screen.dart';
 import 'saved_screen.dart';
 import 'user_profile_screen.dart';

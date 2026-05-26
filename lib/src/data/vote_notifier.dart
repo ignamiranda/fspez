@@ -1,20 +1,15 @@
 import '../domain/enums/vote_direction.dart';
-import '../domain/models/session_cookie.dart';
-import 'optimistic_state_notifier.dart';
-import 'reddit_client.dart';
+import 'write_operation_notifier.dart';
 
-class VoteNotifier extends OptimisticStateNotifier<String, VoteDirection> {
-  final RedditClient _client;
-  final SessionCookie? _sessionCookie;
-
-  VoteNotifier(this._client, this._sessionCookie);
+class VoteNotifier extends WriteOperationNotifier<VoteDirection> {
+  VoteNotifier(super.redditClient, super.sessionCookie);
 
   Future<void> vote(String fullname, VoteDirection direction) async {
     optimisticSet(fullname, direction);
     try {
-      await _client.postForm('/api/vote',
+      await redditClient.postForm('/api/vote',
           fields: {'id': fullname, 'dir': direction.value.toString()},
-          sessionCookie: _sessionCookie);
+          sessionCookie: sessionCookie);
     } catch (_) {}
   }
 
