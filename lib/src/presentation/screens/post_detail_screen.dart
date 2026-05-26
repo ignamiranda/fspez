@@ -5,8 +5,8 @@ import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
 import '../../data/reddit_client_provider.dart';
+import '../../data/comment_repository.dart';
 import '../../domain/models/post.dart';
-import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
 import '../widgets/comment_tree.dart';
@@ -103,12 +103,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       body: detailAsync.when(
         data: (detail) => _buildBody(
           context,
-          detail.comments,
+          detail,
           voteOverrides: voteOverrides,
           saveOverrides: saveOverrides,
           loggedIn: account != null,
         ),
-        loading: () => _buildBody(context, const [],
+        loading: () => _buildBody(context, null,
             voteOverrides: voteOverrides, saveOverrides: saveOverrides),
         error: (err, _) => Center(
           child: Padding(
@@ -130,13 +130,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
   Widget _buildBody(
     BuildContext context,
-    List<Comment> comments, {
+    PostDetail? detail, {
     Map<String, VoteDirection> voteOverrides = const {},
     Map<String, bool> saveOverrides = const {},
     bool loggedIn = false,
   }) {
     final theme = Theme.of(context);
-    final postFullname = widget.post.fullname;
+    final comments = detail?.comments ?? const [];
+    final post = detail?.post ?? widget.post;
+    final postFullname = post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
     final client = ref.read(redditClientProvider);
@@ -149,7 +151,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           child: ListView(
             children: [
               _PostDetailHeader(
-                post: widget.post,
+                post: post,
                 theme: theme,
                 effectiveVote: postEffectiveVote,
                 onVote: (dir) =>
@@ -157,36 +159,36 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 effectiveSaved: postEffectiveSaved,
                 onSave: () => handleSave(
                     ref.read(saveProvider.notifier), postFullname, context),
-                onDelete: username != null && widget.post.author == username
+                onDelete: username != null && post.author == username
                     ? () => handleDelete(context, client, postFullname, session!)
                     : null,
               ),
-              if (widget.post.selftext != null &&
-                  widget.post.selftext!.isNotEmpty)
+              if (post.selftext != null &&
+                  post.selftext!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    widget.post.selftext!,
+                    post.selftext!,
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-              if (widget.post.type == PostType.image &&
-                  widget.post.url != null)
+              if (post.type == PostType.image &&
+                  post.url != null)
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      widget.post.url!,
+                      post.url!,
                       width: double.infinity,
                       fit: BoxFit.fitWidth,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
                   ),
                 )
-              else if (widget.post.type == PostType.link &&
-                  widget.post.url != null)
+              else if (post.type == PostType.link &&
+                  post.url != null)
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -195,11 +197,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       final browser = InAppBrowser();
                       browser.openUrlRequest(
                         urlRequest:
-                            URLRequest(url: WebUri(widget.post.url!)),
+                            URLRequest(url: WebUri(post.url!)),
                       );
                     },
                     child: Text(
-                      widget.post.url!,
+                      post.url!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.primary,
                         decoration: TextDecoration.underline,
