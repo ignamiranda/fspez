@@ -42,6 +42,9 @@ class FeedPageConfig with EquatableMixin {
   const FeedPageConfig.popular()
       : this(kind: FeedPageKind.popular);
 
+  const FeedPageConfig.popularAll({FeedSort sort = FeedSort.hot})
+      : this(kind: FeedPageKind.popularAll, sort: sort);
+
   const FeedPageConfig.saved()
       : this(kind: FeedPageKind.saved, sort: FeedSort.new_);
 
@@ -58,7 +61,7 @@ class FeedPageConfig with EquatableMixin {
   List<Object?> get props => [kind, sort, identifier];
 }
 
-enum FeedPageKind { home, popular, saved, search, subreddit, user }
+enum FeedPageKind { home, popular, popularAll, saved, search, subreddit, user }
 
 class FeedPageNotifier
     extends CursorPaginatedNotifier<FeedPageState, Feed> {
@@ -134,6 +137,7 @@ Future<Feed> fetchForConfig(
   return switch (config.kind) {
     FeedPageKind.home => repo.fetchHome(sort: config.sort, after: after, sessionCookie: cookie),
     FeedPageKind.popular => repo.fetchPopular(after: after, sessionCookie: cookie),
+    FeedPageKind.popularAll => repo.fetchPopularAll(sort: config.sort, after: after, sessionCookie: cookie),
     FeedPageKind.saved => repo.fetchSaved(account!.username, after: after, sessionCookie: cookie),
     FeedPageKind.search => repo.search(config.identifier!, after: after, sessionCookie: cookie),
     FeedPageKind.subreddit => repo.fetchSubreddit(config.identifier!, sort: config.sort, after: after, sessionCookie: cookie),

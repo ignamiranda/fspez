@@ -35,12 +35,23 @@ class FeedRepository {
         sessionCookie: sessionCookie);
   }
 
-  Future<Feed> fetchAll(
+  Future<Feed> fetchPopularAll(
       {FeedSort sort = FeedSort.hot,
       String? after,
       SessionCookie? sessionCookie}) {
-    return _fetchFeed('/r/all', sort, after, FeedKind.all_,
+    return _fetchFeed(_popularPathForSort(sort), sort, after, FeedKind.popular,
         sessionCookie: sessionCookie);
+  }
+
+  String _popularPathForSort(FeedSort sort) {
+    return switch (sort) {
+      FeedSort.hot => '/r/popular/hot',
+      FeedSort.new_ => '/r/popular/new',
+      FeedSort.top => '/r/popular/top',
+      FeedSort.rising => '/r/popular/rising',
+      FeedSort.controversial => '/r/popular/controversial',
+      FeedSort.best => '/r/popular/hot',
+    };
   }
 
   Future<Feed> fetchSubreddit(

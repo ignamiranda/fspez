@@ -21,6 +21,7 @@ class FeedScreen extends ConsumerStatefulWidget {
 
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   FeedSort _sort = FeedSort.hot;
+  bool _showAll = false;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -42,6 +43,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   }
 
   FeedPageConfig _buildConfig() {
+    if (_showAll) return FeedPageConfig.popularAll(sort: _sort);
     final account = ref.read(activeAccountProvider);
     final loggedIn = account != null;
     return loggedIn
@@ -53,9 +55,11 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   Widget build(BuildContext context) {
     final account = ref.watch(activeAccountProvider);
     final loggedIn = account != null;
-    final config = loggedIn
-        ? FeedPageConfig.home(sort: _sort)
-        : const FeedPageConfig.popular();
+    final config = _showAll
+        ? FeedPageConfig.popularAll(sort: _sort)
+        : loggedIn
+            ? FeedPageConfig.home(sort: _sort)
+            : const FeedPageConfig.popular();
     final state = ref.watch(feedPageProvider(config));
     final notifier = ref.read(feedPageProvider(config).notifier);
     final voteOverrides = ref.watch(voteProvider);
@@ -63,11 +67,20 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(loggedIn ? 'fspez' : 'Popular'),
+        title: Text(
+          _showAll ? 'Popular' : loggedIn ? 'fspez' : 'Popular',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.read(feedPageProvider(_buildConfig()).notifier).refresh(),
+          ),
+          IconButton(
+            icon: Icon(_showAll ? Icons.home : Icons.whatshot),
+            tooltip: _showAll ? 'Home' : 'Popular',
+            onPressed: () {
+              setState(() => _showAll = !_showAll);
+            },
           ),
           PopupMenuButton<FeedSort>(
             icon: const Icon(Icons.sort),
