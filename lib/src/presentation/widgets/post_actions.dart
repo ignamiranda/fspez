@@ -129,7 +129,6 @@ class PostActions extends StatelessWidget {
   final bool? effectiveSaved;
   final VoidCallback? onSave;
   final VoidCallback? onDelete;
-  final VoidCallback? onHide;
   final VoidCallback? onTap;
 
   const PostActions({
@@ -140,7 +139,6 @@ class PostActions extends StatelessWidget {
     this.effectiveSaved,
     this.onSave,
     this.onDelete,
-    this.onHide,
     this.onTap,
   });
 
@@ -215,13 +213,6 @@ class PostActions extends StatelessWidget {
             _ActionButton(
               icon: Icons.delete_outline,
               onTap: onDelete,
-            ),
-          ],
-          if (onHide != null) ...[
-            const SizedBox(width: 12),
-            _ActionButton(
-              icon: Icons.visibility_off_outlined,
-              onTap: onHide,
             ),
           ],
         ],

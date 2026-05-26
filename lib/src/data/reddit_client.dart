@@ -235,14 +235,6 @@ class RedditClient {
   Future<void> deleteContent(String fullname, SessionCookie sessionCookie) async {
     await postForm('/api/del', fields: {'id': fullname}, sessionCookie: sessionCookie);
   }
-
-  Future<void> hide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/hide', fields: {'id': fullname}, sessionCookie: sessionCookie);
-  }
-
-  Future<void> unhide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/unhide', fields: {'id': fullname}, sessionCookie: sessionCookie);
-  }
 }
 
 class RedditApiException implements Exception {

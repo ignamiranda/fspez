@@ -10,8 +10,6 @@ class PostList extends StatelessWidget {
   final void Function(String fullname, VoteDirection direction)? onPostVote;
   final void Function(String fullname)? onPostSave;
   final void Function(Post post)? onPostDelete;
-  final void Function(Post post)? onPostHide;
-  final Set<String> hiddenFullnames;
   final String? currentUsername;
   final void Function(Post post)? onPostTap;
   final void Function(Post post)? onSubredditTap;
@@ -29,8 +27,6 @@ class PostList extends StatelessWidget {
     this.onPostVote,
     this.onPostSave,
     this.onPostDelete,
-    this.onPostHide,
-    this.hiddenFullnames = const {},
     this.currentUsername,
     this.onPostTap,
     this.onSubredditTap,
@@ -47,24 +43,16 @@ class PostList extends StatelessWidget {
       return Center(child: Text(emptyMessage));
     }
 
-    final visiblePosts = hiddenFullnames.isEmpty
-        ? posts
-        : posts.where((p) => !hiddenFullnames.contains(p.fullname)).toList();
-
-    if (visiblePosts.isEmpty) {
-      return Center(child: Text(emptyMessage));
-    }
-
     final listView = ListView.builder(
       controller: scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: visiblePosts.length + (footer != null ? 1 : 0),
+      itemCount: posts.length + (footer != null ? 1 : 0),
       itemBuilder: (context, index) {
-        if (footer != null && index == visiblePosts.length) {
+        final post = posts[index];
+        final fullname = post.fullname;
+        if (footer != null && index == posts.length) {
           return footer!;
         }
-        final post = visiblePosts[index];
-        final fullname = post.fullname;
         return PostCard(
           post: post,
           effectiveVote: voteOverrides[fullname],
@@ -77,9 +65,6 @@ class PostList extends StatelessWidget {
               : null,
           onDelete: onPostDelete != null && post.author == currentUsername
               ? () => onPostDelete!(post)
-              : null,
-          onHide: onPostHide != null && !(hiddenFullnames.contains(post.fullname))
-              ? () => onPostHide!(post)
               : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
           onSubredditTap: onSubredditTap != null

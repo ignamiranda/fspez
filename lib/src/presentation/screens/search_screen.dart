@@ -93,7 +93,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     Map<String, bool> saveOverrides,
   ) {
     final account = ref.watch(activeAccountProvider);
-    final hidden = ref.watch(hideProvider);
     if (!_hasSearched) {
       return const Center(
         child: Text('Enter a query to search Reddit'),
@@ -121,9 +120,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             }
           : null,
       currentUsername: account?.username,
-      hiddenFullnames: hidden,
-      onPostHide: (post) =>
-          ref.read(hideProvider.notifier).toggle(post.fullname),
       onPostTap: (post) => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PostDetailScreen(post: post),
