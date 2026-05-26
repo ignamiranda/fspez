@@ -132,12 +132,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
           handleSave(ref.read(saveProvider.notifier), fullname, context),
       onPostDelete: account != null
           ? (post) {
-              if (post.author == account.username) {
-                handleDelete(context, ref.read(redditClientProvider),
-                    post.fullname, account.sessionCookie);
-              }
+              handleDelete(context, ref.read(redditClientProvider),
+                  post.fullname, account.sessionCookie);
             }
           : null,
+      currentUsername: account?.username,
       onPostTap: (post) => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PostDetailScreen(post: post),

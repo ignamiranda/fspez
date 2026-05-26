@@ -10,6 +10,7 @@ class PostList extends StatelessWidget {
   final void Function(String fullname, VoteDirection direction)? onPostVote;
   final void Function(String fullname)? onPostSave;
   final void Function(Post post)? onPostDelete;
+  final String? currentUsername;
   final void Function(Post post)? onPostTap;
   final void Function(Post post)? onSubredditTap;
   final void Function(Post post)? onAuthorTap;
@@ -26,6 +27,7 @@ class PostList extends StatelessWidget {
     this.onPostVote,
     this.onPostSave,
     this.onPostDelete,
+    this.currentUsername,
     this.onPostTap,
     this.onSubredditTap,
     this.onAuthorTap,
@@ -61,7 +63,7 @@ class PostList extends StatelessWidget {
           onSave: onPostSave != null
               ? () => onPostSave!(fullname)
               : null,
-          onDelete: onPostDelete != null
+          onDelete: onPostDelete != null && post.author == currentUsername
               ? () => onPostDelete!(post)
               : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
