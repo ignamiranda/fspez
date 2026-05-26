@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
@@ -193,6 +194,18 @@ class PostActions extends StatelessWidget {
                 : null,
             onTap: onSave,
           ),
+          if (post.type != PostType.self_ && post.url != null) ...[
+            const SizedBox(width: 12),
+            _ActionButton(
+              icon: Icons.open_in_new,
+              onTap: () {
+                final browser = InAppBrowser();
+                browser.openUrlRequest(
+                  urlRequest: URLRequest(url: WebUri(post.url!)),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );

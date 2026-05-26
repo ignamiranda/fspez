@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
@@ -174,6 +175,30 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       width: double.infinity,
                       fit: BoxFit.fitWidth,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                )
+              else if (widget.post.type == PostType.link &&
+                  widget.post.url != null)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: InkWell(
+                    onTap: () {
+                      final browser = InAppBrowser();
+                      browser.openUrlRequest(
+                        urlRequest:
+                            URLRequest(url: WebUri(widget.post.url!)),
+                      );
+                    },
+                    child: Text(
+                      widget.post.url!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
