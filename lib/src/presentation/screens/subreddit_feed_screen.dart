@@ -90,6 +90,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
     final notifier = ref.read(feedPageProvider(config).notifier);
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
+    final hidden = ref.watch(hideProvider);
     final account = ref.watch(activeAccountProvider);
 
     return Scaffold(
@@ -152,6 +153,9 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
                           }
                         : null,
                     currentUsername: account?.username,
+                    hiddenFullnames: hidden,
+                    onPostHide: (post) =>
+                        ref.read(hideProvider.notifier).toggle(post.fullname),
                     onPostTap: (post) => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => PostDetailScreen(post: post),
