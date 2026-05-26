@@ -1,6 +1,3 @@
-## Auto-trigger: `/learn` after every task
-Whenever a task completes (all requested changes are implemented, tests pass, and changes are committed), automatically run the `/learn` command to extract any new pitfalls into agent skills before moving on.
-
 ## Commands
 - `flutter analyze` — lint + static analysis (all errors)
 - `flutter test` — unit tests only (no widget/integration tests yet)

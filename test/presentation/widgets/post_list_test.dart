@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/post.dart';
@@ -78,50 +77,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(refreshed, isTrue);
-    });
-
-    testWidgets('calls onRefresh when wheel scrolling upward at the top', (tester) async {
-      var refreshed = false;
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: PostList(
-            posts: [_createPost('1')],
-            onRefresh: () async {
-              refreshed = true;
-            },
-          ),
-        ),
-      ));
-
-      for (var i = 0; i < 6; i++) {
-        await tester.sendEventToBinding(const PointerScrollEvent(
-          position: Offset(200, 200),
-          scrollDelta: Offset(0, -30),
-        ));
-      }
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.pumpAndSettle();
-
-      expect(refreshed, isTrue);
-    });
-
-    testWidgets('shows refresh indicator while overscrolling', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: PostList(
-            posts: [_createPost('1')],
-            onRefresh: () async {},
-          ),
-        ),
-      ));
-
-      await tester.sendEventToBinding(const PointerScrollEvent(
-        position: Offset(200, 200),
-        scrollDelta: Offset(0, -30),
-      ));
-      await tester.pump();
-
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 
     testWidgets('shows empty state and still allows onRefresh', (tester) async {

@@ -65,6 +65,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       appBar: AppBar(
         title: Text(loggedIn ? 'fspez' : 'Popular'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.read(feedPageProvider(_buildConfig()).notifier).refresh(),
+          ),
           PopupMenuButton<FeedSort>(
             icon: const Icon(Icons.sort),
             onSelected: (sort) {
