@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/save_notifier.dart';
 import '../../data/vote_notifier.dart';
-import '../../data/reddit_client.dart';
+import '../../data/delete_notifier.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../../domain/models/session_cookie.dart';
 
@@ -26,7 +26,7 @@ Future<void> handleSave(SaveNotifier notifier, String fullname, BuildContext con
 
 Future<void> handleDelete(
   BuildContext context,
-  RedditClient client,
+  DeleteNotifier notifier,
   String fullname,
   SessionCookie sessionCookie,
 ) async {
@@ -46,7 +46,7 @@ Future<void> handleDelete(
   );
   if (confirmed != true) return;
   try {
-    await client.deleteContent(fullname, sessionCookie);
+    await notifier.delete(fullname, sessionCookie);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

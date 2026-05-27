@@ -1,8 +1,8 @@
 import '../domain/models/session_cookie.dart';
 import '../domain/models/user_profile.dart';
 import '../domain/models/user_comment.dart';
-import 'parsers/shared_parsers.dart';
 import 'reddit_client.dart';
+import 'parsers/shared_parsers.dart';
 
 class UserRepository {
   final RedditClient _client;
@@ -48,13 +48,11 @@ class UserRepository {
     final listing = data['data'] as Map<String, dynamic>;
     final children = listing['children'] as List<dynamic>;
 
-    final comments = children
+    return children
         .whereType<Map<String, dynamic>>()
         .where((child) => child['kind'] == 't1')
         .map((child) => _parseComment(child['data'] as Map<String, dynamic>))
         .toList();
-
-    return comments;
   }
 
   String? _iconUrl(Map<String, dynamic> about) {

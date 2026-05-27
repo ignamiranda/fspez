@@ -2,9 +2,9 @@ import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/session_cookie.dart';
+import '../domain/enums/vote_direction.dart';
 import 'reddit_client.dart';
-import 'comment_parser.dart';
-import 'feed_parser.dart';
+import 'api_responses.dart';
 
 class PostDetail {
   final Post post;
@@ -15,10 +15,8 @@ class PostDetail {
 
 class CommentRepository {
   final RedditClient _client;
-  final CommentParser _parser;
 
-  CommentRepository(this._client, {CommentParser? parser})
-      : _parser = parser ?? CommentParser();
+  CommentRepository(this._client);
 
   Future<PostDetail> fetchComments(
     String subreddit,
@@ -31,45 +29,71 @@ class CommentRepository {
     );
 
     final items = raw as List<dynamic>;
-    final feedParser = FeedParser();
 
-    final postListing =
-        items.isNotEmpty ? items[0] as Map<String, dynamic> : null;
-    final postChildren = postListing != null
-        ? (postListing['data'] as Map<String, dynamic>)['children']
-            as List<dynamic>
-        : <dynamic>[];
-
-    Post? post;
-    for (final child in postChildren) {
-      final childMap = child as Map<String, dynamic>;
-      if (childMap['kind'] == 't3') {
-        post = feedParser.parsePost(
-            childMap['data'] as Map<String, dynamic>);
+    ApiPost? apiPost;
+    if (items.isNotEmpty) {
+      final listing = items[0] as Map<String, dynamic>;
+      final children = (listing['data'] as Map<String, dynamic>)['children'] as List<dynamic>;
+      for (final child in children) {
+        final childMap = child as Map<String, dynamic>;
+        if (childMap['kind'] == 't3') {
+          apiPost = ApiPost.fromJson(childMap['data'] as Map<String, dynamic>);
+        }
       }
     }
 
-    final commentsListing = items.length > 1
-        ? items[1] as Map<String, dynamic>
-        : null;
-    final commentsChildren = commentsListing != null
-        ? (commentsListing['data'] as Map<String, dynamic>)['children']
-            as List<dynamic>
-        : <dynamic>[];
-    final comments = _parser.parseComments(commentsChildren);
+    final post = apiPost?.toDomain() ??
+        Post(
+          id: postId,
+          title: '',
+          author: '[deleted]',
+          subreddit: Subreddit(id: '', name: subreddit),
+          createdAt: DateTime.now(),
+          permalink: '',
+          type: PostType.self_,
+        );
 
-    return PostDetail(
-      post: post ??
-          Post(
-            id: postId,
-            title: '',
-            author: '[deleted]',
-            subreddit: Subreddit(id: '', name: subreddit),
-            createdAt: DateTime.now(),
-            permalink: '',
-            type: PostType.self_,
-          ),
-      comments: comments,
+    final commentsListing = items.length > 1 ? items[1] as Map<String, dynamic> : null;
+    final commentsChildren = commentsListing != null
+        ? (commentsListing['data'] as Map<String, dynamic>)['children'] as List<dynamic>
+        : <dynamic>[];
+
+    final comments = _parseComments(commentsChildren);
+
+    return PostDetail(post: post, comments: comments);
+  }
+
+  List<Comment> _parseComments(List<dynamic> children) {
+    return children
+        .whereType<Map<String, dynamic>>()
+        .where((child) => child['kind'] == 't1')
+        .map((child) => _commentFromApi(
+            ApiComment.fromJson(child['data'] as Map<String, dynamic>)))
+        .toList();
+  }
+
+  Comment _commentFromApi(ApiComment api) {
+    final vote = api.likes == true
+        ? VoteDirection.upvote
+        : api.likes == false
+            ? VoteDirection.downvote
+            : VoteDirection.none;
+    return Comment(
+      id: api.id,
+      body: api.body,
+      author: api.author,
+      score: api.score,
+      vote: vote,
+      isSaved: api.saved,
+      isSubmitter: api.isSubmitter,
+      isModerator: api.distinguished == 'moderator',
+      isStickied: api.stickied,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(api.createdUtc * 1000),
+      postId: api.linkId,
+      parentId: api.parentId,
+      depth: api.depth,
+      replies: api.replies.map(_commentFromApi).toList(),
+      isCollapsed: api.collapsed,
     );
   }
 
@@ -98,7 +122,7 @@ class CommentRepository {
         'thing_id': thingId,
         'text': text,
         'uh': sessionCookie.modhash ?? '',
-        'm' : 'edit',
+        'm': 'edit',
       },
       sessionCookie: sessionCookie,
     );

@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/feed_providers.dart';
-import '../../data/write_providers.dart';
-import '../../data/reddit_client_provider.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
-import '../utils/interaction_helpers.dart';
-import '../widgets/post_list.dart';
-import 'post_detail_screen.dart';
+import '../utils/infinite_scroll.dart';
+import '../widgets/feed_screen_scaffold.dart';
 import 'search_screen.dart';
-import 'subreddit_feed_screen.dart';
-import 'user_profile_screen.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
@@ -23,23 +18,19 @@ class FeedScreen extends ConsumerStatefulWidget {
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   FeedSort _sort = FeedSort.hot;
   bool _showAll = false;
-  final ScrollController _scrollController = ScrollController();
+  ScrollController? _scrollController;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 300) {
-        final config = _buildConfig();
-        ref.read(feedPageProvider(config).notifier).loadMore();
-      }
-    });
+    _scrollController = createInfiniteScrollController(
+      () => ref.read(feedPageProvider(_buildConfig()).notifier).loadMore(),
+    );
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController?.dispose();
     super.dispose();
   }
 
@@ -61,11 +52,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         : loggedIn
             ? FeedPageConfig.home(sort: _sort)
             : const FeedPageConfig.popular();
-    final state = ref.watch(feedPageProvider(config));
-    final notifier = ref.read(feedPageProvider(config).notifier);
-    final voteOverrides = ref.watch(voteProvider);
-    final saveOverrides = ref.watch(saveProvider);
-    final hidden = ref.watch(hideProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -104,56 +90,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           ),
         ],
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : PostList(
-              scrollController: _scrollController,
-              posts: state.posts,
-              onRefresh: () async => notifier.refresh(),
-              voteOverrides: voteOverrides,
-              saveOverrides: saveOverrides,
-              onPostVote: (fullname, dir) =>
-                  handleVote(ref.read(voteProvider.notifier), fullname, dir),
-               onPostSave: (fullname) =>
-                  handleSave(ref.read(saveProvider.notifier), fullname, context),
-              onPostDelete: account != null
-                  ? (post) {
-                      handleDelete(context, ref.read(redditClientProvider),
-                          post.fullname, account.sessionCookie);
-                    }
-                  : null,
-              currentUsername: account?.username,
-              hiddenFullnames: hidden,
-              onPostHide: (post) =>
-                  ref.read(hideProvider.notifier).toggle(post.fullname),
-              onPostTap: (post) => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => PostDetailScreen(post: post),
-                ),
-              ),
-              onSubredditTap: (post) => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => SubredditFeedScreen(
-                    subredditName: post.subreddit.name,
-                  ),
-                ),
-              ),
-              onAuthorTap: (post) {
-                if (post.author != '[deleted]') {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => UserProfileScreen(username: post.author),
-                    ),
-                  );
-                }
-              },
-              footer: state.isLoadingMore
-                  ? const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : null,
-            ),
+      body: FeedScreenScaffold(
+        config: config,
+        scrollController: _scrollController!,
+      ),
     );
   }
 }

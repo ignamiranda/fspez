@@ -1,4 +1,5 @@
 import '../domain/models/comment.dart';
+import 'api_responses.dart';
 import 'parsers/shared_parsers.dart';
 
 class CommentParser {
@@ -6,41 +7,28 @@ class CommentParser {
     return children
         .whereType<Map<String, dynamic>>()
         .where((child) => child['kind'] == 't1')
-        .map((child) => _parseSingle(child['data'] as Map<String, dynamic>))
+        .map((child) => _toDomain(
+            ApiComment.fromJson(child['data'] as Map<String, dynamic>)))
         .toList();
   }
 
-  Comment _parseSingle(Map<String, dynamic> data) {
-    final repliesRaw = data['replies'];
-    List<Comment> replies;
-    if (repliesRaw is Map<String, dynamic> &&
-        repliesRaw['kind'] == 'Listing') {
-      final children =
-          (repliesRaw['data'] as Map<String, dynamic>)['children']
-              as List<dynamic>;
-      replies = parseComments(children);
-    } else {
-      replies = [];
-    }
-
+  Comment _toDomain(ApiComment api) {
     return Comment(
-      id: data['id'] as String? ?? '',
-      body: data['body'] as String? ?? '',
-      author: data['author'] as String? ?? '[deleted]',
-      score: data['score'] as int? ?? 0,
-      vote: parseVoteDirection(data['likes']),
-      isSaved: data['saved'] as bool? ?? false,
-      isSubmitter: data['is_submitter'] as bool? ?? false,
-      isModerator: data['distinguished'] == 'moderator',
-      isStickied: data['stickied'] as bool? ?? false,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        (data['created_utc'] as num).toInt() * 1000,
-      ),
-      postId: data['link_id'] as String? ?? '',
-      parentId: data['parent_id'] as String?,
-      depth: data['depth'] as int? ?? 0,
-      replies: replies,
-      isCollapsed: data['collapsed'] as bool? ?? false,
+      id: api.id,
+      body: api.body,
+      author: api.author,
+      score: api.score,
+      vote: parseVoteDirection(api.likes),
+      isSaved: api.saved,
+      isSubmitter: api.isSubmitter,
+      isModerator: api.distinguished == 'moderator',
+      isStickied: api.stickied,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(api.createdUtc * 1000),
+      postId: api.linkId,
+      parentId: api.parentId,
+      depth: api.depth,
+      replies: api.replies.map(_toDomain).toList(),
+      isCollapsed: api.collapsed,
     );
   }
 }

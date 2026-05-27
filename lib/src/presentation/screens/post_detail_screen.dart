@@ -4,7 +4,6 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
-import '../../data/reddit_client_provider.dart';
 import '../../data/comment_repository.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
@@ -141,7 +140,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postFullname = post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
-    final client = ref.read(redditClientProvider);
+    final deleteNotifier = ref.read(deleteProvider.notifier);
     final session = ref.read(activeAccountProvider)?.sessionCookie;
     final username = session != null ? ref.read(activeAccountProvider)?.username : null;
 
@@ -160,7 +159,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 onSave: () => handleSave(
                     ref.read(saveProvider.notifier), postFullname, context),
                 onDelete: username != null && post.author == username
-                    ? () => handleDelete(context, client, postFullname, session!)
+                    ? () => handleDelete(context, deleteNotifier, postFullname, session!)
                     : null,
               ),
               if (post.selftext != null &&
@@ -251,7 +250,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onDelete: username != null
                           ? (fullname) {
                               if (c.author == username) {
-                                handleDelete(context, client, fullname, session!);
+                                handleDelete(context, deleteNotifier, fullname, session!);
                               }
                             }
                           : null,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
-import '../../data/reddit_client_provider.dart';
+import '../../data/write_providers.dart';
 
 class SubmitScreen extends ConsumerStatefulWidget {
   final String? subreddit;
@@ -18,7 +18,6 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
   final _urlController = TextEditingController();
   final _subredditController = TextEditingController();
   bool _isLink = false;
-  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -43,49 +42,50 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     final account = ref.read(activeAccountProvider);
     if (title.isEmpty || subreddit.isEmpty || account == null) return;
 
-    setState(() => _isSubmitting = true);
-    try {
-      final client = ref.read(redditClientProvider);
-      final fields = <String, String>{
-        'kind': _isLink ? 'link' : 'self',
-        'sr': subreddit,
-        'title': title,
-        'uh': account.sessionCookie.modhash ?? '',
-      };
-      if (!_isLink && _textController.text.trim().isNotEmpty) {
-        fields['text'] = _textController.text.trim();
-      }
-      if (_isLink && _urlController.text.trim().isNotEmpty) {
-        fields['url'] = _urlController.text.trim();
-      }
-      await client.submit(fields: fields, sessionCookie: account.sessionCookie);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Post submitted'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        Navigator.of(context).pop(true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+    final fields = <String, String>{
+      'kind': _isLink ? 'link' : 'self',
+      'sr': subreddit,
+      'title': title,
+      'uh': account.sessionCookie.modhash ?? '',
+    };
+    if (!_isLink && _textController.text.trim().isNotEmpty) {
+      fields['text'] = _textController.text.trim();
+    }
+    if (_isLink && _urlController.text.trim().isNotEmpty) {
+      fields['url'] = _urlController.text.trim();
+    }
+
+    final success = await ref.read(submitProvider.notifier).submit(
+      fields: fields,
+      sessionCookie: account.sessionCookie,
+    );
+
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Post submitted'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      final state = ref.read(submitProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit: ${state.error}')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final submitState = ref.watch(submitProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Post'),
         actions: [
-          if (_isSubmitting)
+          if (submitState.isSubmitting)
             const Center(child: SizedBox(
               width: 20, height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),

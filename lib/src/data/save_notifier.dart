@@ -12,24 +12,27 @@ class SaveException implements Exception {
 class SaveNotifier extends WriteOperationNotifier<bool> {
   SaveNotifier(super.redditClient, super.sessionCookie);
 
+  @override
+  bool get shouldRevertOnError => true;
+
   Future<void> toggle(String fullname) async {
     final current = state[fullname] ?? false;
     final next = !current;
-    optimisticSet(fullname, next);
+    final sc = sessionCookie;
+    if (sc == null) {
+      state = {...state, fullname: current};
+      throw const SaveException(statusCode: 0, body: 'No session');
+    }
     try {
-      final sc = sessionCookie;
-      if (sc == null) throw const SaveException(statusCode: 0, body: 'No session');
-      if (next) {
-        await redditClient.save(fullname, sc);
-      } else {
-        await redditClient.unsave(fullname, sc);
-      }
+      await write(fullname, next, current, () async {
+        if (next) {
+          await redditClient.save(fullname, sc);
+        } else {
+          await redditClient.unsave(fullname, sc);
+        }
+      });
     } on RedditApiException catch (e) {
-      optimisticRevert(fullname, current);
       throw SaveException(statusCode: e.statusCode, body: e.message);
-    } catch (_) {
-      optimisticRevert(fullname, current);
-      rethrow;
     }
   }
 

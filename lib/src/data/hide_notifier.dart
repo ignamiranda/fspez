@@ -1,29 +1,23 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'reddit_client.dart';
-import '../domain/models/session_cookie.dart';
+import 'write_operation_notifier.dart';
 
-class HideNotifier extends StateNotifier<Set<String>> {
-  final RedditClient _client;
-  final SessionCookie? _cookie;
+class HideNotifier extends WriteOperationNotifier<bool> {
+  HideNotifier(super.redditClient, super.sessionCookie);
 
-  HideNotifier(this._client, this._cookie) : super({});
+  @override
+  bool get shouldRevertOnError => true;
 
   Future<void> toggle(String fullname) async {
-    final hidden = state.contains(fullname);
-    if (hidden) return;
-    state = {...state, fullname};
-    try {
-      final sc = _cookie;
+    final previous = state[fullname];
+    if (previous == true) return;
+    await write(fullname, true, previous, () async {
+      final sc = sessionCookie;
       if (sc == null) return;
-      await _client.hide(fullname, sc);
-    } catch (_) {
-      state = {...state}..remove(fullname);
-    }
+      await redditClient.hide(fullname, sc);
+    });
   }
 
   void dismiss(String fullname) {
-    if (state.contains(fullname)) {
-      state = {...state}..remove(fullname);
-    }
+    final copy = Map<String, bool>.from(state)..remove(fullname);
+    state = copy;
   }
 }

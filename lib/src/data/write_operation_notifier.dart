@@ -8,4 +8,23 @@ abstract class WriteOperationNotifier<V>
   final SessionCookie? sessionCookie;
 
   WriteOperationNotifier(this.redditClient, this.sessionCookie);
+
+  bool get shouldRevertOnError => true;
+
+  Future<void> write(
+    String key,
+    V optimisticValue,
+    V? previousValue,
+    Future<void> Function() apiCall,
+  ) async {
+    optimisticSet(key, optimisticValue);
+    try {
+      await apiCall();
+    } catch (e) {
+      if (shouldRevertOnError) {
+        optimisticRevert(key, previousValue);
+      }
+      rethrow;
+    }
+  }
 }

@@ -2,8 +2,10 @@ import 'package:equatable/equatable.dart';
 import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
 import '../domain/models/account.dart';
+import '../domain/models/session_cookie.dart';
 import '../domain/enums/feed_sort.dart';
-import 'feed_repository.dart';
+import 'reddit_client.dart';
+import 'feed_parser.dart';
 import 'cursor_paginated_notifier.dart';
 
 class FeedPageState with EquatableMixin {
@@ -130,21 +132,68 @@ class FeedPageNotifier
   bool getHasMore(FeedPageState state) => state.hasMore;
 }
 
+String _pathForSort(FeedSort sort) {
+  return switch (sort) {
+    FeedSort.best => '/best',
+    FeedSort.hot => '/hot',
+    FeedSort.new_ => '/new',
+    FeedSort.top => '/top',
+    FeedSort.rising => '/rising',
+    FeedSort.controversial => '/controversial',
+  };
+}
+
+String _popularPathForSort(FeedSort sort) {
+  return switch (sort) {
+    FeedSort.hot => '/r/popular/hot',
+    FeedSort.new_ => '/r/popular/new',
+    FeedSort.top => '/r/popular/top',
+    FeedSort.rising => '/r/popular/rising',
+    FeedSort.controversial => '/r/popular/controversial',
+    FeedSort.best => '/r/popular/hot',
+  };
+}
+
+Future<Feed> _fetchFeed(
+  RedditClient client,
+  FeedParser parser,
+  String path,
+  FeedSort sort,
+  FeedKind kind,
+  String? after, {
+  SessionCookie? cookie,
+  Map<String, String>? queryOverrides,
+}) async {
+  final params = <String, String>{
+    'sort': sort.label,
+    if (after != null) 'after': after,
+    'limit': '25',
+    'sr_detail': 'true',
+    if (queryOverrides != null) ...queryOverrides,
+  };
+  final data = await client.get(path,
+      queryParams: params, sessionCookie: cookie);
+  return parser.parseFeed(data, kind, sort);
+}
+
 Future<Feed> fetchForConfig(
-  FeedRepository repo,
   Account? account,
   FeedPageConfig config,
-  String? after,
-) {
+  String? after, {
+  required RedditClient client,
+  required FeedParser parser,
+}) {
   final cookie = account?.sessionCookie;
   return switch (config.kind) {
-    FeedPageKind.home => repo.fetchHome(sort: config.sort, after: after, sessionCookie: cookie),
-    FeedPageKind.popular => repo.fetchPopular(after: after, sessionCookie: cookie),
-    FeedPageKind.popularAll => repo.fetchPopularAll(sort: config.sort, after: after, sessionCookie: cookie),
-    FeedPageKind.saved => repo.fetchSaved(account!.username, after: after, sessionCookie: cookie),
-    FeedPageKind.hidden => repo.fetchHidden(account!.username, after: after, sessionCookie: cookie),
-    FeedPageKind.search => repo.search(config.identifier!, after: after, sessionCookie: cookie),
-    FeedPageKind.subreddit => repo.fetchSubreddit(config.identifier!, sort: config.sort, after: after, sessionCookie: cookie),
-    FeedPageKind.user => repo.fetchUserPosts(config.identifier!, sort: config.sort, after: after, sessionCookie: cookie),
+    FeedPageKind.home => _fetchFeed(client, parser, _pathForSort(config.sort), config.sort, FeedKind.home, after, cookie: cookie),
+    FeedPageKind.popular => _fetchFeed(client, parser, '/r/popular', FeedSort.hot, FeedKind.popular, after, cookie: cookie),
+    FeedPageKind.popularAll => _fetchFeed(client, parser, _popularPathForSort(config.sort), config.sort, FeedKind.popular, after, cookie: cookie),
+    FeedPageKind.saved => _fetchFeed(client, parser, '/user/${account!.username}/saved', config.sort, FeedKind.saved, after, cookie: cookie),
+    FeedPageKind.hidden => _fetchFeed(client, parser, '/user/${account!.username}/hidden', config.sort, FeedKind.saved, after, cookie: cookie),
+    FeedPageKind.search => _fetchFeed(client, parser, '/search', config.sort, FeedKind.popular, after,
+        cookie: cookie,
+        queryOverrides: {'q': config.identifier!, 'restrict_sr': 'off', 'sort': 'relevance'}),
+    FeedPageKind.subreddit => _fetchFeed(client, parser, '/r/${config.identifier!}', config.sort, FeedKind.home, after, cookie: cookie),
+    FeedPageKind.user => _fetchFeed(client, parser, '/user/${config.identifier!}/submitted', config.sort, FeedKind.user, after, cookie: cookie),
   };
 }

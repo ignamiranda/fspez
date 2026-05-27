@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
-import '../../data/reddit_client_provider.dart';
+import '../../data/write_providers.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyTo;
@@ -17,7 +17,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final _toController = TextEditingController();
   final _subjectController = TextEditingController();
   final _textController = TextEditingController();
-  bool _isSending = false;
 
   @override
   void initState() {
@@ -60,37 +59,31 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
-    setState(() => _isSending = true);
-    try {
-      final client = ref.read(redditClientProvider);
-      await client.compose(
-        fields: {
-          'to': to,
-          'subject': subject,
-          'text': text,
-          'uh': cookie.modhash ?? '',
-          'api_type': 'json',
-        },
-        sessionCookie: cookie,
-      );
+    final success = await ref.read(composeProvider.notifier).send(
+      fields: {
+        'to': to,
+        'subject': subject,
+        'text': text,
+        'uh': cookie.modhash ?? '',
+        'api_type': 'json',
+      },
+      sessionCookie: cookie,
+    );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Message sent'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        Navigator.of(context).pop(true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Compose failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSending = false);
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Message sent'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      final state = ref.read(composeProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Compose failed: ${state.error}')),
+      );
     }
   }
 
@@ -104,11 +97,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       );
     }
 
+    final composeState = ref.watch(composeProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('New Message'),
         actions: [
-          if (_isSending)
+          if (composeState.isSending)
             const Padding(
               padding: EdgeInsets.all(16),
               child: SizedBox(

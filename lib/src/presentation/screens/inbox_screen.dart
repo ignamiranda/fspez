@@ -6,6 +6,7 @@ import '../../data/inbox_notifier.dart';
 import '../../domain/models/message.dart';
 import '../../domain/models/message_feed.dart';
 import '../utils/format_utils.dart';
+import '../utils/infinite_scroll.dart';
 import 'compose_screen.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -17,22 +18,19 @@ class InboxScreen extends ConsumerStatefulWidget {
 
 class _InboxScreenState extends ConsumerState<InboxScreen> {
   final Set<String> _expandedIds = {};
-  final ScrollController _inboxScrollController = ScrollController();
+  ScrollController? _inboxScrollController;
 
   @override
   void initState() {
     super.initState();
-    _inboxScrollController.addListener(() {
-      if (_inboxScrollController.position.pixels >=
-          _inboxScrollController.position.maxScrollExtent - 300) {
-        ref.read(inboxProvider.notifier).loadMore();
-      }
-    });
+    _inboxScrollController = createInfiniteScrollController(
+      () => ref.read(inboxProvider.notifier).loadMore(),
+    );
   }
 
   @override
   void dispose() {
-    _inboxScrollController.dispose();
+    _inboxScrollController?.dispose();
     super.dispose();
   }
 
