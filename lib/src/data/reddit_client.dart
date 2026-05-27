@@ -228,6 +228,31 @@ class RedditClient {
     );
   }
 
+  Future<void> editContent({
+    required String thingId,
+    required String text,
+    required SessionCookie sessionCookie,
+  }) async {
+    final fields = <String, String>{
+      'thing_id': thingId,
+      'text': text,
+      if (sessionCookie.modhash != null) 'uh': sessionCookie.modhash!,
+    };
+    final uri = Uri.parse('https://www.reddit.com/api/editusertext');
+    final response = await _httpClient.post(
+      uri,
+      headers: _headersFor(ApiEndpoint.comment, sessionCookie),
+      body: Uri(queryParameters: fields).query,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
   void dispose() {
     _httpClient.close();
   }

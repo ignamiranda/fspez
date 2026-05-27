@@ -128,6 +128,7 @@ class PostActions extends StatelessWidget {
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
   final VoidCallback? onSave;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onHide;
   final VoidCallback? onTap;
@@ -139,6 +140,7 @@ class PostActions extends StatelessWidget {
     this.onVote,
     this.effectiveSaved,
     this.onSave,
+    this.onEdit,
     this.onDelete,
     this.onHide,
     this.onTap,
@@ -208,6 +210,13 @@ class PostActions extends StatelessWidget {
                   urlRequest: URLRequest(url: WebUri(post.url!)),
                 );
               },
+            ),
+          ],
+          if (onEdit != null) ...[
+            const SizedBox(width: 12),
+            _ActionButton(
+              icon: Icons.edit_outlined,
+              onTap: onEdit,
             ),
           ],
           if (onDelete != null) ...[

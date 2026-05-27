@@ -8,6 +8,7 @@ import 'hide_notifier.dart';
 import 'delete_notifier.dart';
 import 'submit_notifier.dart';
 import 'compose_notifier.dart';
+import 'edit_notifier.dart';
 
 final voteProvider =
     StateNotifierProvider<VoteNotifier, Map<String, VoteDirection>>((ref) {
@@ -45,4 +46,9 @@ final submitProvider =
 final composeProvider =
     StateNotifierProvider<ComposeNotifier, ComposeState>((ref) {
   return ComposeNotifier(ref.watch(redditClientProvider));
+});
+
+final editProvider =
+    StateNotifierProvider<EditNotifier, EditState>((ref) {
+  return EditNotifier(ref.watch(redditClientProvider));
 });

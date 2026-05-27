@@ -9,6 +9,7 @@ class PostList extends StatelessWidget {
   final Map<String, bool> saveOverrides;
   final void Function(String fullname, VoteDirection direction)? onPostVote;
   final void Function(String fullname)? onPostSave;
+  final void Function(Post post)? onPostEdit;
   final void Function(Post post)? onPostDelete;
   final void Function(Post post)? onPostHide;
   final Set<String> hiddenFullnames;
@@ -28,6 +29,7 @@ class PostList extends StatelessWidget {
     this.saveOverrides = const {},
     this.onPostVote,
     this.onPostSave,
+    this.onPostEdit,
     this.onPostDelete,
     this.onPostHide,
     this.hiddenFullnames = const {},
@@ -74,6 +76,9 @@ class PostList extends StatelessWidget {
           effectiveSaved: saveOverrides[fullname],
           onSave: onPostSave != null
               ? () => onPostSave!(fullname)
+              : null,
+          onEdit: onPostEdit != null && post.author == currentUsername
+              ? () => onPostEdit!(post)
               : null,
           onDelete: onPostDelete != null && post.author == currentUsername
               ? () => onPostDelete!(post)

@@ -9,6 +9,7 @@ import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
 import '../widgets/comment_tree.dart';
+import '../widgets/edit_sheet.dart';
 import '../widgets/post_actions.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
@@ -158,6 +159,21 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 effectiveSaved: postEffectiveSaved,
                 onSave: () => handleSave(
                     ref.read(saveProvider.notifier), postFullname, context),
+                onEdit: username != null && post.author == username
+                    ? () {
+                        showEditSheet(context,
+                          currentText: post.selftext ?? '',
+                          readOnlyTitle: post.title,
+                          thingId: postFullname).then((saved) {
+                          if (saved == true && context.mounted) {
+                            ref.invalidate(postDetailProvider((
+                              subreddit: post.subreddit.name,
+                              postId: post.id,
+                            )));
+                          }
+                        });
+                      }
+                    : null,
                 onDelete: username != null && post.author == username
                     ? () => handleDelete(context, deleteNotifier, postFullname, session!)
                     : null,
@@ -247,6 +263,20 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           );
                         }
                       },
+                      onEdit: username != null && c.author == username
+                          ? (fullname) {
+                              showEditSheet(context,
+                                currentText: c.body,
+                                thingId: fullname).then((saved) {
+                                if (saved == true && context.mounted) {
+                                  ref.invalidate(postDetailProvider((
+                                    subreddit: post.subreddit.name,
+                                    postId: post.id,
+                                  )));
+                                }
+                              });
+                            }
+                          : null,
                       onDelete: username != null
                           ? (fullname) {
                               if (c.author == username) {
@@ -341,6 +371,7 @@ class _PostDetailHeader extends StatelessWidget {
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
   final VoidCallback? onSave;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   const _PostDetailHeader({
@@ -350,6 +381,7 @@ class _PostDetailHeader extends StatelessWidget {
     this.onVote,
     this.effectiveSaved,
     this.onSave,
+    this.onEdit,
     this.onDelete,
   });
 
@@ -392,6 +424,7 @@ class _PostDetailHeader extends StatelessWidget {
             onVote: onVote,
             effectiveSaved: effectiveSaved,
             onSave: onSave,
+            onEdit: onEdit,
             onDelete: onDelete,
           ),
         ],
