@@ -8,6 +8,27 @@ class CdpCookieProvider implements CookieProvider {
 
   @override
   Future<String?> getRedditSessionValue() async {
+    final fromCookieManager = await _tryCookieManager();
+    if (fromCookieManager != null) return fromCookieManager;
+
+    final fromCdp = await _tryCdp();
+    if (fromCdp != null) return fromCdp;
+
+    return null;
+  }
+
+  Future<String?> _tryCookieManager() async {
+    try {
+      final cookies = await CookieManager.instance()
+          .getCookies(url: WebUri('https://www.reddit.com'));
+      for (final c in cookies) {
+        if (c.name == 'reddit_session') return c.value;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<String?> _tryCdp() async {
     try {
       final r = await _controller.callDevToolsProtocolMethod(
         methodName: 'Network.getCookies',
@@ -25,6 +46,26 @@ class CdpCookieProvider implements CookieProvider {
 
   @override
   Future<String?> getCookieString() async {
+    final fromCookieManager = await _tryCookieManagerString();
+    if (fromCookieManager != null) return fromCookieManager;
+
+    final fromCdp = await _tryCdpString();
+    if (fromCdp != null) return fromCdp;
+
+    return null;
+  }
+
+  Future<String?> _tryCookieManagerString() async {
+    try {
+      final cookies = await CookieManager.instance()
+          .getCookies(url: WebUri('https://www.reddit.com'));
+      if (cookies.isEmpty) return null;
+      return cookies.map((c) => '${c.name}=${c.value}').join('; ');
+    } catch (_) {}
+    return null;
+  }
+
+  Future<String?> _tryCdpString() async {
     try {
       final r = await _controller.callDevToolsProtocolMethod(
         methodName: 'Network.getCookies',
