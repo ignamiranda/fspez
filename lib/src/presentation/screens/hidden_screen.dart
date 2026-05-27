@@ -46,6 +46,7 @@ class _HiddenScreenState extends ConsumerState<HiddenScreen> {
         config: _config,
         scrollController: _scrollController!,
         emptyMessage: 'No hidden posts.',
+        filterHidden: false,
       ),
     );
   }

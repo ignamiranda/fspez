@@ -128,6 +128,14 @@ class FeedPageNotifier
   @override
   bool getIsLoadingMore(FeedPageState state) => state.isLoadingMore;
 
+  void removePost(String fullname) {
+    state = FeedPageState(
+      posts: state.posts.where((p) => p.fullname != fullname).toList(),
+      isLoading: false,
+      hasMore: state.hasMore,
+    );
+  }
+
   @override
   bool getHasMore(FeedPageState state) => state.hasMore;
 }

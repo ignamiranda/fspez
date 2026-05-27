@@ -20,4 +20,11 @@ class HideNotifier extends WriteOperationNotifier<bool> {
     final copy = Map<String, bool>.from(state)..remove(fullname);
     state = copy;
   }
+
+  Future<void> unhide(String fullname) async {
+    final sc = sessionCookie;
+    if (sc == null) return;
+    dismiss(fullname);
+    await redditClient.unhide(fullname, sc);
+  }
 }

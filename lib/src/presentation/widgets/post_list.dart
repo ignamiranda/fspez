@@ -12,6 +12,7 @@ class PostList extends StatelessWidget {
   final void Function(Post post)? onPostEdit;
   final void Function(Post post)? onPostDelete;
   final void Function(Post post)? onPostHide;
+  final void Function(Post post)? onPostUnhide;
   final Set<String> hiddenFullnames;
   final String? currentUsername;
   final void Function(Post post)? onPostTap;
@@ -32,6 +33,7 @@ class PostList extends StatelessWidget {
     this.onPostEdit,
     this.onPostDelete,
     this.onPostHide,
+    this.onPostUnhide,
     this.hiddenFullnames = const {},
     this.currentUsername,
     this.onPostTap,
@@ -85,6 +87,9 @@ class PostList extends StatelessWidget {
               : null,
           onHide: onPostHide != null && !hiddenFullnames.contains(post.fullname)
               ? () => onPostHide!(post)
+              : null,
+          onUnhide: onPostUnhide != null
+              ? () => onPostUnhide!(post)
               : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
           onSubredditTap: onSubredditTap != null

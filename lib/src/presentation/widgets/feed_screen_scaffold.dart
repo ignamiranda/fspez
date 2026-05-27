@@ -16,6 +16,7 @@ class FeedScreenScaffold extends ConsumerWidget {
   final ScrollController scrollController;
   final void Function(Post post)? onSubredditTapOverride;
   final String emptyMessage;
+  final bool filterHidden;
 
   const FeedScreenScaffold({
     super.key,
@@ -23,6 +24,7 @@ class FeedScreenScaffold extends ConsumerWidget {
     required this.scrollController,
     this.onSubredditTapOverride,
     this.emptyMessage = 'No posts yet.',
+    this.filterHidden = true,
   });
 
   @override
@@ -56,9 +58,36 @@ class FeedScreenScaffold extends ConsumerWidget {
             }
           : null,
       currentUsername: account?.username,
-      hiddenFullnames: hidden,
-      onPostHide: (post) =>
-          ref.read(hideProvider.notifier).toggle(post.fullname),
+      hiddenFullnames: filterHidden ? hidden : const {},
+      onPostHide: filterHidden
+          ? (post) async {
+              final notifier = ref.read(hideProvider.notifier);
+              try {
+                await notifier.toggle(post.fullname);
+              } catch (_) {
+                return;
+              }
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(
+                  content: const Text('Post hidden'),
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () => notifier.unhide(post.fullname),
+                  ),
+                  duration: const Duration(seconds: 4),
+                ));
+            }
+          : null,
+      onPostUnhide: !filterHidden
+          ? (post) async {
+              final hideNotifier = ref.read(hideProvider.notifier);
+              final feedNotifier = ref.read(feedPageProvider(config).notifier);
+              feedNotifier.removePost(post.fullname);
+              await hideNotifier.unhide(post.fullname);
+            }
+          : null,
       onPostTap: (post) => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PostDetailScreen(post: post),

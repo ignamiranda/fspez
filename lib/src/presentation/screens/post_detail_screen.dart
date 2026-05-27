@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
@@ -8,6 +7,7 @@ import '../../data/comment_repository.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
+import '../utils/open_url.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
 import '../widgets/post_actions.dart';
@@ -208,13 +208,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: InkWell(
-                    onTap: () {
-                      final browser = InAppBrowser();
-                      browser.openUrlRequest(
-                        urlRequest:
-                            URLRequest(url: WebUri(post.url!)),
-                      );
-                    },
+                    onTap: () => openUrl(post.url!),
                     child: Text(
                       post.url!,
                       style: theme.textTheme.bodySmall?.copyWith(
