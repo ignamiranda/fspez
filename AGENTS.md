@@ -13,6 +13,9 @@
 - When the user says `commit`, also perform the established cleanup workflow: delete the implemented handoff, run `/update-skills`, inspect status/diff/recent log, stage only intended files, commit, then report the next handoff.
 - Run `dart format` only on Dart files. Do not pass YAML or other non-Dart files to `dart format`; use package/tool-specific formatting only when needed.
 
+## Auto-trigger: `/reorder-todo` on TODO.md edits
+Whenever you insert or remove a handoff entry in `TODO.md`, run `pwsh .agents/skills/reorder-todo/scripts/reorder-todo.ps1` to renumber. Never manually rewrite the entire file just to fix numbering.
+
 ## Architecture
 - **Auth**: Cookie-only via WebView CDP (`Network.getCookies`, 10×500ms) → `GET /api/me` for modhash → username extraction (JS eval → API call → cookie heuristic). No OAuth. `AuthAcquirer` orchestrates.
 - **State**: Riverpod (`StateNotifierProvider`, `FutureProvider.family`). Pagination via `CursorPaginatedNotifier` → `FeedPageNotifier` (cursor/after, loading). Optimistic updates via `OptimisticStateNotifier<K,V>` → `WriteOperationNotifier<V>`. `VoteNotifier` keeps optimistic on error; `SaveNotifier`/`HideNotifier` revert + rethrow. Settings via `AppSettingsNotifier` (persisted to `SharedPreferences` with `settings.*` keys).
