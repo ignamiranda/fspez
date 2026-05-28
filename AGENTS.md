@@ -14,7 +14,7 @@
 - Run `dart format` only on Dart files. Do not pass YAML or other non-Dart files to `dart format`; use package/tool-specific formatting only when needed.
 
 ## Auto-trigger: `/reorder-todo` on TODO.md edits
-Whenever you insert or remove a handoff entry in `TODO.md`, run `pwsh .agents/skills/reorder-todo/scripts/reorder-todo.ps1` to renumber. Never manually rewrite the entire file just to fix numbering.
+Whenever you insert or remove a handoff entry in `TODO.md`, run `pwsh ~/.config/opencode/skills/reorder-todo/scripts/reorder-todo.ps1` to renumber. Never manually rewrite the entire file just to fix numbering.
 
 ## Architecture
 - **Auth**: Cookie-only via WebView CDP (`Network.getCookies`, 10×500ms) → `GET /api/me` for modhash → username extraction (JS eval → API call → cookie heuristic). No OAuth. `AuthAcquirer` orchestrates.
