@@ -4,6 +4,7 @@ import '../../data/auth_providers.dart';
 import 'auth_webview_screen.dart';
 import 'saved_screen.dart';
 import 'hidden_screen.dart';
+import 'settings_screen.dart';
 import 'user_profile_screen.dart';
 
 class AccountScreen extends ConsumerWidget {
@@ -15,7 +16,16 @@ class AccountScreen extends ConsumerWidget {
     final accounts = ref.watch(accountsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Account')),
+      appBar: AppBar(
+        title: const Text('Account'),
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => _openSettings(context),
+          ),
+        ],
+      ),
       body: activeAccount == null
           ? _buildLoggedOut(context)
           : _buildLoggedIn(context, ref, accounts, activeAccount),
@@ -28,8 +38,8 @@ class AccountScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.person_outline, size: 64,
-              color: theme.colorScheme.onSurfaceVariant),
+          Icon(Icons.person_outline,
+              size: 64, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text('Not logged in',
               style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
@@ -141,11 +151,16 @@ class AccountScreen extends ConsumerWidget {
             );
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.settings_outlined),
+          title: const Text('Settings'),
+          onTap: () => _openSettings(context),
+        ),
         const Divider(),
         ListTile(
           leading: Icon(Icons.logout, color: theme.colorScheme.error),
-          title: Text('Log Out',
-              style: TextStyle(color: theme.colorScheme.error)),
+          title:
+              Text('Log Out', style: TextStyle(color: theme.colorScheme.error)),
           onTap: () async {
             final confirmed = await showDialog<bool>(
               context: context,
@@ -177,6 +192,12 @@ class AccountScreen extends ConsumerWidget {
 
   void _switchAccount(WidgetRef ref, dynamic account) {
     ref.read(activeAccountProvider.notifier).setActive(account);
+  }
+
+  void _openSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
   }
 
   Future<void> _removeAccount(

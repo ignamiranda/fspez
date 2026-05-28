@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
+import '../../data/app_settings.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
 import '../../data/comment_repository.dart';
@@ -31,6 +32,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   String? _replyToId;
   String? _replyToName;
   CommentSort _commentSort = CommentSort.best;
+
+  @override
+  void initState() {
+    super.initState();
+    _commentSort =
+        ref.read(appSettingsProvider).defaultCommentSort ?? CommentSort.best;
+  }
 
   ({String subreddit, String postId, CommentSort sort}) _postDetailParams(
       [Post? post]) {
