@@ -1,0 +1,81 @@
+# TODO: Handoff importance ranking
+
+Maintain this file whenever a new handoff is approved. Add the new handoff into the ranking by importance, not by creation order.
+
+Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblocking value, reliability/safety, implementation leverage, then nice-to-have polish.
+
+## Ranked handoffs
+
+1. `handoffs/2026-05-27-in-app-settings-screen-handoff.md` — foundational for many user preferences: awards visibility, comment sort, feed density, NSFW/spoiler behavior, onboarding choices, read indicators.
+2. `handoffs/2026-05-27-standardize-paginated-list-state-handoff.md` — architecture leverage for nearly every list-heavy parity feature: feeds, inbox, search, profiles, joined communities, modqueue, modmail, wiki, moderators.
+3. `handoffs/2026-05-27-centralize-thing-actions-handoff.md` — architecture leverage and safety for the growing set of post/comment/mod actions; reduces duplicated endpoint/optimistic/error quirks.
+4. `handoffs/2026-05-27-bottom-sheet-action-menus-handoff.md` — mobile-first interaction foundation for report/block/share/crosspost/mod actions as menus grow.
+5. `handoffs/2026-05-27-optimistic-action-undo-snackbars-handoff.md` — high mobile trust value; makes destructive/reversible actions feel safer and more polished.
+6. `handoffs/2026-05-27-nsfw-spoiler-blur-reveal-handoff.md` — core Reddit safety/content expectation and important mobile parity.
+7. `handoffs/2026-05-27-account-session-health-relogin-recovery-handoff.md` — reliability foundation for cookie-only auth; prevents confusing failures across votes, saves, submit, inbox, and mod actions.
+8. `handoffs/2026-05-27-mobile-accessibility-comfort-audit-handoff.md` — mobile quality foundation: dynamic text, touch targets, semantics, and reduced motion affect every screen and future UI handoff.
+9. `handoffs/2026-05-27-offline-cache-stale-while-revalidate-handoff.md` — major perceived performance/reliability upgrade; makes the app feel instant and resilient.
+10. `handoffs/2026-05-27-media-prefetching-feed-handoff.md` — mobile performance polish for media-heavy browsing; valuable after/alongside cache and sensitive-content policy.
+11. `handoffs/2026-05-27-pull-to-refresh-polish-handoff.md` — core mobile feed interaction polish; high frequency user action.
+12. `handoffs/2026-05-27-mobile-comment-composer-handoff.md` — high-frequency mobile interaction polish: bottom-sheet composer, markdown preview, draft preservation on dismiss, keyboard-safe layout, parent context preview.
+13. `handoffs/2026-05-27-adaptive-image-scaling-handoff.md` — fixes visible media-quality issue and prevents bad cropping for common image posts.
+14. `handoffs/2026-05-27-gesture-first-media-browsing-handoff.md` — makes existing media viewer feel native-mobile-quality.
+15. `handoffs/2026-05-27-media-post-submission-handoff.md` — major official-app parity gap: create image/gallery/video posts, not just text/link.
+16. `handoffs/2026-05-27-scroll-to-top-tab-double-tap-handoff.md` — high-frequency mobile UX polish; very cheap to implement; makes navigation feel native.
+17. `handoffs/2026-05-27-comment-sort-selector-handoff.md` — core post-detail parity; users expect comment sorting on Reddit.
+18. `handoffs/2026-05-27-post-flair-selection-handoff.md` — important for successful submissions in flair-required communities.
+19. `handoffs/2026-05-27-user-flair-display-handoff.md` — high-visibility mobile Reddit parity; very cheap (likely API parsing already exists); visible on every post and comment.
+20. `handoffs/2026-05-27-subreddit-icon-display-handoff.md` — highly visible visual parity; renders subreddit icon from already-available `sr_detail.icon_img` next to community names in feed cards; very cheap and makes feed feel Reddit-native.
+21. `handoffs/2026-05-27-report-content-handoff.md` — core safety feature and common Reddit action.
+22. `handoffs/2026-05-27-block-unblock-users-handoff.md` — core safety/control feature.
+23. `handoffs/2026-05-27-dark-mode-theme-support-handoff.md` — huge mobile- app impact, affects every screen every session; requires settings screen (#1) for toggle but interim Account entry possible. Light/Dark/AMOLED with persistence.
+24. `handoffs/2026-05-27-community-mute-unmute-handoff.md` — important feed control and official-app parity.
+25. `handoffs/2026-05-27-joined-communities-management-handoff.md` — mobile navigation and account utility; improves discovery of subscribed communities.
+26. `handoffs/2026-05-27-swipe-back-gesture-handoff.md` — very high-frequency mobile navigation gesture; affects every pushed screen; simple routing-wide change via `CupertinoPageTransitionsBuilder`.
+27. `handoffs/2026-05-27-search-within-subreddit-handoff.md` — high-utility daily feature; reuses existing search infrastructure with `restrict_sr=on`; very cheap.
+28. `handoffs/2026-05-27-swipe-gestures-feed-handoff.md` — very high mobile delight; transforms feed interaction; most Reddit-mobile-native gesture pattern.
+29. `handoffs/2026-05-27-account-age-karma-profile-handoff.md` — simple visual parity; data already flows from `/user/{username}/about.json`; cheap to implement.
+30. `handoffs/2026-05-27-subreddit-time-range-sort-handoff.md` — post-sort polish; cheap UI addition for Top sort (hour/day/week/month/year/all).
+31. `handoffs/2026-05-27-multireddit-navigation-handoff.md` — official-app power-user feature; moderate complexity but reuses existing feed infrastructure.
+32. `handoffs/2026-05-27-relative-timestamps-handoff.md` — affects every screen with time display (feed, comments, inbox, profiles); very cheap pure-display change; huge Reddit-native feel impact.
+33. `handoffs/2026-05-27-op-indicator-comments-handoff.md` — visible in every comment thread; trivially cheap (one author comparison); strong Reddit-native detail.
+34. `handoffs/2026-05-27-sticky-post-indicator-handoff.md` — feed visual parity; cheap (API `stickied` field already parsed); green pin icon for subreddit stickied posts.
+35. `handoffs/2026-05-27-autoplay-videos-feed-handoff.md` — high video-browsing UX impact; moderate complexity (scroll visibility detection, single-video management).
+36. `handoffs/2026-05-27-image-upload-comments-handoff.md` — enables richer replies with inline images; depends on media-picker from media-post-submission handoff.
+37. `handoffs/2026-05-27-custom-home-feed-tabs-handoff.md` — mobile personalization and fast feed switching; valuable after feed/settings foundations exist.
+38. `handoffs/2026-05-27-crosspost-indicator-feed-handoff.md` — visible feed parity label on crossposted posts; cheap (API `crosspost_parent` field already in responses).
+39. `handoffs/2026-05-27-delete-inbox-messages-handoff.md` — inbox cleanup action; moderate complexity (verify delete endpoint with cookie auth).
+40. `handoffs/2026-05-27-gallery-multi-image-indicator-handoff.md` — feed visual; shows gallery icon + image count on multi-image posts; cheap (parse `is_gallery`, `gallery_data`).
+41. `handoffs/2026-05-27-feed-density-modes-handoff.md` — mobile personalization and scanning comfort; depends on settings and post-card layout stability.
+42. `handoffs/2026-05-27-first-run-account-feed-setup-handoff.md` — onboarding/retention polish; best after settings/feed choices exist.
+43. `handoffs/2026-05-27-read-posts-history-sync-handoff.md` — useful feed quality feature; local read-state improves scanning and history continuity.
+44. `handoffs/2026-05-27-save-comments-handoff.md` — broad everyday utility; reuses existing save/unsave infrastructure and endpoint; cheap to add to comment overflow menu; comments already appear in saved listing.
+45. `handoffs/2026-05-27-live-comment-updates-handoff.md` — post-detail quality improvement; periodic polling with "X new comments" banner; official-app parity for active threads.
+46. `handoffs/2026-05-27-recently-visited-communities-users-handoff.md` — useful navigation convenience; lower than joined communities/custom tabs because it is local-only and auxiliary.
+47. `handoffs/2026-05-27-local-drafts-handoff.md` — protects user-written content; high quality-of-life for posts/comments/messages.
+48. `handoffs/2026-05-27-share-copy-link-actions-handoff.md` — common mobile action with low risk and broad usefulness.
+49. `handoffs/2026-05-27-inbox-badge-mark-read-handoff.md` — inbox polish and correctness: unread badge plus actual mark-as-read behavior.
+50. `handoffs/2026-05-27-mark-all-inbox-read-handoff.md` — useful inbox bulk action; cheap (one endpoint call or iterated markAsRead).
+51. `handoffs/2026-05-27-blocked-users-management-handoff.md` — completes block feature with view/manage/unblock list; depends on block-unblock API confirmation.
+52. `handoffs/2026-05-27-muted-communities-management-handoff.md` — completes mute feature with view/manage/unmute list; depends on community-mute API confirmation.
+53. `handoffs/2026-05-27-post-save-collections-handoff.md` — post organization feature; official-app parity; moderate complexity (local or server-side collections).
+54. `handoffs/2026-05-27-edit-post-remaining-gaps-handoff.md` — completes partial edit behavior; valuable but narrower than missing feature classes.
+55. `handoffs/2026-05-27-poll-post-submission-handoff.md` — parity for post creation, but endpoint/auth uncertainty and lower frequency than media/flair.
+56. `handoffs/2026-05-27-crosspost-creation-handoff.md` — useful Reddit-native creation flow; lower than core submit/safety/feed features.
+57. `handoffs/2026-05-27-subreddit-rules-display-handoff.md` — important for posting safely and community context.
+58. `handoffs/2026-05-27-subreddit-sidebar-about-details-handoff.md` — community context polish; useful before deeper community tooling.
+59. `handoffs/2026-05-27-subreddit-wiki-pages-handoff.md` — community information parity; lower frequency than rules/about.
+60. `handoffs/2026-05-27-moderator-list-display-handoff.md` — useful community transparency; comparatively narrow.
+61. `handoffs/2026-05-27-community-notification-levels-handoff.md` — official-app parity, but endpoint/auth uncertainty and push-notification dependencies reduce immediate value.
+62. `handoffs/2026-05-27-award-visibility-setting-handoff.md` — lower priority because awards are less central and user explicitly wants visibility disable support.
+63. `handoffs/2026-05-27-moderation-queue-handoff.md` — high value for moderators, but only a subset of users and depends on action/service/list foundations.
+64. `handoffs/2026-05-27-moderator-removal-reasons-handoff.md` — important mod workflow, best after modqueue/remove flows exist.
+65. `handoffs/2026-05-27-moderator-ban-unban-users-handoff.md` — powerful mod action; needs careful auth/safety and moderator context.
+66. `handoffs/2026-05-27-moderator-user-notes-handoff.md` — advanced moderator workflow; useful after basic mod surfaces exist.
+67. `handoffs/2026-05-27-modmail-access-handoff.md` — advanced moderator feature with significant endpoint/auth uncertainty; start read-only when reached.
+
+## Notes
+
+- If duplicate/superseded handoffs exist, prefer the broader/more current handoff and delete or archive obsolete ones when implementation starts.
+- User-facing UI/Reddit behavior changes should include manual test steps in final reports.
+- Prioritize mobile-app parity and mobile-quality UX over desktop-only enhancements.
