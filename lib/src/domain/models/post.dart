@@ -26,6 +26,7 @@ class Post with EquatableMixin {
   final double? upvoteRatio;
   final Post? crosspostParent;
   final List<String> mediaUrls;
+  final String? videoUrl;
 
   String get fullname => 't3_$id';
 
@@ -51,6 +52,7 @@ class Post with EquatableMixin {
     this.upvoteRatio,
     this.crosspostParent,
     this.mediaUrls = const [],
+    this.videoUrl,
   });
 
   @override
@@ -76,5 +78,6 @@ class Post with EquatableMixin {
         upvoteRatio,
         crosspostParent,
         mediaUrls,
+        videoUrl,
       ];
 }

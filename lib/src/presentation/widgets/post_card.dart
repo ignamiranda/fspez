@@ -95,7 +95,18 @@ class PostCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    if (post.mediaUrls.length >= 2)
+                    if (post.videoUrl != null && post.thumbnailUrl != null)
+                      _MediaTile(
+                        imageUrl: post.thumbnailUrl!,
+                        badgeIcon: Icons.play_arrow,
+                        isVideo: true,
+                        onTap: () => MediaViewer.show(
+                          context,
+                          imageUrls: post.mediaUrls,
+                          videoUrl: post.videoUrl,
+                        ),
+                      )
+                    else if (post.mediaUrls.length >= 2)
                       _MediaTile(
                         imageUrl: post.mediaUrls.first,
                         badgeText: '${post.mediaUrls.length}',
@@ -485,12 +496,14 @@ class _MediaTile extends StatelessWidget {
   final VoidCallback onTap;
   final String? badgeText;
   final IconData? badgeIcon;
+  final bool isVideo;
 
   const _MediaTile({
     required this.imageUrl,
     required this.onTap,
     this.badgeText,
     this.badgeIcon,
+    this.isVideo = false,
   });
 
   @override
@@ -498,6 +511,7 @@ class _MediaTile extends StatelessWidget {
     final child = ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Stack(
+        alignment: Alignment.center,
         children: [
           Image.network(
             imageUrl,
@@ -505,6 +519,19 @@ class _MediaTile extends StatelessWidget {
             fit: BoxFit.fitWidth,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
+          if (isVideo)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black38,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(12),
+              child: const Icon(
+                Icons.play_arrow,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
           if (badgeText != null)
             Positioned(
               top: 8,

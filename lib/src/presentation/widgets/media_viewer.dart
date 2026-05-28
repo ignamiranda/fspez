@@ -1,34 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
-/// Full-screen media overlay with pinch-to-zoom and gallery swipe.
+/// Full-screen media overlay with pinch-to-zoom, gallery swipe, and video playback.
 ///
 /// Supports:
-/// - Single image: displays one full-screen zoomable image
+/// - Single image: one full-screen zoomable image
 /// - Gallery: swipe left/right between multiple images
-/// - Pinch-to-zoom via [InteractiveViewer]
-/// - Double-tap to zoom in/out
-/// - Tap to toggle chrome (close button + page counter)
+/// - Video: playback with play/pause, seek, auto-plays on open
+/// - Image+video mixed: video as first page, then gallery images
+/// - Pinch-to-zoom via [InteractiveViewer] (images only)
+/// - Double-tap to zoom in/out (images only)
+/// - Tap to toggle chrome (close button + page indicator)
 class MediaViewer extends StatefulWidget {
   final List<String> imageUrls;
+  final String? videoUrl;
   final int initialIndex;
 
   const MediaViewer({
     super.key,
     required this.imageUrls,
+    this.videoUrl,
     this.initialIndex = 0,
   });
+
+  int get _pageCount => (videoUrl != null ? 1 : 0) + imageUrls.length;
 
   /// Push the viewer as a full-screen route.
   static Future<void> show(
     BuildContext context, {
     required List<String> imageUrls,
+    String? videoUrl,
     int initialIndex = 0,
   }) {
     return Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            MediaViewer(imageUrls: imageUrls, initialIndex: initialIndex),
+        pageBuilder: (context, animation, secondaryAnimation) => MediaViewer(
+          imageUrls: imageUrls,
+          videoUrl: videoUrl,
+          initialIndex: initialIndex,
+        ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -49,7 +60,8 @@ class _MediaViewerState extends State<MediaViewer> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, widget.imageUrls.length - 1);
+    _currentIndex =
+        widget.initialIndex.clamp(0, widget._pageCount - 1);
     _pageController = PageController(initialPage: _currentIndex);
   }
 
@@ -63,21 +75,35 @@ class _MediaViewerState extends State<MediaViewer> {
 
   void _close() => Navigator.of(context).pop();
 
+  bool get _hasVideo => widget.videoUrl != null;
+
+  /// Returns the image page index (accounts for video page 0 offset).
+  int _imagePageIndex(int pageIndex) => _hasVideo ? pageIndex - 1 : pageIndex;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Main image page view
+          // Main media page view
           PageView.builder(
             controller: _pageController,
-            itemCount: widget.imageUrls.length,
+            itemCount: widget._pageCount,
             onPageChanged: (i) => setState(() => _currentIndex = i),
-            itemBuilder: (context, index) => _ZoomableImagePage(
-              imageUrl: widget.imageUrls[index],
-              onTap: _toggleChrome,
-            ),
+            itemBuilder: (context, index) {
+              if (_hasVideo && index == 0) {
+                return _VideoPage(
+                  videoUrl: widget.videoUrl!,
+                  onTap: _toggleChrome,
+                );
+              }
+              final imageIndex = _imagePageIndex(index);
+              return _ZoomableImagePage(
+                imageUrl: widget.imageUrls[imageIndex],
+                onTap: _toggleChrome,
+              );
+            },
           ),
 
           // Chrome overlay
@@ -93,19 +119,233 @@ class _MediaViewerState extends State<MediaViewer> {
             ),
 
             // Bottom page indicator
-            if (widget.imageUrls.length > 1)
+            if (widget._pageCount > 1)
               Positioned(
                 bottom: MediaQuery.of(context).padding.bottom + 16,
                 left: 0,
                 right: 0,
                 child: _PageIndicator(
                   currentIndex: _currentIndex,
-                  count: widget.imageUrls.length,
+                  count: widget._pageCount,
                 ),
               ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// A video player page with basic playback controls.
+class _VideoPage extends StatefulWidget {
+  final String videoUrl;
+  final VoidCallback onTap;
+
+  const _VideoPage({required this.videoUrl, required this.onTap});
+
+  @override
+  State<_VideoPage> createState() => _VideoPageState();
+}
+
+class _VideoPageState extends State<_VideoPage> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+  bool _errored = false;
+  bool _showControls = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPlayer();
+  }
+
+  @override
+  void didUpdateWidget(_VideoPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _controller.dispose();
+      _initialized = false;
+      _errored = false;
+      _initPlayer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initPlayer() async {
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+    );
+    try {
+      await _controller.initialize();
+      if (!mounted) return;
+      setState(() => _initialized = true);
+      _controller.play();
+      _controller.addListener(_onControllerUpdate);
+    } catch (_) {
+      if (mounted) setState(() => _errored = true);
+    }
+  }
+
+  void _onControllerUpdate() {
+    if (!mounted) return;
+    // Rebuild for position/progress updates when controls are visible
+    if (_showControls) setState(() {});
+  }
+
+  void _togglePlayPause() {
+    if (_controller.value.isPlaying) {
+      _controller.pause();
+    } else {
+      _controller.play();
+    }
+  }
+
+  void _seekTo(double position) {
+    _controller.seekTo(Duration(seconds: position.toInt()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_errored) {
+      return const Center(
+        child: Icon(Icons.broken_image_outlined,
+            color: Colors.white38, size: 48),
+      );
+    }
+
+    if (!_initialized) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Colors.white54,
+          strokeWidth: 2,
+        ),
+      );
+    }
+
+    final duration = _controller.value.duration;
+    final position = _controller.value.position;
+    final isPlaying = _controller.value.isPlaying;
+    final progress = duration.inSeconds > 0
+        ? position.inMilliseconds / duration.inMilliseconds
+        : 0.0;
+
+    return GestureDetector(
+      onTap: () {
+        widget.onTap();
+        setState(() => _showControls = !_showControls);
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Video player
+          Center(
+            child: VideoPlayer(_controller),
+          ),
+
+          // Play/pause overlay (fades in/out with chrome)
+          if (_chromeVisible) ...[
+            // Large play/pause button in center
+            Center(
+              child: GestureDetector(
+                onTap: _togglePlayPause,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Icon(
+                    isPlaying
+                        ? Icons.pause
+                        : Icons.play_arrow,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+              ),
+            ),
+
+            // Seek bar at the bottom
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: MediaQuery.of(context).padding.bottom + 48,
+              child: _VideoSeekBar(
+                progress: progress,
+                position: position,
+                duration: duration,
+                onSeek: _seekTo,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  bool get _chromeVisible {
+    // Use the parent's chrome visibility via onTap toggling
+    // We manage our own _showControls which follows chrome visibility
+    return _showControls;
+  }
+}
+
+/// Seek bar with position label, track, and duration label.
+class _VideoSeekBar extends StatelessWidget {
+  final double progress;
+  final Duration position;
+  final Duration duration;
+  final ValueChanged<double> onSeek;
+
+  const _VideoSeekBar({
+    required this.progress,
+    required this.position,
+    required this.duration,
+    required this.onSeek,
+  });
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          _formatDuration(position),
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              activeTrackColor: Colors.white,
+              inactiveTrackColor: Colors.white30,
+              thumbColor: Colors.white,
+              overlayColor: Colors.white24,
+            ),
+            child: Slider(
+              value: progress.clamp(0.0, 1.0),
+              onChanged: onSeek,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          _formatDuration(duration),
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
+        ),
+      ],
     );
   }
 }
@@ -192,8 +432,6 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
                     );
                   },
                   errorBuilder: (_, __, ___) {
-                    // After first build, mark errored so InteractiveViewer
-                    // still works (allows panning around the error icon).
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted) setState(() => _errored = true);
                     });

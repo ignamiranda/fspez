@@ -188,7 +188,18 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-              if (post.mediaUrls.length >= 2)
+              if (post.videoUrl != null)
+                _PostMediaTile(
+                  imageUrl: post.thumbnailUrl ??
+                      (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
+                  isVideo: true,
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: post.mediaUrls,
+                    videoUrl: post.videoUrl,
+                  ),
+                )
+              else if (post.mediaUrls.length >= 2)
                 _PostMediaTile(
                   imageUrl: post.mediaUrls.first,
                   badgeText: '${post.mediaUrls.length}',
@@ -375,11 +386,13 @@ class _PostMediaTile extends StatelessWidget {
   final String imageUrl;
   final VoidCallback onTap;
   final String? badgeText;
+  final bool isVideo;
 
   const _PostMediaTile({
     required this.imageUrl,
     required this.onTap,
     this.badgeText,
+    this.isVideo = false,
   });
 
   @override
@@ -387,6 +400,7 @@ class _PostMediaTile extends StatelessWidget {
     final child = ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Stack(
+        alignment: Alignment.center,
         children: [
           Image.network(
             imageUrl,
@@ -394,6 +408,19 @@ class _PostMediaTile extends StatelessWidget {
             fit: BoxFit.fitWidth,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
+          if (isVideo)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black38,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(16),
+              child: const Icon(
+                Icons.play_arrow,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
           if (badgeText != null)
             Positioned(
               top: 8,

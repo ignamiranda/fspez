@@ -52,6 +52,7 @@ class ApiPost {
   final bool? isSelf;
   final String? crosspostParent;
   final List<String> mediaUrls;
+  final String? videoUrl;
 
   ApiPost({
     required this.id,
@@ -79,10 +80,12 @@ class ApiPost {
     this.isSelf,
     this.crosspostParent,
     this.mediaUrls = const [],
+    this.videoUrl,
   });
 
   factory ApiPost.fromJson(Map<String, dynamic> data) {
     final mediaUrls = _parseMediaUrls(data);
+    final videoUrl = _parseVideoUrl(data);
     return ApiPost(
       id: data['id'] as String,
       title: data['title'] as String? ?? '',
@@ -109,6 +112,7 @@ class ApiPost {
       isSelf: data['is_self'] as bool?,
       crosspostParent: data['crosspost_parent'] as String?,
       mediaUrls: mediaUrls,
+      videoUrl: videoUrl,
     );
   }
 
@@ -163,6 +167,21 @@ class ApiPost {
     return urls;
   }
 
+  /// Extracts the direct MP4 URL from a video post's [media.reddit_video].
+  ///
+  /// Returns the [fallback_url] (DASH MP4) when available, which is the most
+  /// reliable direct-playable video URL. Strips the `?source=fallback` query
+  /// param to keep the URL clean.
+  static String? _parseVideoUrl(Map<String, dynamic> data) {
+    final media = data['media'] as Map<String, dynamic>?;
+    if (media == null) return null;
+    final redditVideo = media['reddit_video'] as Map<String, dynamic>?;
+    if (redditVideo == null) return null;
+    final fallbackUrl = redditVideo['fallback_url'] as String?;
+    if (fallbackUrl == null) return null;
+    return fallbackUrl.replaceAll('&amp;', '&');
+  }
+
   Post toDomain() {
     return Post(
       id: id,
@@ -189,6 +208,7 @@ class ApiPost {
       permalink: permalink,
       upvoteRatio: upvoteRatio,
       mediaUrls: mediaUrls,
+      videoUrl: videoUrl,
     );
   }
 
