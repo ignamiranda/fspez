@@ -10,12 +10,12 @@
 ## Before committing
 - When new files are part of the change, remember that `git diff --stat` omits untracked files. Review `git status --short` and explicitly include intended new files in staging/diff review before committing.
 - After any user-requested commit, end the final response with the next `handoffs/*.md` file to implement and a brief reason.
-- When the user says `commit`, also perform the established cleanup workflow: delete the implemented handoff, run `/update-project-skills`, inspect status/diff/recent log, stage only intended files, commit, then report the next handoff.
+- When the user says `commit`, also perform the established cleanup workflow: delete the implemented handoff, run `/update-skills`, inspect status/diff/recent log, stage only intended files, commit, then report the next handoff.
 - Run `dart format` only on Dart files. Do not pass YAML or other non-Dart files to `dart format`; use package/tool-specific formatting only when needed.
 
 ## Architecture
 - **Auth**: Cookie-only via WebView CDP (`Network.getCookies`, 10×500ms) → `GET /api/me` for modhash → username extraction (JS eval → API call → cookie heuristic). No OAuth. `AuthAcquirer` orchestrates.
-- **State**: Riverpod (`StateNotifierProvider`, `FutureProvider.family`). Pagination via `CursorPaginatedNotifier` → `FeedPageNotifier` (cursor/after, loading). Optimistic updates via `OptimisticStateNotifier<K,V>` → `WriteOperationNotifier<V>`. `VoteNotifier` keeps optimistic on error; `SaveNotifier`/`HideNotifier` revert + rethrow.
+- **State**: Riverpod (`StateNotifierProvider`, `FutureProvider.family`). Pagination via `CursorPaginatedNotifier` → `FeedPageNotifier` (cursor/after, loading). Optimistic updates via `OptimisticStateNotifier<K,V>` → `WriteOperationNotifier<V>`. `VoteNotifier` keeps optimistic on error; `SaveNotifier`/`HideNotifier` revert + rethrow. Settings via `AppSettingsNotifier` (persisted to `SharedPreferences` with `settings.*` keys).
 - **Tabs**: `_MainShell` uses `IndexedStack` — all 3 tabs stay alive.
 - **HTTP**: `RedditClient` wraps `http.Client`. `ApiEndpoint` enum selects per-endpoint headers. `get()` auto-appends `.json`.
 - **No `build_runner`**: `freezed`/`json_serializable` listed but never run. Manual `Equatable`.
@@ -64,3 +64,6 @@ Single-context layout. See `docs/agents/domain.md`.
 - **Test**: `test/widget_test.dart` is a stub (placeholder `MyApp` counter test, not real fspez test). `mocktail` available for mocking.
 - **Hide**: Optimistic — post removed from `visiblePosts` immediately, reappears on API error.
 - **Reddit URL entity encoding**: URL fields from Reddit API (`icon_img`, `community_icon`, `thumbnail`, `banner_img`, `banner_background_image`, `sr_detail.icon_img`, media URLs) contain `&amp;` entities. Always decode via `_cleanUrl()` / `url.replaceAll('&amp;', '&')` before passing to Flutter widgets. A raw `&amp;` URL causes 403s when Flutter requests it literally.
+- **PostCard is ConsumerStatefulWidget**: `PostCard` reads `appSettingsProvider` for blur/reveal state. Tests must wrap in `ProviderScope` with `sharedPrefsProvider` override.
+- **RadioGroup<T>**: New Flutter 3.32+ API. Use `RadioGroup<T>(groupValue: ..., onChanged: ..., child: ...)` wrapping `Radio<T>(value: ...)` or `RadioListTile<T>(value: ...)`. Do NOT use deprecated `groupValue`/`onChanged` params on individual radios.
+- **AppThemeMode**: Custom enum (not Flutter's `ThemeMode`) with 4 values: system, light, dark, amoled. `toThemeMode()` maps dark/amoled both to `ThemeMode.dark`; `FspezApp` switches `darkTheme` reference based on mode.
