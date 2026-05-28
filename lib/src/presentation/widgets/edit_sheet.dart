@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/write_providers.dart';
 import '../../data/auth_providers.dart';
 
-Future<bool?> showEditSheet(BuildContext context, {
+Future<bool?> showEditSheet(
+  BuildContext context, {
   required String currentText,
   String? readOnlyTitle,
   required String thingId,
@@ -53,12 +54,12 @@ class _EditSheetContentState extends ConsumerState<_EditSheetContent> {
   Future<void> _save() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    final cookie = ref.read(activeAccountProvider)?.sessionCookie;
-    if (cookie == null) return;
+    final account = ref.read(activeAccountProvider);
+    if (account == null) return;
 
     setState(() => _isSaving = true);
-    final notifier = ref.read(editProvider.notifier);
-    final success = await notifier.edit(widget.thingId, text, cookie);
+    final actions = ref.read(postActionsServiceProvider);
+    final success = await actions.edit(widget.thingId, text);
     if (!mounted) return;
 
     if (success) {
@@ -66,7 +67,9 @@ class _EditSheetContentState extends ConsumerState<_EditSheetContent> {
     } else {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Edit failed: ${notifier.error ?? 'Unknown error'}')),
+        SnackBar(
+            content:
+                Text('Edit failed: ${actions.editError ?? 'Unknown error'}')),
       );
     }
   }
@@ -118,7 +121,8 @@ class _EditSheetContentState extends ConsumerState<_EditSheetContent> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
-                onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
+                onPressed:
+                    _isSaving ? null : () => Navigator.of(context).pop(false),
                 child: const Text('Cancel'),
               ),
               const SizedBox(width: 8),

@@ -160,10 +160,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postFullname = post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
-    final deleteNotifier = ref.read(deleteProvider.notifier);
-    final session = ref.read(activeAccountProvider)?.sessionCookie;
-    final username =
-        session != null ? ref.read(activeAccountProvider)?.username : null;
+    final actions = ref.read(postActionsServiceProvider);
+    final username = ref.read(activeAccountProvider)?.username;
 
     return Column(
       children: [
@@ -174,11 +172,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 post: post,
                 theme: theme,
                 effectiveVote: postEffectiveVote,
-                onVote: (dir) => handleVote(
-                    ref.read(voteProvider.notifier), postFullname, dir),
+                onVote: (dir) => handleVote(actions, postFullname, dir),
                 effectiveSaved: postEffectiveSaved,
-                onSave: () => handleSave(
-                    ref.read(saveProvider.notifier), postFullname, context),
+                onSave: () => handleSave(actions, postFullname, context),
                 onEdit: username != null && post.author == username
                     ? () {
                         showEditSheet(context,
@@ -194,8 +190,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       }
                     : null,
                 onDelete: username != null && post.author == username
-                    ? () => handleDelete(
-                        context, deleteNotifier, postFullname, session!)
+                    ? () => handleDelete(context, actions, postFullname)
                     : null,
               ),
               if (post.selftext != null && post.selftext!.isNotEmpty)
@@ -318,11 +313,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 ...comments.map((c) => CommentTree(
                       comment: c,
                       voteOverrides: voteOverrides,
-                      onVote: (fullname, dir) => handleVote(
-                          ref.read(voteProvider.notifier), fullname, dir),
+                      onVote: (fullname, dir) =>
+                          handleVote(actions, fullname, dir),
                       saveOverrides: saveOverrides,
-                      onSave: (fullname) => handleSave(
-                          ref.read(saveProvider.notifier), fullname, context),
+                      onSave: (fullname) =>
+                          handleSave(actions, fullname, context),
                       onReply: loggedIn ? _replyToComment : null,
                       onAuthorTap: (author) {
                         if (author != '[deleted]') {
@@ -349,8 +344,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onDelete: username != null
                           ? (fullname) {
                               if (c.author == username) {
-                                handleDelete(context, deleteNotifier, fullname,
-                                    session!);
+                                handleDelete(context, actions, fullname);
                               }
                             }
                           : null,

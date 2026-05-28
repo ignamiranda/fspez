@@ -34,6 +34,7 @@ class FeedScreenScaffold extends ConsumerWidget {
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
     final hiddenMap = ref.watch(hideProvider);
+    final actions = ref.read(postActionsServiceProvider);
     final hidden =
         hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
     final account = ref.watch(activeAccountProvider);
@@ -48,23 +49,19 @@ class FeedScreenScaffold extends ConsumerWidget {
       onRefresh: () async => notifier.refresh(),
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
-      onPostVote: (fullname, dir) =>
-          handleVote(ref.read(voteProvider.notifier), fullname, dir),
-      onPostSave: (fullname) =>
-          handleSave(ref.read(saveProvider.notifier), fullname, context),
+      onPostVote: (fullname, dir) => handleVote(actions, fullname, dir),
+      onPostSave: (fullname) => handleSave(actions, fullname, context),
       onPostDelete: account != null
           ? (post) {
-              handleDelete(context, ref.read(deleteProvider.notifier),
-                  post.fullname, account.sessionCookie);
+              handleDelete(context, actions, post.fullname);
             }
           : null,
       currentUsername: account?.username,
       hiddenFullnames: filterHidden ? hidden : const {},
       onPostHide: filterHidden
           ? (post) async {
-              final notifier = ref.read(hideProvider.notifier);
               try {
-                await notifier.toggle(post.fullname);
+                await actions.hide(post.fullname);
               } catch (_) {
                 return;
               }
@@ -75,7 +72,7 @@ class FeedScreenScaffold extends ConsumerWidget {
                   content: const Text('Post hidden'),
                   action: SnackBarAction(
                     label: 'Undo',
-                    onPressed: () => notifier.unhide(post.fullname),
+                    onPressed: () => actions.unhide(post.fullname),
                   ),
                   duration: const Duration(seconds: 4),
                 ));
@@ -83,10 +80,9 @@ class FeedScreenScaffold extends ConsumerWidget {
           : null,
       onPostUnhide: !filterHidden
           ? (post) async {
-              final hideNotifier = ref.read(hideProvider.notifier);
               final feedNotifier = ref.read(feedPageProvider(config).notifier);
               feedNotifier.removeItem((p) => p.fullname == post.fullname);
-              await hideNotifier.unhide(post.fullname);
+              await actions.unhide(post.fullname);
             }
           : null,
       onPostTap: (post) => Navigator.of(context).push(

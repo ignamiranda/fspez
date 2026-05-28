@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fspez/src/data/delete_notifier.dart';
+import 'package:fspez/src/data/edit_notifier.dart';
+import 'package:fspez/src/data/hide_notifier.dart';
+import 'package:fspez/src/data/post_actions_service.dart';
 import 'package:fspez/src/data/save_notifier.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/data/vote_notifier.dart';
@@ -10,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 
 class _MockHttpClient extends Mock implements http.Client {}
+
 class _MockRedditClient extends Mock implements RedditClient {}
 
 Widget _app(Widget body) => MaterialApp(home: Scaffold(body: body));
@@ -19,6 +24,7 @@ void main() {
   late _MockRedditClient mockClient;
   late VoteNotifier voteNotifier;
   late SaveNotifier saveNotifier;
+  late PostActionsService actions;
 
   setUpAll(() {
     registerFallbackValue(Uri());
@@ -28,32 +34,42 @@ void main() {
   setUp(() {
     mockHttp = _MockHttpClient();
     mockClient = _MockRedditClient();
-    when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
+    when(() => mockHttp.post(any(),
+            headers: any(named: 'headers'), body: any(named: 'body')))
         .thenAnswer((_) async => http.Response('{}', 200));
     when(() => mockClient.save(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
     voteNotifier = VoteNotifier(RedditClient(httpClient: mockHttp), null);
-    final cookie = SessionCookie(value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
+    final cookie = SessionCookie(
+        value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
     saveNotifier = SaveNotifier(mockClient, cookie);
+    actions = PostActionsService(
+      voteNotifier: voteNotifier,
+      saveNotifier: saveNotifier,
+      hideNotifier: HideNotifier(mockClient, cookie),
+      deleteNotifier: DeleteNotifier(mockClient, cookie),
+      editNotifier: EditNotifier(mockClient),
+      sessionCookie: cookie,
+    );
   });
 
   group('handleVote', () {
     test('toggles vote on notifier', () {
-      handleVote(voteNotifier, 't3_test', VoteDirection.upvote);
+      handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveVote('t3_test', VoteDirection.none),
           VoteDirection.upvote);
     });
 
     test('toggles from upvote to none', () async {
       await voteNotifier.vote('t3_test', VoteDirection.upvote);
-      handleVote(voteNotifier, 't3_test', VoteDirection.upvote);
+      handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveVote('t3_test', VoteDirection.none),
           VoteDirection.none);
     });
 
     test('toggles from downvote to upvote', () async {
       await voteNotifier.vote('t3_test', VoteDirection.downvote);
-      handleVote(voteNotifier, 't3_test', VoteDirection.upvote);
+      handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveVote('t3_test', VoteDirection.upvote),
           VoteDirection.upvote);
     });
@@ -67,7 +83,7 @@ void main() {
         return const SizedBox.shrink();
       })));
 
-      await handleSave(saveNotifier, 't3_test', ctx);
+      await handleSave(actions, 't3_test', ctx);
 
       expect(saveNotifier.effectiveSaved('t3_test', false), true);
     });
@@ -79,15 +95,15 @@ void main() {
         return const SizedBox.shrink();
       })));
 
-      await handleSave(saveNotifier, 't3_test', ctx);
-      await handleSave(saveNotifier, 't3_test', ctx);
+      await handleSave(actions, 't3_test', ctx);
+      await handleSave(actions, 't3_test', ctx);
 
       expect(saveNotifier.effectiveSaved('t3_test', false), false);
     });
 
     testWidgets('reverts state on save failure', (tester) async {
-      when(() => mockClient.save(any(), any()))
-          .thenThrow(const RedditApiException(statusCode: 403, message: 'Forbidden'));
+      when(() => mockClient.save(any(), any())).thenThrow(
+          const RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       late BuildContext ctx;
       await tester.pumpWidget(_app(Builder(builder: (c) {
@@ -95,14 +111,14 @@ void main() {
         return const SizedBox.shrink();
       })));
 
-      await handleSave(saveNotifier, 't3_test', ctx);
+      await handleSave(actions, 't3_test', ctx);
 
       expect(saveNotifier.effectiveSaved('t3_test', false), false);
     });
 
     testWidgets('does not propagate save failure to caller', (tester) async {
-      when(() => mockClient.save(any(), any()))
-          .thenThrow(const RedditApiException(statusCode: 403, message: 'Forbidden'));
+      when(() => mockClient.save(any(), any())).thenThrow(
+          const RedditApiException(statusCode: 403, message: 'Forbidden'));
 
       late BuildContext ctx;
       await tester.pumpWidget(_app(Builder(builder: (c) {
@@ -110,7 +126,7 @@ void main() {
         return const SizedBox.shrink();
       })));
 
-      expect(handleSave(saveNotifier, 't3_test', ctx), completes);
+      expect(handleSave(actions, 't3_test', ctx), completes);
     });
   });
 }

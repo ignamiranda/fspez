@@ -9,6 +9,7 @@ import 'delete_notifier.dart';
 import 'submit_notifier.dart';
 import 'compose_notifier.dart';
 import 'edit_notifier.dart';
+import 'post_actions_service.dart';
 
 final voteProvider =
     StateNotifierProvider<VoteNotifier, Map<String, VoteDirection>>((ref) {
@@ -48,7 +49,17 @@ final composeProvider =
   return ComposeNotifier(ref.watch(redditClientProvider));
 });
 
-final editProvider =
-    StateNotifierProvider<EditNotifier, EditState>((ref) {
+final editProvider = StateNotifierProvider<EditNotifier, EditState>((ref) {
   return EditNotifier(ref.watch(redditClientProvider));
+});
+
+final postActionsServiceProvider = Provider<PostActionsService>((ref) {
+  return PostActionsService(
+    voteNotifier: ref.watch(voteProvider.notifier),
+    saveNotifier: ref.watch(saveProvider.notifier),
+    hideNotifier: ref.watch(hideProvider.notifier),
+    deleteNotifier: ref.watch(deleteProvider.notifier),
+    editNotifier: ref.watch(editProvider.notifier),
+    sessionCookie: ref.watch(activeAccountProvider)?.sessionCookie,
+  );
 });
