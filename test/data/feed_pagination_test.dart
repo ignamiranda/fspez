@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/feed_pagination.dart';
-import 'package:fspez/src/domain/models/feed.dart';
+import 'package:fspez/src/data/paginated_notifier.dart';
+
 import 'package:fspez/src/domain/models/post.dart';
 import 'package:fspez/src/domain/models/subreddit.dart';
 import 'package:fspez/src/domain/enums/feed_sort.dart';
@@ -21,23 +22,23 @@ void main() {
   group('FeedPageNotifier', () {
     test('initial state has isLoading true', () {
       final notifier = FeedPageNotifier(
-        fetchPage: ({after}) => Future.value(Feed(
-          kind: FeedKind.home, sort: FeedSort.hot,
+        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+          items: [],
         )),
         autoLoad: false,
       );
 
       expect(notifier.state.isLoading, isTrue);
-      expect(notifier.state.posts, isEmpty);
+      expect(notifier.state.items, isEmpty);
     });
 
-    test('loadInitial sets isLoading false and populates posts after success', () async {
+    test('loadInitial sets isLoading false and populates items after success',
+        () async {
       final notifier = FeedPageNotifier(
-        fetchPage: ({after}) => Future.value(Feed(
-          kind: FeedKind.home,
-          sort: FeedSort.hot,
-          posts: [_post('1'), _post('2')],
+        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+          items: [_post('1'), _post('2')],
           after: 't3_cursor',
+          hasMore: true,
         )),
         autoLoad: false,
       );
@@ -45,18 +46,19 @@ void main() {
       await notifier.loadInitial();
 
       expect(notifier.state.isLoading, isFalse);
-      expect(notifier.state.posts.length, 2);
-      expect(notifier.state.posts[0].id, '1');
-      expect(notifier.state.posts[1].id, '2');
+      expect(notifier.state.items.length, 2);
+      expect(notifier.state.items[0].id, '1');
+      expect(notifier.state.items[1].id, '2');
       expect(notifier.state.hasMore, isTrue);
       expect(notifier.state.error, isNull);
     });
 
-    test('loadInitial sets isLoading false and hasMore false when after is null', () async {
+    test(
+        'loadInitial sets isLoading false and hasMore false when after is null',
+        () async {
       final notifier = FeedPageNotifier(
-        fetchPage: ({after}) => Future.value(Feed(
-          kind: FeedKind.home, sort: FeedSort.hot,
-          posts: [_post('1')],
+        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+          items: [_post('1')],
         )),
         autoLoad: false,
       );
@@ -77,28 +79,28 @@ void main() {
 
       expect(notifier.state.isLoading, isFalse);
       expect(notifier.state.error, isNotNull);
-      expect(notifier.state.posts, isEmpty);
+      expect(notifier.state.items, isEmpty);
     });
 
-    test('loadMore appends posts and updates cursor', () async {
+    test('loadMore appends items and updates cursor', () async {
       final notifier = FeedPageNotifier(
         fetchPage: ({after}) {
-          return Future.value(Feed(
-            kind: FeedKind.home, sort: FeedSort.hot,
-            posts: after == null ? [_post('1')] : [_post('2')],
+          return Future.value(PaginatedResult<Post>(
+            items: after == null ? [_post('1')] : [_post('2')],
             after: after == null ? 'cursor1' : null,
+            hasMore: after == null,
           ));
         },
         autoLoad: false,
       );
 
       await notifier.loadInitial();
-      expect(notifier.state.posts.length, 1);
+      expect(notifier.state.items.length, 1);
       expect(notifier.state.hasMore, isTrue);
 
       await notifier.loadMore();
-      expect(notifier.state.posts.length, 2);
-      expect(notifier.state.posts[1].id, '2');
+      expect(notifier.state.items.length, 2);
+      expect(notifier.state.items[1].id, '2');
       expect(notifier.state.hasMore, isFalse);
     });
 
@@ -107,9 +109,8 @@ void main() {
       final notifier = FeedPageNotifier(
         fetchPage: ({after}) {
           callCount++;
-          return Future.value(Feed(
-            kind: FeedKind.home, sort: FeedSort.hot,
-            posts: [_post('1')],
+          return Future.value(PaginatedResult<Post>(
+            items: [_post('1')],
           ));
         },
         autoLoad: false,
@@ -128,10 +129,10 @@ void main() {
         fetchPage: ({after}) async {
           callCount++;
           await Future.delayed(const Duration(milliseconds: 50));
-          return Feed(
-            kind: FeedKind.home, sort: FeedSort.hot,
-            posts: [_post('1')],
+          return PaginatedResult<Post>(
+            items: [_post('1')],
             after: 'cursor',
+            hasMore: true,
           );
         },
         autoLoad: false,
@@ -148,14 +149,14 @@ void main() {
       expect(callCount, initialCount + 1);
     });
 
-    test('loadMore preserves existing posts on error', () async {
+    test('loadMore preserves existing items on error', () async {
       final notifier = FeedPageNotifier(
         fetchPage: ({after}) async {
           if (after == null) {
-            return Feed(
-              kind: FeedKind.home, sort: FeedSort.hot,
-              posts: [_post('1')],
+            return PaginatedResult<Post>(
+              items: [_post('1')],
               after: 'cursor',
+              hasMore: true,
             );
           }
           throw Exception('Load more failed');
@@ -164,13 +165,13 @@ void main() {
       );
 
       await notifier.loadInitial();
-      expect(notifier.state.posts.length, 1);
+      expect(notifier.state.items.length, 1);
 
       await notifier.loadMore();
 
-      expect(notifier.state.posts.length, 1);
+      expect(notifier.state.items.length, 1);
       expect(notifier.state.error, isNotNull);
-      expect(notifier.state.posts[0].id, '1');
+      expect(notifier.state.items[0].id, '1');
     });
   });
 

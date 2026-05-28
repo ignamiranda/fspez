@@ -34,7 +34,8 @@ class FeedScreenScaffold extends ConsumerWidget {
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
     final hiddenMap = ref.watch(hideProvider);
-    final hidden = hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
+    final hidden =
+        hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
     final account = ref.watch(activeAccountProvider);
 
     if (state.isLoading) {
@@ -43,7 +44,7 @@ class FeedScreenScaffold extends ConsumerWidget {
 
     return PostList(
       scrollController: scrollController,
-      posts: state.posts,
+      posts: state.items,
       onRefresh: () async => notifier.refresh(),
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
@@ -84,7 +85,7 @@ class FeedScreenScaffold extends ConsumerWidget {
           ? (post) async {
               final hideNotifier = ref.read(hideProvider.notifier);
               final feedNotifier = ref.read(feedPageProvider(config).notifier);
-              feedNotifier.removePost(post.fullname);
+              feedNotifier.removeItem((p) => p.fullname == post.fullname);
               await hideNotifier.unhide(post.fullname);
             }
           : null,

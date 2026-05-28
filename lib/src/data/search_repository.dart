@@ -7,18 +7,7 @@ import '../domain/enums/feed_sort.dart';
 import 'reddit_client.dart';
 import 'feed_parser.dart';
 import 'api_responses.dart';
-
-class SearchResultPage<T> {
-  final List<T> items;
-  final String? after;
-  final bool hasMore;
-
-  const SearchResultPage({
-    required this.items,
-    this.after,
-    this.hasMore = false,
-  });
-}
+import 'paginated_notifier.dart';
 
 class SearchRepository {
   final RedditClient _client;
@@ -28,13 +17,14 @@ class SearchRepository {
       : _parser = parser ?? FeedParser();
 
   /// Searches for posts matching [query].
-  Future<SearchResultPage<Post>> searchPosts(
+  Future<PaginatedResult<Post>> searchPosts(
     String query, {
     String? after,
     SessionCookie? sessionCookie,
   }) async {
-    final page = await _search(query, after: after, sessionCookie: sessionCookie);
-    return SearchResultPage(
+    final page =
+        await _search(query, after: after, sessionCookie: sessionCookie);
+    return PaginatedResult<Post>(
       items: page.posts,
       after: page.after,
       hasMore: page.hasMorePages,
@@ -42,7 +32,7 @@ class SearchRepository {
   }
 
   /// Searches for subreddits matching [query].
-  Future<SearchResultPage<Subreddit>> searchCommunities(
+  Future<PaginatedResult<Subreddit>> searchCommunities(
     String query, {
     String? after,
     SessionCookie? sessionCookie,
@@ -62,11 +52,10 @@ class SearchRepository {
         .map((c) => c['data'] as Map<String, dynamic>)
         .toList();
 
-    final subreddits = children
-        .map((c) => ApiSubreddit.fromJson(c).toDomain(''))
-        .toList();
+    final subreddits =
+        children.map((c) => ApiSubreddit.fromJson(c).toDomain('')).toList();
 
-    return SearchResultPage(
+    return PaginatedResult<Subreddit>(
       items: subreddits,
       after: listing['after'] as String?,
       hasMore: listing['after'] != null,
@@ -74,7 +63,7 @@ class SearchRepository {
   }
 
   /// Searches for users matching [query].
-  Future<SearchResultPage<SearchUser>> searchUsers(
+  Future<PaginatedResult<SearchUser>> searchUsers(
     String query, {
     String? after,
     SessionCookie? sessionCookie,
@@ -94,11 +83,10 @@ class SearchRepository {
         .map((c) => c['data'] as Map<String, dynamic>)
         .toList();
 
-    final users = children
-        .map((c) => ApiSearchUser.fromJson(c).toDomain())
-        .toList();
+    final users =
+        children.map((c) => ApiSearchUser.fromJson(c).toDomain()).toList();
 
-    return SearchResultPage(
+    return PaginatedResult<SearchUser>(
       items: users,
       after: listing['after'] as String?,
       hasMore: listing['after'] != null,
@@ -106,7 +94,7 @@ class SearchRepository {
   }
 
   /// Searches for comments (returns posts with selftext as comment body).
-  Future<SearchResultPage<Post>> searchComments(
+  Future<PaginatedResult<Post>> searchComments(
     String query, {
     String? after,
     SessionCookie? sessionCookie,
