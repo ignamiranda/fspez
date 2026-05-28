@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
@@ -95,11 +96,10 @@ class PostCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    if (post.videoUrl != null && post.thumbnailUrl != null)
-                      _MediaTile(
-                        imageUrl: post.thumbnailUrl!,
-                        badgeIcon: Icons.play_arrow,
-                        isVideo: true,
+                    if (post.videoUrl != null)
+                      _InlineVideoPlayer(
+                        videoUrl: post.videoUrl!,
+                        thumbnailUrl: post.thumbnailUrl,
                         onTap: () => MediaViewer.show(
                           context,
                           imageUrls: post.mediaUrls,
@@ -490,20 +490,146 @@ class _PostActionBar extends StatelessWidget {
   }
 }
 
+/// Ensures only one inline video plays at a time across the feed.
+class _InlineVideoManager {
+  static VideoPlayerController? _activeController;
+
+  /// Activates [controller], pausing any previously active one.
+  static void activate(VideoPlayerController controller) {
+    if (_activeController != null && _activeController != controller) {
+      _activeController!.pause();
+    }
+    _activeController = controller;
+    controller.play();
+  }
+
+  /// Deactivates [controller] if it was the active one.
+  static void deactivate(VideoPlayerController controller) {
+    if (_activeController == controller) {
+      _activeController?.pause();
+      _activeController = null;
+    }
+  }
+}
+
+/// An inline video player that auto-plays in the feed, preserving aspect ratio.
+class _InlineVideoPlayer extends StatefulWidget {
+  final String videoUrl;
+  final String? thumbnailUrl;
+  final VoidCallback? onTap;
+
+  const _InlineVideoPlayer({
+    required this.videoUrl,
+    this.thumbnailUrl,
+    this.onTap,
+  });
+
+  @override
+  State<_InlineVideoPlayer> createState() => _InlineVideoPlayerState();
+}
+
+class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+  bool _errored = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPlayer();
+  }
+
+  Future<void> _initPlayer() async {
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+    );
+    try {
+      await controller.initialize();
+      if (!mounted) return;
+      setState(() {
+        _controller = controller;
+        _initialized = true;
+      });
+      _InlineVideoManager.activate(controller);
+    } catch (_) {
+      if (mounted) setState(() => _errored = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_controller != null) {
+      _InlineVideoManager.deactivate(_controller!);
+      _controller!.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget child;
+
+    if (_errored) {
+      child = widget.thumbnailUrl != null
+          ? Image.network(
+              widget.thumbnailUrl!,
+              width: double.infinity,
+              fit: BoxFit.fitWidth,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            )
+          : const SizedBox.shrink();
+    } else if (!_initialized || _controller == null) {
+      child = widget.thumbnailUrl != null
+          ? Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.network(
+                  widget.thumbnailUrl!,
+                  width: double.infinity,
+                  fit: BoxFit.fitWidth,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+                const CircularProgressIndicator(
+                  color: Colors.white54,
+                  strokeWidth: 2,
+                ),
+              ],
+            )
+          : const AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+    } else {
+      child = ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: AspectRatio(
+          aspectRatio: _controller!.value.aspectRatio,
+          child: VideoPlayer(_controller!),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: GestureDetector(onTap: widget.onTap, child: child),
+    );
+  }
+}
+
 /// A tappable media preview tile used in the feed for images and galleries.
 class _MediaTile extends StatelessWidget {
   final String imageUrl;
   final VoidCallback onTap;
   final String? badgeText;
   final IconData? badgeIcon;
-  final bool isVideo;
 
   const _MediaTile({
     required this.imageUrl,
     required this.onTap,
     this.badgeText,
     this.badgeIcon,
-    this.isVideo = false,
   });
 
   @override
@@ -519,19 +645,6 @@ class _MediaTile extends StatelessWidget {
             fit: BoxFit.fitWidth,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
-          if (isVideo)
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.black38,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(12),
-              child: const Icon(
-                Icons.play_arrow,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
           if (badgeText != null)
             Positioned(
               top: 8,

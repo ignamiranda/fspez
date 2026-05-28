@@ -242,9 +242,12 @@ class _VideoPageState extends State<_VideoPage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Video player
+          // Video player — AspectRatio prevents stretching
           Center(
-            child: VideoPlayer(_controller),
+            child: AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            ),
           ),
 
           // Play/pause overlay (fades in/out with chrome)
