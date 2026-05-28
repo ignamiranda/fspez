@@ -9,9 +9,17 @@
 
 ## Before committing
 - When new files are part of the change, remember that `git diff --stat` omits untracked files. Review `git status --short` and explicitly include intended new files in staging/diff review before committing.
-- After any user-requested commit, end the final response with the next `handoffs/*.md` file to implement and a brief reason.
-- When the user says `commit`, also perform the established cleanup workflow: delete the implemented handoff, run `/update-skills`, inspect status/diff/recent log, stage only intended files, commit, then report the next handoff.
 - Run `dart format` only on Dart files. Do not pass YAML or other non-Dart files to `dart format`; use package/tool-specific formatting only when needed.
+
+## Commit workflow (mandatory sequence)
+When the user says `commit`, execute **all** steps in order. Do not skip any step:
+
+1. **Delete** the implemented handoff file from `handoffs/`
+2. **Run `/update-skills`** — audit the session and apply any skill/AGENTS.md changes before committing
+3. **Inspect** `git status --short`, `git diff --stat`, `git log --oneline -5`
+4. **Stage** only intended files (include new untracked files explicitly)
+5. **Commit** with a concise message
+6. **Report** the next `handoffs/*.md` file to implement and a brief reason
 
 ## Auto-trigger: `/reorder-todo` on TODO.md edits
 Whenever you insert or remove a handoff entry in `TODO.md`, run `pwsh ~/.config/opencode/skills/reorder-todo/scripts/reorder-todo.ps1` to renumber. Never manually rewrite the entire file just to fix numbering.
@@ -19,6 +27,7 @@ Whenever you insert or remove a handoff entry in `TODO.md`, run `pwsh ~/.config/
 ## Architecture
 - **Auth**: Cookie-only via WebView CDP (`Network.getCookies`, 10×500ms) → `GET /api/me` for modhash → username extraction (JS eval → API call → cookie heuristic). No OAuth. `AuthAcquirer` orchestrates.
 - **State**: Riverpod (`StateNotifierProvider`, `FutureProvider.family`). Pagination via `CursorPaginatedNotifier` → `FeedPageNotifier` (cursor/after, loading). Optimistic updates via `OptimisticStateNotifier<K,V>` → `WriteOperationNotifier<V>`. `VoteNotifier` keeps optimistic on error; `SaveNotifier`/`HideNotifier` revert + rethrow. Settings via `AppSettingsNotifier` (persisted to `SharedPreferences` with `settings.*` keys).
+- **Post actions**: `PostActionsService` (via `postActionsServiceProvider`) routes vote/save/hide/unhide/delete/edit through one use-case layer. UI call sites use the service instead of directly coordinating individual notifiers. Preserves existing optimistic semantics.
 - **Tabs**: `_MainShell` uses `IndexedStack` — all 3 tabs stay alive.
 - **HTTP**: `RedditClient` wraps `http.Client`. `ApiEndpoint` enum selects per-endpoint headers. `get()` auto-appends `.json`.
 - **No `build_runner`**: `freezed`/`json_serializable` listed but never run. Manual `Equatable`.
