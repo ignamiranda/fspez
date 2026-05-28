@@ -8,6 +8,11 @@
       "template": "Load the learn skill and follow its instructions to extract reusable knowledge from this session.",
       "description": "Extract reusable knowledge from the session and create/update/fix skills",
       "agent": "general"
+    },
+    "commit": {
+      "template": "Load the commit skill and follow its instructions to commit the current changes.",
+      "description": "Commit workflow: delete implemented handoff, /update-project-skills, stage, format, commit, next handoff",
+      "agent": "general"
     }
   },
   "mcp": {
