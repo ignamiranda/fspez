@@ -31,7 +31,22 @@
 - `X-Requested-With: XMLHttpRequest`, `Accept: */*`, `Content-Type: application/x-www-form-urlencoded; charset=UTF-8`
 - Vote only needs `reddit_session` + form content type (no modhash, no old.reddit.com)
 
+## Agent skills
+
+### Issue tracker
+
+Local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five roles with default label strings. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout. See `docs/agents/domain.md`.
+
 ## Non-obvious gotchas
+- **VideoPlayer stretches by default**: `VideoPlayer` from `video_player` sizes to `constraints.biggest` and draws the video texture stretched across its full bounds. It does NOT preserve aspect ratio on its own. Always wrap in `AspectRatio(aspectRatio: controller.value.aspectRatio)` — both inline and full-screen.
 - **Feed sort**: Aggregate feeds (`/r/popular`, `/r/all`) must use path sort (`/r/popular/hot.json`), not `?sort=` query param. Handled by `_popularPathForSort()` in `feed_pagination.dart`.
 - **Compose**: HTTP `RedditClient.compose()` often returns 403. WebView at `www.reddit.com/message/compose/` with CDP `Network.setCookie` seed is more reliable. `ComposeAutotestScreen` demonstrates; enable via `FSPEZ_AUTOTEST_COMPOSE=1` + `REDDIT_SESSION`.
 - **PostDetailScreen**: Uses API-fetched `Post` from `postDetailProvider` for header, falls back to `widget.post` while loading. Matters when navigating from user profile comments.

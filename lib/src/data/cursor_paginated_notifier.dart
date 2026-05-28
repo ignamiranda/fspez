@@ -35,7 +35,7 @@ abstract class CursorPaginatedNotifier<T, TPage>
     }
   }
 
-  void refresh() => loadInitial();
+  Future<void> refresh() => loadInitial();
 
   Future<TPage> fetchPage({String? after});
   String? extractAfter(TPage page);
