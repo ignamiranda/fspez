@@ -9,6 +9,7 @@ import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
 import 'media_viewer.dart';
+import 'post_action_bottom_sheet.dart';
 
 class PostCard extends ConsumerStatefulWidget {
   final Post post;
@@ -288,7 +289,7 @@ class _SensitiveOverlay extends StatelessWidget {
   }
 }
 
-class _OverflowMenu extends StatelessWidget {
+class _OverflowButton extends StatelessWidget {
   final Post post;
   final ColorScheme cs;
   final VoidCallback? onEdit;
@@ -296,7 +297,7 @@ class _OverflowMenu extends StatelessWidget {
   final VoidCallback? onHide;
   final VoidCallback? onUnhide;
 
-  const _OverflowMenu({
+  const _OverflowButton({
     required this.post,
     required this.cs,
     this.onEdit,
@@ -305,57 +306,65 @@ class _OverflowMenu extends StatelessWidget {
     this.onUnhide,
   });
 
+  bool get _hasAnyAction =>
+      onEdit != null || onDelete != null || onHide != null || onUnhide != null;
+
   @override
   Widget build(BuildContext context) {
-    final entries = <PopupMenuEntry<String>>[];
-    if (onEdit != null) {
-      entries.add(const PopupMenuItem(value: 'edit', child: Text('Edit')));
-    }
-    if (onDelete != null) {
-      entries.add(const PopupMenuItem(value: 'delete', child: Text('Delete')));
-    }
-    if (onHide != null) {
-      entries.add(const PopupMenuItem(value: 'hide', child: Text('Hide')));
-    }
-    if (onUnhide != null) {
-      entries.add(const PopupMenuItem(value: 'unhide', child: Text('Unhide')));
-    }
-    if (entries.isEmpty) return const SizedBox.shrink();
+    if (!_hasAnyAction) return const SizedBox.shrink();
 
     return InkWell(
-      onTap: () {
-        final box = context.findRenderObject() as RenderBox;
-        final offset = box.localToGlobal(Offset.zero);
-        showMenu<String>(
-          context: context,
-          position: RelativeRect.fromLTRB(
-            offset.dx,
-            offset.dy,
-            offset.dx + box.size.width,
-            offset.dy + box.size.height,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          items: entries,
-        ).then((value) {
-          if (value == null) return;
-          switch (value) {
-            case 'edit':
-              onEdit?.call();
-            case 'delete':
-              onDelete?.call();
-            case 'hide':
-              onHide?.call();
-            case 'unhide':
-              onUnhide?.call();
-          }
-        });
-      },
+      onTap: () => _openSheet(context),
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.all(4),
         child: Icon(Icons.more_horiz, size: 18, color: cs.onSurfaceVariant),
       ),
     );
+  }
+
+  void _openSheet(BuildContext context) {
+    showPostActionSheet(context, sections: _buildSections());
+  }
+
+  List<PostActionSheetSection> _buildSections() {
+    final primary = <PostActionSheetItem>[];
+    final author = <PostActionSheetItem>[];
+
+    if (onHide != null) {
+      primary.add(PostActionSheetItem(
+        icon: Icons.visibility_off_outlined,
+        label: 'Hide',
+        onTap: onHide!,
+      ));
+    }
+    if (onUnhide != null) {
+      primary.add(PostActionSheetItem(
+        icon: Icons.visibility_outlined,
+        label: 'Unhide',
+        onTap: onUnhide!,
+      ));
+    }
+    if (onEdit != null) {
+      author.add(PostActionSheetItem(
+        icon: Icons.edit_outlined,
+        label: 'Edit',
+        onTap: onEdit!,
+      ));
+    }
+    if (onDelete != null) {
+      author.add(PostActionSheetItem(
+        icon: Icons.delete_outline,
+        label: 'Delete',
+        isDestructive: true,
+        onTap: onDelete!,
+      ));
+    }
+
+    return [
+      if (primary.isNotEmpty) PostActionSheetSection(items: primary),
+      if (author.isNotEmpty) PostActionSheetSection(items: author),
+    ];
   }
 }
 
@@ -543,7 +552,7 @@ class _MetadataRow extends StatelessWidget {
           ),
         ],
         const Spacer(),
-        _OverflowMenu(
+        _OverflowButton(
           post: post,
           cs: cs,
           onEdit: onEdit,
