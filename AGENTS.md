@@ -63,3 +63,4 @@ Single-context layout. See `docs/agents/domain.md`.
 - **Linter**: `prefer_single_quotes`, `avoid_print`, `prefer_const_constructors`, `prefer_const_declarations`, `sort_child_properties_last`. `invalid_annotation_target` errors ignored.
 - **Test**: `test/widget_test.dart` is a stub (placeholder `MyApp` counter test, not real fspez test). `mocktail` available for mocking.
 - **Hide**: Optimistic — post removed from `visiblePosts` immediately, reappears on API error.
+- **Reddit URL entity encoding**: URL fields from Reddit API (`icon_img`, `community_icon`, `thumbnail`, `banner_img`, `banner_background_image`, `sr_detail.icon_img`, media URLs) contain `&amp;` entities. Always decode via `_cleanUrl()` / `url.replaceAll('&amp;', '&')` before passing to Flutter widgets. A raw `&amp;` URL causes 403s when Flutter requests it literally.

@@ -1,6 +1,7 @@
 import '../domain/models/post.dart';
 import '../domain/models/search_user.dart';
 import '../domain/models/subreddit.dart';
+import '../domain/models/subreddit_rule.dart';
 import 'parsers/shared_parsers.dart';
 
 class ApiListing {
@@ -238,7 +239,7 @@ class ApiPost {
 
   String? _cleanThumbnail(String? t) {
     if (t == null || t == 'self' || t == 'default' || t == 'nsfw') return null;
-    return t;
+    return _cleanUrl(t);
   }
 
   String _cleanUrl(String url) => url.replaceAll('&amp;', '&');
@@ -512,5 +513,60 @@ class ApiSubreddit {
       return fallback.replaceAll('&amp;', '&');
     }
     return null;
+  }
+}
+
+class ApiSubredditRules {
+  final List<ApiSubredditRule> rules;
+
+  const ApiSubredditRules({required this.rules});
+
+  factory ApiSubredditRules.fromJson(Map<String, dynamic> data) {
+    final rules = (data['rules'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiSubredditRule.fromJson)
+        .toList()
+      ..sort((a, b) => a.priority.compareTo(b.priority));
+
+    return ApiSubredditRules(rules: rules);
+  }
+
+  List<SubredditRule> toDomain() =>
+      rules.map((rule) => rule.toDomain()).toList();
+}
+
+class ApiSubredditRule {
+  final String shortName;
+  final String description;
+  final String kind;
+  final String? violationReason;
+  final int priority;
+
+  const ApiSubredditRule({
+    required this.shortName,
+    required this.description,
+    required this.kind,
+    this.violationReason,
+    required this.priority,
+  });
+
+  factory ApiSubredditRule.fromJson(Map<String, dynamic> data) {
+    return ApiSubredditRule(
+      shortName: data['short_name'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      kind: data['kind'] as String? ?? 'all',
+      violationReason: data['violation_reason'] as String?,
+      priority: (data['priority'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  SubredditRule toDomain() {
+    return SubredditRule(
+      shortName: shortName,
+      description: description,
+      kind: kind,
+      violationReason: violationReason,
+      priority: priority,
+    );
   }
 }

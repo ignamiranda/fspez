@@ -98,7 +98,8 @@ void main() {
       expect(post.vote, VoteDirection.none);
       expect(post.isNsfw, false);
       expect(post.permalink, '/r/flutter/comments/abc123/test_post/');
-      expect(post.createdAt, DateTime.fromMillisecondsSinceEpoch(1000000000000));
+      expect(
+          post.createdAt, DateTime.fromMillisecondsSinceEpoch(1000000000000));
     });
 
     test('handles deleted author', () {
@@ -157,13 +158,33 @@ void main() {
         'created_utc': 1000000000,
         'subreddit': 'flutter',
         'sr_detail': {
-          'community_icon': 'https://example.com/icon.png?width=256&amp;s=abc123',
+          'community_icon':
+              'https://example.com/icon.png?width=256&amp;s=abc123',
         },
       };
 
       final post = parser.parsePost(data);
 
-      expect(post.subreddit.iconUrl, 'https://example.com/icon.png?width=256&s=abc123');
+      expect(post.subreddit.iconUrl,
+          'https://example.com/icon.png?width=256&s=abc123');
+    });
+
+    test('cleans &amp; from thumbnail URLs', () {
+      final data = {
+        'id': 'abc',
+        'title': 'Post with encoded thumbnail',
+        'permalink': '/r/test/abc',
+        'created_utc': 1000000000,
+        'thumbnail':
+            'https://external-preview.redd.it/thumb.png?width=140&amp;height=140&amp;format=jpg',
+      };
+
+      final post = parser.parsePost(data);
+
+      expect(
+        post.thumbnailUrl,
+        'https://external-preview.redd.it/thumb.png?width=140&height=140&format=jpg',
+      );
     });
 
     test('subreddit icon is null when no sr_detail', () {

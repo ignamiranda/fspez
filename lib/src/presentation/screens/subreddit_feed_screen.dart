@@ -11,6 +11,7 @@ import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
 import '../utils/reddit_markdown.dart';
 import '../widgets/feed_screen_scaffold.dart';
+import '../widgets/subreddit_rules_sheet.dart';
 import 'submit_screen.dart';
 
 class SubredditFeedScreen extends ConsumerStatefulWidget {
@@ -125,6 +126,10 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
               loading: _togglingSub,
               onToggle: _toggleSubscribe,
               onAbout: () => _showAboutSheet(_subInfo!),
+              onRules: () => showSubredditRulesSheet(
+                context,
+                subredditName: widget.subredditName,
+              ),
             ),
           Expanded(
             child: FeedScreenScaffold(
@@ -181,6 +186,7 @@ class _SubredditHeader extends StatelessWidget {
   final bool loading;
   final VoidCallback onToggle;
   final VoidCallback onAbout;
+  final VoidCallback onRules;
 
   const _SubredditHeader({
     required this.sub,
@@ -188,6 +194,7 @@ class _SubredditHeader extends StatelessWidget {
     required this.loading,
     required this.onToggle,
     required this.onAbout,
+    required this.onRules,
   });
 
   @override
@@ -239,12 +246,23 @@ class _SubredditHeader extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton.outlined(
-                tooltip: 'About this community',
-                onPressed: onAbout,
-                icon: const Icon(Icons.info_outline),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton.outlined(
+                    tooltip: 'About this community',
+                    onPressed: onAbout,
+                    icon: const Icon(Icons.info_outline),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton.outlined(
+                    tooltip: 'Community rules',
+                    onPressed: onRules,
+                    icon: const Icon(Icons.rule_outlined),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               FilledButton.tonal(
                 onPressed: loading ? null : onToggle,
                 child: loading

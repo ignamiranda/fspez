@@ -70,4 +70,48 @@ void main() {
       ),
     ).called(1);
   });
+
+  test('fetchRules parses and sorts subreddit rules', () async {
+    when(() => mockHttp.get(any(), headers: any(named: 'headers'))).thenAnswer(
+      (_) async => http.Response(
+        jsonEncode({
+          'rules': [
+            {
+              'short_name': 'Second rule',
+              'description': 'No spam',
+              'kind': 'all',
+              'violation_reason': 'Spam',
+              'priority': 1,
+            },
+            {
+              'short_name': 'First rule',
+              'description': 'Be kind',
+              'kind': 'comment',
+              'violation_reason': 'Unkind',
+              'priority': 0,
+            },
+          ],
+          'site_rules': ['Spam'],
+        }),
+        200,
+      ),
+    );
+
+    final rules = await repository.fetchRules('flutter');
+
+    expect(rules, hasLength(2));
+    expect(rules[0].shortName, 'First rule');
+    expect(rules[0].description, 'Be kind');
+    expect(rules[0].kind, 'comment');
+    expect(rules[0].violationReason, 'Unkind');
+    expect(rules[0].priority, 0);
+    expect(rules[1].shortName, 'Second rule');
+
+    verify(
+      () => mockHttp.get(
+        Uri.parse('https://www.reddit.com/r/flutter/about/rules.json'),
+        headers: any(named: 'headers'),
+      ),
+    ).called(1);
+  });
 }

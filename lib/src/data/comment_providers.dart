@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/enums/comment_sort.dart';
 import '../domain/models/subreddit.dart';
+import '../domain/models/subreddit_rule.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'subreddit_repository.dart';
@@ -27,4 +28,11 @@ final subredditInfoProvider =
   final repo = ref.watch(subredditRepositoryProvider);
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetch(name, sessionCookie: sessionCookie);
+});
+
+final subredditRulesProvider =
+    FutureProvider.family<List<SubredditRule>, String>((ref, name) async {
+  final repo = ref.watch(subredditRepositoryProvider);
+  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return repo.fetchRules(name, sessionCookie: sessionCookie);
 });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/write_providers.dart';
+import '../widgets/subreddit_rules_sheet.dart';
 
 class SubmitScreen extends ConsumerStatefulWidget {
   final String? subreddit;
@@ -19,12 +20,15 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
   final _subredditController = TextEditingController();
   bool _isLink = false;
 
+  bool get _hasSubreddit => _subredditController.text.trim().isNotEmpty;
+
   @override
   void initState() {
     super.initState();
     if (widget.subreddit != null) {
       _subredditController.text = widget.subreddit!;
     }
+    _subredditController.addListener(() => setState(() {}));
   }
 
   @override
@@ -56,9 +60,9 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     }
 
     final success = await ref.read(submitProvider.notifier).submit(
-      fields: fields,
-      sessionCookie: account.sessionCookie,
-    );
+          fields: fields,
+          sessionCookie: account.sessionCookie,
+        );
 
     if (!mounted) return;
     if (success) {
@@ -77,6 +81,12 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     }
   }
 
+  void _showRules() {
+    final subreddit = _subredditController.text.trim();
+    if (subreddit.isEmpty) return;
+    showSubredditRulesSheet(context, subredditName: subreddit);
+  }
+
   @override
   Widget build(BuildContext context) {
     final submitState = ref.watch(submitProvider);
@@ -86,8 +96,10 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
         title: const Text('Create Post'),
         actions: [
           if (submitState.isSubmitting)
-            const Center(child: SizedBox(
-              width: 20, height: 20,
+            const Center(
+                child: SizedBox(
+              width: 20,
+              height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             ))
           else
@@ -107,6 +119,14 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
               hintText: 'subreddit_name',
               border: OutlineInputBorder(),
               prefixText: 'r/',
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _hasSubreddit ? _showRules : null,
+              icon: const Icon(Icons.rule_outlined),
+              label: const Text('View community rules'),
             ),
           ),
           const SizedBox(height: 12),
