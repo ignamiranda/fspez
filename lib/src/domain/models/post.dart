@@ -25,6 +25,7 @@ class Post with EquatableMixin {
   final String permalink;
   final double? upvoteRatio;
   final Post? crosspostParent;
+  final List<String> mediaUrls;
 
   String get fullname => 't3_$id';
 
@@ -49,6 +50,7 @@ class Post with EquatableMixin {
     required this.permalink,
     this.upvoteRatio,
     this.crosspostParent,
+    this.mediaUrls = const [],
   });
 
   @override
@@ -73,5 +75,6 @@ class Post with EquatableMixin {
         permalink,
         upvoteRatio,
         crosspostParent,
+        mediaUrls,
       ];
 }

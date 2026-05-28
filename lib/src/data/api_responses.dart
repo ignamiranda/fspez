@@ -51,6 +51,7 @@ class ApiPost {
   final bool? isGallery;
   final bool? isSelf;
   final String? crosspostParent;
+  final List<String> mediaUrls;
 
   ApiPost({
     required this.id,
@@ -77,9 +78,11 @@ class ApiPost {
     this.isGallery,
     this.isSelf,
     this.crosspostParent,
+    this.mediaUrls = const [],
   });
 
   factory ApiPost.fromJson(Map<String, dynamic> data) {
+    final mediaUrls = _parseMediaUrls(data);
     return ApiPost(
       id: data['id'] as String,
       title: data['title'] as String? ?? '',
@@ -105,7 +108,59 @@ class ApiPost {
       isGallery: data['is_gallery'] as bool?,
       isSelf: data['is_self'] as bool?,
       crosspostParent: data['crosspost_parent'] as String?,
+      mediaUrls: mediaUrls,
     );
+  }
+
+  /// Extracts ordered image URLs from a gallery post's [media_metadata].
+  ///
+  /// Reddit gallery posts store image data in `media_metadata` keyed by image ID
+  /// and ordering in `gallery_data.items[].media_id`. Falls back to iterating
+  /// `media_metadata` keys if `gallery_data` is absent.
+  ///
+  /// Returns the source (`s.u`) URL when available, otherwise the largest
+  /// preview (`p[last].u`).
+  static List<String> _parseMediaUrls(Map<String, dynamic> data) {
+    final metadata = data['media_metadata'] as Map<String, dynamic>?;
+    if (metadata == null) return const [];
+
+    List<String> ids;
+    final galleryData = data['gallery_data'] as Map<String, dynamic>?;
+    final items = galleryData?['items'] as List<dynamic>?;
+    if (items != null && items.isNotEmpty) {
+      ids = items
+          .map((item) => (item as Map<String, dynamic>)['media_id'] as String?)
+          .whereType<String>()
+          .toList();
+    } else {
+      ids = metadata.keys.toList();
+    }
+
+    final urls = <String>[];
+    for (final id in ids) {
+      final entry = metadata[id] as Map<String, dynamic>?;
+      if (entry == null) continue;
+      if (entry['status'] == 'valid') {
+        final s = entry['s'] as Map<String, dynamic>?;
+        if (s != null) {
+          final u = s['u'] as String?;
+          if (u != null) {
+            urls.add(u.replaceAll('&amp;', '&'));
+            continue;
+          }
+        }
+        // Fallback to largest preview
+        final previews = entry['p'] as List<dynamic>?;
+        if (previews != null && previews.isNotEmpty) {
+          final last = previews.last as Map<String, dynamic>;
+          final u = last['u'] as String?;
+          if (u != null) {
+            urls.add(u.replaceAll('&amp;', '&'));
+          }
+        }
+      }
+    }
+    return urls;
   }
 
   Post toDomain() {
@@ -133,6 +188,7 @@ class ApiPost {
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000),
       permalink: permalink,
       upvoteRatio: upvoteRatio,
+      mediaUrls: mediaUrls,
     );
   }
 

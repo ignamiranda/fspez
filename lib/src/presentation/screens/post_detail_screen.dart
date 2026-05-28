@@ -10,6 +10,7 @@ import '../utils/interaction_helpers.dart';
 import '../utils/open_url.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
+import '../widgets/media_viewer.dart';
 import '../widgets/post_actions.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
@@ -187,19 +188,30 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-              if (post.type == PostType.image &&
+              if (post.mediaUrls.length >= 2)
+                _PostMediaTile(
+                  imageUrl: post.mediaUrls.first,
+                  badgeText: '${post.mediaUrls.length}',
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: post.mediaUrls,
+                  ),
+                )
+              else if (post.mediaUrls.length == 1)
+                _PostMediaTile(
+                  imageUrl: post.mediaUrls.first,
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: post.mediaUrls,
+                  ),
+                )
+              else if (post.type == PostType.image &&
                   post.url != null)
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      post.url!,
-                      width: double.infinity,
-                      fit: BoxFit.fitWidth,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
+                _PostMediaTile(
+                  imageUrl: post.url!,
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: [post.url!],
                   ),
                 )
               else if (post.type == PostType.link &&
@@ -354,6 +366,69 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// A tappable media tile used in post detail for images and galleries.
+class _PostMediaTile extends StatelessWidget {
+  final String imageUrl;
+  final VoidCallback onTap;
+  final String? badgeText;
+
+  const _PostMediaTile({
+    required this.imageUrl,
+    required this.onTap,
+    this.badgeText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Stack(
+        children: [
+          Image.network(
+            imageUrl,
+            width: double.infinity,
+            fit: BoxFit.fitWidth,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+          if (badgeText != null)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.photo_library_outlined,
+                        color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      badgeText!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: GestureDetector(onTap: onTap, child: child),
     );
   }
 }
