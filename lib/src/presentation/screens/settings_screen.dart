@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/app_settings.dart';
+import '../../domain/enums/app_theme_mode.dart';
 import '../../domain/enums/comment_sort.dart';
+import '../../domain/enums/feed_density.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -9,74 +11,206 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
-    final theme = Theme.of(context);
+    final notifier = ref.read(appSettingsProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'General',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          const _SectionHeader(label: 'Appearance'),
+          _SettingsCard(children: [
+            ListTile(
+              title: const Text('Theme'),
+              subtitle: Text(settings.themeMode.label),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showThemePicker(context, settings, notifier),
             ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: Column(
-              children: [
-                SwitchListTile(
-                  title: const Text('Show awards'),
-                  subtitle: const Text('Display awards on posts.'),
-                  value: settings.showAwards,
-                  onChanged: (value) {
-                    ref.read(appSettingsProvider.notifier).setShowAwards(value);
-                  },
-                ),
-              ],
+          ]),
+          const _SectionHeader(label: 'Content'),
+          _SettingsCard(children: [
+            SwitchListTile(
+              title: const Text('Blur NSFW content'),
+              subtitle: const Text('Blur media on posts marked NSFW.'),
+              value: settings.nsfwBlur,
+              onChanged: (v) => notifier.setNsfwBlur(v),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Comments',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            SwitchListTile(
+              title: const Text('Blur spoiler content'),
+              subtitle: const Text('Blur media on posts marked as spoiler.'),
+              value: settings.spoilerBlur,
+              onChanged: (v) => notifier.setSpoilerBlur(v),
             ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  title: const Text('Default comment sort'),
-                  subtitle: const Text('Used when opening a post.'),
-                  trailing: DropdownButton<CommentSort?>(
-                    value: settings.defaultCommentSort,
-                    underline: const SizedBox(),
-                    items: [
-                      const DropdownMenuItem<CommentSort?>(
-                        value: null,
-                        child: Text('Reddit default'),
-                      ),
-                      ...CommentSort.values.map((sort) {
-                        return DropdownMenuItem<CommentSort?>(
-                          value: sort,
-                          child: Text(sort.label),
-                        );
-                      }),
-                    ],
-                    onChanged: (sort) {
-                      ref
-                          .read(appSettingsProvider.notifier)
-                          .setDefaultCommentSort(sort);
-                    },
+            SwitchListTile(
+              title: const Text('Show awards'),
+              subtitle: const Text('Display awards on posts.'),
+              value: settings.showAwards,
+              onChanged: (v) => notifier.setShowAwards(v),
+            ),
+          ]),
+          const _SectionHeader(label: 'Feed'),
+          _SettingsCard(children: [
+            ListTile(
+              title: const Text('Feed density'),
+              subtitle: Text(settings.feedDensity.label),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showFeedDensityPicker(context, settings, notifier),
+            ),
+          ]),
+          const _SectionHeader(label: 'Comments'),
+          _SettingsCard(children: [
+            ListTile(
+              title: const Text('Default comment sort'),
+              subtitle: const Text('Used when opening a post.'),
+              trailing: DropdownButton<CommentSort?>(
+                value: settings.defaultCommentSort,
+                underline: const SizedBox(),
+                items: [
+                  const DropdownMenuItem<CommentSort?>(
+                    value: null,
+                    child: Text('Reddit default'),
                   ),
-                ),
-              ],
+                  ...CommentSort.values.map((sort) {
+                    return DropdownMenuItem<CommentSort?>(
+                      value: sort,
+                      child: Text(sort.label),
+                    );
+                  }),
+                ],
+                onChanged: (sort) {
+                  notifier.setDefaultCommentSort(sort);
+                },
+              ),
             ),
-          ),
+          ]),
+          const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  void _showThemePicker(
+    BuildContext context,
+    AppSettings settings,
+    AppSettingsNotifier notifier,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'Choose theme',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Divider(height: 1),
+              RadioGroup<AppThemeMode>(
+                groupValue: settings.themeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    notifier.setThemeMode(value);
+                    Navigator.of(ctx).pop();
+                  }
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: AppThemeMode.values
+                      .map((mode) => RadioListTile<AppThemeMode>(
+                            title: Text(mode.label),
+                            value: mode,
+                          ))
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFeedDensityPicker(
+    BuildContext context,
+    AppSettings settings,
+    AppSettingsNotifier notifier,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'Feed density',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Divider(height: 1),
+              RadioGroup<FeedDensity>(
+                groupValue: settings.feedDensity,
+                onChanged: (value) {
+                  if (value != null) {
+                    notifier.setFeedDensity(value);
+                    Navigator.of(ctx).pop();
+                  }
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: FeedDensity.values
+                      .map((density) => RadioListTile<FeedDensity>(
+                            title: Text(density.label),
+                            value: density,
+                          ))
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+
+  const _SectionHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        label,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCard extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SettingsCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        child: Column(children: children),
       ),
     );
   }

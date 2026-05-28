@@ -1,12 +1,16 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
+import '../../data/app_settings.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
 import 'media_viewer.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends ConsumerStatefulWidget {
   final Post post;
   final VoteDirection? effectiveVote;
   final ValueChanged<VoteDirection>? onVote;
@@ -36,8 +40,15 @@ class PostCard extends StatelessWidget {
     this.onAuthorTap,
   });
 
+  @override
+  ConsumerState<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends ConsumerState<PostCard> {
+  bool _sensitiveRevealed = false;
+
   bool get _hasThumbnail {
-    final t = post.thumbnailUrl;
+    final t = widget.post.thumbnailUrl;
     return t != null &&
         t != 'self' &&
         t != 'default' &&
@@ -45,14 +56,24 @@ class PostCard extends StatelessWidget {
         t != 'spoiler';
   }
 
+  /// Whether this post's media should be blurred based on settings.
+  bool get _shouldBlur {
+    final settings = ref.read(appSettingsProvider);
+    final post = widget.post;
+    if (_sensitiveRevealed) return false;
+    if (post.isNsfw && settings.nsfwBlur) return true;
+    if (post.isSpoiler && settings.spoilerBlur) return true;
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final vote = effectiveVote ?? post.vote;
+    final vote = widget.effectiveVote ?? widget.post.vote;
 
     return InkWell(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         decoration: BoxDecoration(
           border: Border(
@@ -63,93 +84,206 @@ class PostCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.only(left: 12),
           child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _MetadataRow(
-                      post: post,
-                      theme: theme,
-                      cs: cs,
-                      onSubredditTap: onSubredditTap,
-                      onAuthorTap: onAuthorTap,
-                      onEdit: onEdit,
-                      onDelete: onDelete,
-                      onHide: onHide,
-                      onUnhide: onUnhide,
-                    ),
-                    const SizedBox(height: 2),
-                    _TitleWithThumbnail(
-                      post: post,
-                      hasThumbnail: _hasThumbnail,
-                      theme: theme,
-                    ),
-                    if (post.type == PostType.self_ &&
-                        post.selftext != null &&
-                        post.selftext!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          post.selftext!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    if (post.videoUrl != null)
-                      _InlineVideoPlayer(
-                        videoUrl: post.videoUrl!,
-                        thumbnailUrl: post.thumbnailUrl,
-                        onTap: () => MediaViewer.show(
-                          context,
-                          imageUrls: post.mediaUrls,
-                          videoUrl: post.videoUrl,
-                        ),
-                      )
-                    else if (post.mediaUrls.length >= 2)
-                      _MediaTile(
-                        imageUrl: post.mediaUrls.first,
-                        badgeText: '${post.mediaUrls.length}',
-                        badgeIcon: Icons.photo_library_outlined,
-                        onTap: () => MediaViewer.show(
-                          context,
-                          imageUrls: post.mediaUrls,
-                        ),
-                      )
-                    else if (post.mediaUrls.length == 1)
-                      _MediaTile(
-                        imageUrl: post.mediaUrls.first,
-                        onTap: () => MediaViewer.show(
-                          context,
-                          imageUrls: post.mediaUrls,
-                        ),
-                      )
-                    else if (post.type == PostType.image &&
-                        post.url != null)
-                      _MediaTile(
-                        imageUrl: post.url!,
-                        onTap: () => MediaViewer.show(
-                          context,
-                          imageUrls: [post.url!],
-                        ),
-                      ),
-                    const SizedBox(height: 6),
-                    _PostActionBar(
-                      post: post,
-                      theme: theme,
-                      cs: cs,
-                      vote: vote,
-                      score: post.score,
-                      commentCount: post.commentCount,
-                      isSaved: effectiveSaved ?? post.isSaved,
-                      onVote: onVote,
-                      onSave: onSave,
-                      onTap: onTap,
-                    ),
-                  ],
-                ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _MetadataRow(
+                post: widget.post,
+                theme: theme,
+                cs: cs,
+                onSubredditTap: widget.onSubredditTap,
+                onAuthorTap: widget.onAuthorTap,
+                onEdit: widget.onEdit,
+                onDelete: widget.onDelete,
+                onHide: widget.onHide,
+                onUnhide: widget.onUnhide,
               ),
-            ),
+              const SizedBox(height: 2),
+              _TitleWithThumbnail(
+                post: widget.post,
+                hasThumbnail: _hasThumbnail,
+                theme: theme,
+              ),
+              if (widget.post.type == PostType.self_ &&
+                  widget.post.selftext != null &&
+                  widget.post.selftext!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    widget.post.selftext!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              _buildMediaSection(theme, cs),
+              const SizedBox(height: 6),
+              _PostActionBar(
+                post: widget.post,
+                theme: theme,
+                cs: cs,
+                vote: vote,
+                score: widget.post.score,
+                commentCount: widget.post.commentCount,
+                isSaved: widget.effectiveSaved ?? widget.post.isSaved,
+                onVote: widget.onVote,
+                onSave: widget.onSave,
+                onTap: widget.onTap,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaSection(ThemeData theme, ColorScheme cs) {
+    final post = widget.post;
+    final shouldBlur = _shouldBlur;
+
+    Widget? mediaWidget;
+
+    if (post.videoUrl != null) {
+      mediaWidget = _InlineVideoPlayer(
+        videoUrl: post.videoUrl!,
+        thumbnailUrl: post.thumbnailUrl,
+        onTap: () => MediaViewer.show(
+          context,
+          imageUrls: post.mediaUrls,
+          videoUrl: post.videoUrl,
+        ),
+      );
+    } else if (post.mediaUrls.length >= 2) {
+      mediaWidget = _MediaTile(
+        imageUrl: post.mediaUrls.first,
+        badgeText: '${post.mediaUrls.length}',
+        badgeIcon: Icons.photo_library_outlined,
+        onTap: () => MediaViewer.show(
+          context,
+          imageUrls: post.mediaUrls,
+        ),
+      );
+    } else if (post.mediaUrls.length == 1) {
+      mediaWidget = _MediaTile(
+        imageUrl: post.mediaUrls.first,
+        onTap: () => MediaViewer.show(
+          context,
+          imageUrls: post.mediaUrls,
+        ),
+      );
+    } else if (post.type == PostType.image && post.url != null) {
+      mediaWidget = _MediaTile(
+        imageUrl: post.url!,
+        onTap: () => MediaViewer.show(
+          context,
+          imageUrls: [post.url!],
+        ),
+      );
+    }
+
+    if (mediaWidget == null) return const SizedBox.shrink();
+
+    if (shouldBlur) {
+      return _SensitiveOverlay(
+        isNsfw: post.isNsfw,
+        isSpoiler: post.isSpoiler,
+        onReveal: () => setState(() => _sensitiveRevealed = true),
+        child: mediaWidget,
+      );
+    }
+
+    return mediaWidget;
+  }
+}
+
+/// Overlay that blurs sensitive content and shows a tap-to-reveal button.
+class _SensitiveOverlay extends StatelessWidget {
+  final bool isNsfw;
+  final bool isSpoiler;
+  final VoidCallback onReveal;
+  final Widget child;
+
+  const _SensitiveOverlay({
+    required this.isNsfw,
+    required this.isSpoiler,
+    required this.onReveal,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labels = <String>[
+      if (isNsfw) 'NSFW',
+      if (isSpoiler) 'Spoiler',
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: GestureDetector(
+        onTap: onReveal,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            alignment: Alignment.center,
+            fit: StackFit.passthrough,
+            children: [
+              // Blurred content behind
+              ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: child,
+              ),
+              // Dark scrim
+              Container(
+                color: Colors.black54,
+              ),
+              // Label + reveal button
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: labels.map((label) {
+                      final color = label == 'NSFW'
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.tertiary;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: color),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: color,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap to reveal',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -293,8 +427,8 @@ class _TitleWithThumbnail extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: theme.colorScheme.surfaceContainerHighest,
-                    child: Icon(Icons.link, size: 20,
-                        color: theme.colorScheme.onSurfaceVariant),
+                    child: Icon(Icons.link,
+                        size: 20, color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ),
               ),
@@ -374,32 +508,51 @@ class _MetadataRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
             child: Text('PINNED',
-                style: TextStyle(fontSize: 9, color: cs.tertiary, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    fontSize: 9,
+                    color: cs.tertiary,
+                    fontWeight: FontWeight.w700)),
           ),
         ],
-          if (post.isNsfw) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                border: Border.all(color: cs.error),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: Text('NSFW',
-                  style: TextStyle(fontSize: 9, color: cs.error, fontWeight: FontWeight.w700)),
+        if (post.isNsfw) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              border: Border.all(color: cs.error),
+              borderRadius: BorderRadius.circular(2),
             ),
-          ],
-          const Spacer(),
-          _OverflowMenu(
-            post: post,
-            cs: cs,
-            onEdit: onEdit,
-            onDelete: onDelete,
-            onHide: onHide,
-            onUnhide: onUnhide,
+            child: Text('NSFW',
+                style: TextStyle(
+                    fontSize: 9, color: cs.error, fontWeight: FontWeight.w700)),
           ),
         ],
-      );
+        if (post.isSpoiler) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              border: Border.all(color: cs.tertiary),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Text('SPOILER',
+                style: TextStyle(
+                    fontSize: 9,
+                    color: cs.tertiary,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+        const Spacer(),
+        _OverflowMenu(
+          post: post,
+          cs: cs,
+          onEdit: onEdit,
+          onDelete: onDelete,
+          onHide: onHide,
+          onUnhide: onUnhide,
+        ),
+      ],
+    );
   }
 }
 
@@ -458,7 +611,8 @@ class _PostActionBar extends StatelessWidget {
           ),
         ),
         _VoteButton(
-          icon: downActive ? Icons.arrow_downward : Icons.arrow_downward_outlined,
+          icon:
+              downActive ? Icons.arrow_downward : Icons.arrow_downward_outlined,
           active: downActive,
           color: downActive ? cs.secondary : cs.onSurfaceVariant,
           activeColor: cs.secondary,

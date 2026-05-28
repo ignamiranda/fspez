@@ -5,19 +5,24 @@ import 'screens/feed_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/login_screen.dart';
+import '../data/app_settings.dart';
 import '../data/auth_providers.dart';
 import '../data/inbox_providers.dart';
+import '../domain/enums/app_theme_mode.dart';
 
 class FspezApp extends ConsumerWidget {
   const FspezApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
+    final isAmoled = settings.themeMode == AppThemeMode.amoled;
+
     return MaterialApp(
       title: 'fspez',
       theme: FspezTheme.light(),
-      darkTheme: FspezTheme.dark(),
-      themeMode: ThemeMode.system,
+      darkTheme: isAmoled ? FspezTheme.amoled() : FspezTheme.dark(),
+      themeMode: settings.themeMode.toThemeMode(),
       home: const _AppGate(),
     );
   }

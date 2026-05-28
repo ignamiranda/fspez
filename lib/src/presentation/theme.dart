@@ -43,6 +43,26 @@ class FspezTheme {
     return _build(colorScheme, Brightness.dark);
   }
 
+  /// AMOLED dark theme — pure black backgrounds for OLED screens.
+  static ThemeData amoled() {
+    final colorScheme = ColorScheme.dark(
+      primary: _redditOrange,
+      onPrimary: Colors.white,
+      primaryContainer: _redditOrange.withValues(alpha: 0.25),
+      onPrimaryContainer: const Color(0xFFFFD4C2),
+      secondary: _downvoteBlueDark,
+      onSecondary: Colors.white,
+      surface: const Color(0xFF000000),
+      onSurface: const Color(0xFFD7DADC),
+      surfaceContainerHighest: const Color(0xFF111111),
+      onSurfaceVariant: const Color(0xFF818384),
+      outline: const Color(0xFF222222),
+      outlineVariant: const Color(0xFF222222),
+      error: const Color(0xFFCF6679),
+    );
+    return _build(colorScheme, Brightness.dark);
+  }
+
   static ThemeData _build(ColorScheme colorScheme, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 
@@ -100,31 +120,49 @@ class FspezTheme {
       ),
       textTheme: TextTheme(
         titleLarge: TextStyle(
-          fontSize: 18, fontWeight: FontWeight.w700, color: colorScheme.onSurface,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurface,
         ),
         titleMedium: TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
         ),
         titleSmall: TextStyle(
-          fontSize: 14, fontWeight: FontWeight.w600, color: colorScheme.onSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
         ),
         bodyLarge: TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w400, color: colorScheme.onSurface,
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          color: colorScheme.onSurface,
         ),
         bodyMedium: TextStyle(
-          fontSize: 14, fontWeight: FontWeight.w400, color: colorScheme.onSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: colorScheme.onSurface,
         ),
         bodySmall: TextStyle(
-          fontSize: 12, fontWeight: FontWeight.w400, color: colorScheme.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: colorScheme.onSurfaceVariant,
         ),
         labelLarge: TextStyle(
-          fontSize: 14, fontWeight: FontWeight.w600, color: colorScheme.onSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
         ),
         labelMedium: TextStyle(
-          fontSize: 12, fontWeight: FontWeight.w500, color: colorScheme.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurfaceVariant,
         ),
         labelSmall: TextStyle(
-          fontSize: 10, fontWeight: FontWeight.w500, color: colorScheme.onSurfaceVariant,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -148,7 +186,8 @@ class FspezTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+        fillColor:
+            isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: colorScheme.outline),
@@ -161,13 +200,15 @@ class FspezTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        backgroundColor: isDark ? const Color(0xFF333333) : const Color(0xFF323232),
+        backgroundColor:
+            isDark ? const Color(0xFF333333) : const Color(0xFF323232),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: colorScheme.surface,
