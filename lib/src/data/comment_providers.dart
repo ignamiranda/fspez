@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../domain/enums/comment_sort.dart';
 import '../domain/models/subreddit.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
@@ -13,13 +14,12 @@ final commentRepositoryProvider = Provider<CommentRepository>((ref) {
   return CommentRepository(ref.watch(redditClientProvider));
 });
 
-final postDetailProvider =
-    FutureProvider.family<PostDetail, ({String subreddit, String postId})>(
-        (ref, params) async {
+final postDetailProvider = FutureProvider.family<PostDetail,
+    ({String subreddit, String postId, CommentSort sort})>((ref, params) async {
   final repo = ref.watch(commentRepositoryProvider);
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetchComments(params.subreddit, params.postId,
-      sessionCookie: sessionCookie);
+      sort: params.sort, sessionCookie: sessionCookie);
 });
 
 final subredditInfoProvider =

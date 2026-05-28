@@ -4,6 +4,7 @@ import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
 import '../../data/comment_repository.dart';
+import '../../domain/enums/comment_sort.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
@@ -29,6 +30,17 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   bool _isSending = false;
   String? _replyToId;
   String? _replyToName;
+  CommentSort _commentSort = CommentSort.best;
+
+  ({String subreddit, String postId, CommentSort sort}) _postDetailParams(
+      [Post? post]) {
+    final target = post ?? widget.post;
+    return (
+      subreddit: target.subreddit.name,
+      postId: target.id,
+      sort: _commentSort,
+    );
+  }
 
   @override
   void dispose() {
@@ -85,12 +97,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final account = ref.watch(activeAccountProvider);
-    final detailAsync = ref.watch(
-      postDetailProvider((
-        subreddit: widget.post.subreddit.name,
-        postId: widget.post.id,
-      )),
-    );
+    final detailAsync = ref.watch(postDetailProvider(_postDetailParams()));
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
 
@@ -110,7 +117,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           loggedIn: account != null,
         ),
         loading: () => _buildBody(context, null,
-            voteOverrides: voteOverrides, saveOverrides: saveOverrides),
+            voteOverrides: voteOverrides,
+            saveOverrides: saveOverrides,
+            commentsLoading: true),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -135,6 +144,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     Map<String, VoteDirection> voteOverrides = const {},
     Map<String, bool> saveOverrides = const {},
     bool loggedIn = false,
+    bool commentsLoading = false,
   }) {
     final theme = Theme.of(context);
     final comments = detail?.comments ?? const [];
@@ -144,7 +154,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postEffectiveSaved = saveOverrides[postFullname];
     final deleteNotifier = ref.read(deleteProvider.notifier);
     final session = ref.read(activeAccountProvider)?.sessionCookie;
-    final username = session != null ? ref.read(activeAccountProvider)?.username : null;
+    final username =
+        session != null ? ref.read(activeAccountProvider)?.username : null;
 
     return Column(
       children: [
@@ -155,32 +166,31 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 post: post,
                 theme: theme,
                 effectiveVote: postEffectiveVote,
-                onVote: (dir) =>
-                    handleVote(ref.read(voteProvider.notifier), postFullname, dir),
+                onVote: (dir) => handleVote(
+                    ref.read(voteProvider.notifier), postFullname, dir),
                 effectiveSaved: postEffectiveSaved,
                 onSave: () => handleSave(
                     ref.read(saveProvider.notifier), postFullname, context),
                 onEdit: username != null && post.author == username
                     ? () {
                         showEditSheet(context,
-                          currentText: post.selftext ?? '',
-                          readOnlyTitle: post.title,
-                          thingId: postFullname).then((saved) {
+                                currentText: post.selftext ?? '',
+                                readOnlyTitle: post.title,
+                                thingId: postFullname)
+                            .then((saved) {
                           if (saved == true && context.mounted) {
-                            ref.invalidate(postDetailProvider((
-                              subreddit: post.subreddit.name,
-                              postId: post.id,
-                            )));
+                            ref.invalidate(
+                                postDetailProvider(_postDetailParams(post)));
                           }
                         });
                       }
                     : null,
                 onDelete: username != null && post.author == username
-                    ? () => handleDelete(context, deleteNotifier, postFullname, session!)
+                    ? () => handleDelete(
+                        context, deleteNotifier, postFullname, session!)
                     : null,
               ),
-              if (post.selftext != null &&
-                  post.selftext!.isNotEmpty)
+              if (post.selftext != null && post.selftext!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
@@ -216,8 +226,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     imageUrls: post.mediaUrls,
                   ),
                 )
-              else if (post.type == PostType.image &&
-                  post.url != null)
+              else if (post.type == PostType.image && post.url != null)
                 _PostMediaTile(
                   imageUrl: post.url!,
                   onTap: () => MediaViewer.show(
@@ -225,8 +234,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     imageUrls: [post.url!],
                   ),
                 )
-              else if (post.type == PostType.link &&
-                  post.url != null)
+              else if (post.type == PostType.link && post.url != null)
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -246,16 +254,54 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               const Divider(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  comments.isEmpty
-                      ? 'Comments'
-                      : 'Comments (${comments.length})',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Row(
+                  children: [
+                    Text(
+                      comments.isEmpty
+                          ? 'Comments'
+                          : 'Comments (${comments.length})',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    PopupMenuButton<CommentSort>(
+                      initialValue: _commentSort,
+                      tooltip: 'Sort comments',
+                      onSelected: (sort) {
+                        if (sort == _commentSort) return;
+                        setState(() => _commentSort = sort);
+                      },
+                      itemBuilder: (_) => CommentSort.values.map((sort) {
+                        return PopupMenuItem(
+                          value: sort,
+                          child: Text(sort.label),
+                        );
+                      }).toList(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.sort, size: 18),
+                            const SizedBox(width: 4),
+                            Text(_commentSort.label),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              if (comments.isEmpty)
+              if (commentsLoading)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (comments.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(24),
                   child: Center(child: Text('No comments yet')),
@@ -283,13 +329,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onEdit: username != null && c.author == username
                           ? (fullname) {
                               showEditSheet(context,
-                                currentText: c.body,
-                                thingId: fullname).then((saved) {
+                                      currentText: c.body, thingId: fullname)
+                                  .then((saved) {
                                 if (saved == true && context.mounted) {
-                                  ref.invalidate(postDetailProvider((
-                                    subreddit: post.subreddit.name,
-                                    postId: post.id,
-                                  )));
+                                  ref.invalidate(postDetailProvider(
+                                      _postDetailParams(post)));
                                 }
                               });
                             }
@@ -297,7 +341,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onDelete: username != null
                           ? (fullname) {
                               if (c.author == username) {
-                                handleDelete(context, deleteNotifier, fullname, session!);
+                                handleDelete(context, deleteNotifier, fullname,
+                                    session!);
                               }
                             }
                           : null,
@@ -306,8 +351,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ],
           ),
         ),
-        if (loggedIn)
-          _buildInputBar(theme),
+        if (loggedIn) _buildInputBar(theme),
       ],
     );
   }
@@ -410,7 +454,7 @@ class _PostMediaTile extends StatelessWidget {
           ),
           if (isVideo)
             Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.black38,
                 shape: BoxShape.circle,
               ),

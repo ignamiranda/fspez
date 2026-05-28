@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/comment_repository.dart';
 import 'package:fspez/src/data/reddit_client.dart';
+import 'package:fspez/src/domain/enums/comment_sort.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
@@ -83,10 +84,11 @@ void main() {
       ];
 
       when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async =>
-          http.Response(jsonEncode(responseJson), 200));
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode(responseJson), 200));
 
       final detail = await repository.fetchComments('flutter', 'post1');
 
@@ -100,13 +102,13 @@ void main() {
       expect(detail.comments[1].body, 'Second comment');
 
       verify(() => mockHttp.get(
-            Uri.parse(
-                'https://www.reddit.com/r/flutter/comments/post1.json'),
+            Uri.parse('https://www.reddit.com/r/flutter/comments/post1.json'),
             headers: any(named: 'headers'),
           )).called(1);
     });
 
-    test('returns post with default values when post data is missing', () async {
+    test('returns post with default values when post data is missing',
+        () async {
       final responseJson = [
         {
           'kind': 'Listing',
@@ -134,10 +136,11 @@ void main() {
       ];
 
       when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async =>
-          http.Response(jsonEncode(responseJson), 200));
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode(responseJson), 200));
 
       final detail = await repository.fetchComments('flutter', 'post1');
 
@@ -208,10 +211,11 @@ void main() {
       ];
 
       when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async =>
-          http.Response(jsonEncode(responseJson), 200));
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode(responseJson), 200));
 
       final detail = await repository.fetchComments('flutter', 'post1');
 
@@ -220,6 +224,53 @@ void main() {
       expect(detail.comments[0].replies.length, 1);
       expect(detail.comments[0].replies[0].id, 'c2');
       expect(detail.comments[0].replies[0].body, 'Nested reply');
+    });
+
+    test('passes comment sort query parameter when provided', () async {
+      final responseJson = [
+        {
+          'kind': 'Listing',
+          'data': {
+            'children': [
+              {
+                'kind': 't3',
+                'data': {
+                  'id': 'post1',
+                  'title': 'Test',
+                  'author': 'u',
+                  'subreddit': 'flutter',
+                  'subreddit_id': 't5_2qh30',
+                  'permalink': '/r/test/1',
+                  'created_utc': 1000000000,
+                },
+              },
+            ],
+          },
+        },
+        {
+          'kind': 'Listing',
+          'data': {'children': []},
+        },
+      ];
+
+      when(() => mockHttp.get(
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode(responseJson), 200));
+
+      await repository.fetchComments(
+        'flutter',
+        'post1',
+        sort: CommentSort.new_,
+      );
+
+      verify(() => mockHttp.get(
+            Uri.parse(
+                'https://www.reddit.com/r/flutter/comments/post1.json?sort=new'),
+            headers: any(named: 'headers'),
+          )).called(1);
     });
 
     test('parses vote direction on comments', () async {
@@ -282,10 +333,11 @@ void main() {
       ];
 
       when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async =>
-          http.Response(jsonEncode(responseJson), 200));
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode(responseJson), 200));
 
       final detail = await repository.fetchComments('flutter', 'p1');
 

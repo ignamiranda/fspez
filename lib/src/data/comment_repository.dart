@@ -2,6 +2,7 @@ import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/session_cookie.dart';
+import '../domain/enums/comment_sort.dart';
 import '../domain/enums/vote_direction.dart';
 import 'reddit_client.dart';
 import 'api_responses.dart';
@@ -21,10 +22,12 @@ class CommentRepository {
   Future<PostDetail> fetchComments(
     String subreddit,
     String postId, {
+    CommentSort? sort,
     SessionCookie? sessionCookie,
   }) async {
     final raw = await _client.getRaw(
       '/r/$subreddit/comments/$postId',
+      queryParams: sort != null ? {'sort': sort.queryValue} : null,
       sessionCookie: sessionCookie,
     );
 
@@ -33,7 +36,8 @@ class CommentRepository {
     ApiPost? apiPost;
     if (items.isNotEmpty) {
       final listing = items[0] as Map<String, dynamic>;
-      final children = (listing['data'] as Map<String, dynamic>)['children'] as List<dynamic>;
+      final children = (listing['data'] as Map<String, dynamic>)['children']
+          as List<dynamic>;
       for (final child in children) {
         final childMap = child as Map<String, dynamic>;
         if (childMap['kind'] == 't3') {
@@ -53,9 +57,11 @@ class CommentRepository {
           type: PostType.self_,
         );
 
-    final commentsListing = items.length > 1 ? items[1] as Map<String, dynamic> : null;
+    final commentsListing =
+        items.length > 1 ? items[1] as Map<String, dynamic> : null;
     final commentsChildren = commentsListing != null
-        ? (commentsListing['data'] as Map<String, dynamic>)['children'] as List<dynamic>
+        ? (commentsListing['data'] as Map<String, dynamic>)['children']
+            as List<dynamic>
         : <dynamic>[];
 
     final comments = _parseComments(commentsChildren);
