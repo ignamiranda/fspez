@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/feed_pagination.dart';
@@ -8,6 +9,7 @@ import '../../domain/enums/feed_sort.dart';
 import '../../domain/models/subreddit.dart';
 import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
+import '../utils/reddit_markdown.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'submit_screen.dart';
 
@@ -33,7 +35,11 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadSubInfo());
     _scrollController = createInfiniteScrollController(
-      () => ref.read(feedPageProvider(FeedPageConfig.subreddit(widget.subredditName, sort: _sort)).notifier).loadMore(),
+      () => ref
+          .read(feedPageProvider(
+                  FeedPageConfig.subreddit(widget.subredditName, sort: _sort))
+              .notifier)
+          .loadMore(),
     );
   }
 
@@ -47,8 +53,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
     try {
       final repo = ref.read(subredditRepositoryProvider);
       final cookie = ref.read(activeAccountProvider)?.sessionCookie;
-      final sub = await repo.fetch(widget.subredditName,
-          sessionCookie: cookie);
+      final sub = await repo.fetch(widget.subredditName, sessionCookie: cookie);
       setState(() {
         _subInfo = sub;
         _isSubscribed = sub.isSubscribed;
@@ -85,7 +90,8 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(feedPageProvider(config).notifier).refresh(),
+            onPressed: () =>
+                ref.read(feedPageProvider(config).notifier).refresh(),
           ),
           PopupMenuButton<FeedSort>(
             icon: const Icon(Icons.sort),
@@ -118,6 +124,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
               isSubscribed: _isSubscribed,
               loading: _togglingSub,
               onToggle: _toggleSubscribe,
+              onAbout: () => _showAboutSheet(_subInfo!),
             ),
           Expanded(
             child: FeedScreenScaffold(
@@ -136,6 +143,15 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showAboutSheet(Subreddit sub) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => _SubredditAboutSheet(sub: sub),
     );
   }
 }
@@ -164,12 +180,14 @@ class _SubredditHeader extends StatelessWidget {
   final bool isSubscribed;
   final bool loading;
   final VoidCallback onToggle;
+  final VoidCallback onAbout;
 
   const _SubredditHeader({
     required this.sub,
     required this.isSubscribed,
     required this.loading,
     required this.onToggle,
+    required this.onAbout,
   });
 
   @override
@@ -188,7 +206,8 @@ class _SubredditHeader extends StatelessWidget {
                   ? Image.network(
                       sub.iconUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _SubredditLetterAvatar(name: sub.name, theme: theme),
+                      errorBuilder: (_, __, ___) =>
+                          _SubredditLetterAvatar(name: sub.name, theme: theme),
                     )
                   : _SubredditLetterAvatar(name: sub.name, theme: theme),
             ),
@@ -217,18 +236,235 @@ class _SubredditHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          FilledButton.tonal(
-            onPressed: loading ? null : onToggle,
-            child: loading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(isSubscribed ? 'Joined' : 'Join'),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton.outlined(
+                tooltip: 'About this community',
+                onPressed: onAbout,
+                icon: const Icon(Icons.info_outline),
+              ),
+              const SizedBox(height: 4),
+              FilledButton.tonal(
+                onPressed: loading ? null : onToggle,
+                child: loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(isSubscribed ? 'Joined' : 'Join'),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SubredditAboutSheet extends StatelessWidget {
+  final Subreddit sub;
+
+  const _SubredditAboutSheet({required this.sub});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          20 + MediaQuery.paddingOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              sub.displayName,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (_hasText(sub.description)) ...[
+              const SizedBox(height: 8),
+              Text(
+                sub.description!.trim(),
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (sub.isNsfw)
+                  _StatusChip(
+                    label: 'NSFW',
+                    icon: Icons.visibility_off_outlined,
+                    color: colorScheme.error,
+                  ),
+                if (sub.isQuarantined)
+                  _StatusChip(
+                    label: 'Quarantined',
+                    icon: Icons.warning_amber_outlined,
+                    color: colorScheme.error,
+                  ),
+                if (sub.isRestricted)
+                  _StatusChip(
+                    label: 'Restricted',
+                    icon: Icons.lock_outline,
+                    color: colorScheme.secondary,
+                  ),
+                if (sub.isPrivate)
+                  _StatusChip(
+                    label: 'Private',
+                    icon: Icons.lock_outline,
+                    color: colorScheme.secondary,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _AboutInfoRow(
+              icon: Icons.group_outlined,
+              label: 'Members',
+              value: formatCount(sub.subscriberCount),
+            ),
+            if (sub.activeUserCount != null) ...[
+              const SizedBox(height: 12),
+              _AboutInfoRow(
+                icon: Icons.circle_outlined,
+                label: 'Online',
+                value: formatCount(sub.activeUserCount!),
+              ),
+            ],
+            if (sub.createdAt != null) ...[
+              const SizedBox(height: 12),
+              _AboutInfoRow(
+                icon: Icons.calendar_today_outlined,
+                label: 'Created',
+                value: _formatCreatedDate(sub.createdAt!),
+              ),
+            ],
+            if (_hasText(sub.sidebarDescription)) ...[
+              const SizedBox(height: 20),
+              Text(
+                'Sidebar',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              MarkdownBody(
+                data: normalizeRedditMarkdown(sub.sidebarDescription!.trim()),
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: theme.textTheme.bodyMedium,
+                  a: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                  blockquoteDecoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: colorScheme.outlineVariant,
+                        width: 4,
+                      ),
+                    ),
+                  ),
+                  code: theme.textTheme.bodyMedium?.copyWith(
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    fontFamily: 'monospace',
+                  ),
+                  codeblockDecoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _hasText(String? value) => value != null && value.trim().isNotEmpty;
+
+  String _formatCreatedDate(DateTime createdAt) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[createdAt.month - 1]} ${createdAt.day}, ${createdAt.year}';
+  }
+}
+
+class _AboutInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _AboutInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 12),
+        Text(label, style: theme.textTheme.bodyMedium),
+        const Spacer(),
+        Text(
+          value.isEmpty ? '0' : value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _StatusChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label),
+      visualDensity: VisualDensity.compact,
+      side: BorderSide(color: color),
+      labelStyle: TextStyle(color: color),
+      backgroundColor: Colors.transparent,
     );
   }
 }

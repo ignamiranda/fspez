@@ -230,7 +230,9 @@ class ApiPost {
     final icon = srDetail!['icon_img'] as String?;
     if (icon != null && icon.isNotEmpty) return _cleanUrl(icon);
     final communityIcon = srDetail!['community_icon'] as String?;
-    if (communityIcon != null && communityIcon.isNotEmpty) return _cleanUrl(communityIcon);
+    if (communityIcon != null && communityIcon.isNotEmpty) {
+      return _cleanUrl(communityIcon);
+    }
     return null;
   }
 
@@ -321,7 +323,8 @@ class ApiComment {
     final repliesRaw = data['replies'];
     List<ApiComment> replies;
     if (repliesRaw is Map<String, dynamic> && repliesRaw['kind'] == 'Listing') {
-      final children = (repliesRaw['data'] as Map<String, dynamic>)['children'] as List<dynamic>;
+      final children = (repliesRaw['data'] as Map<String, dynamic>)['children']
+          as List<dynamic>;
       replies = children
           .whereType<Map<String, dynamic>>()
           .where((c) => c['kind'] == 't1')
@@ -392,7 +395,8 @@ class ApiMessage {
     final repliesRaw = data['replies'];
     List<ApiMessage> replies;
     if (repliesRaw is Map<String, dynamic> && repliesRaw['kind'] == 'Listing') {
-      final children = (repliesRaw['data'] as Map<String, dynamic>)['children'] as List<dynamic>;
+      final children = (repliesRaw['data'] as Map<String, dynamic>)['children']
+          as List<dynamic>;
       replies = children
           .whereType<Map<String, dynamic>>()
           .where((c) => c['kind'] == 't4' || c['kind'] == 't1')
@@ -427,9 +431,14 @@ class ApiSubreddit {
   final String id;
   final String displayName;
   final String? publicDescription;
+  final String? description;
   final int subscribers;
+  final int? activeUserCount;
+  final int? createdUtc;
   final bool over18;
+  final bool quarantine;
   final bool userIsSubscriber;
+  final String? subredditType;
   final String? iconImg;
   final String? communityIcon;
   final String? bannerImg;
@@ -439,9 +448,14 @@ class ApiSubreddit {
     required this.id,
     required this.displayName,
     this.publicDescription,
+    this.description,
     required this.subscribers,
+    this.activeUserCount,
+    this.createdUtc,
     required this.over18,
+    required this.quarantine,
     required this.userIsSubscriber,
+    this.subredditType,
     this.iconImg,
     this.communityIcon,
     this.bannerImg,
@@ -453,9 +467,14 @@ class ApiSubreddit {
       id: data['id'] as String? ?? '',
       displayName: data['display_name'] as String? ?? '',
       publicDescription: data['public_description'] as String?,
+      description: data['description'] as String?,
       subscribers: data['subscribers'] as int? ?? 0,
+      activeUserCount: (data['active_user_count'] as num?)?.toInt(),
+      createdUtc: (data['created_utc'] as num?)?.toInt(),
       over18: data['over18'] as bool? ?? false,
+      quarantine: data['quarantine'] as bool? ?? false,
       userIsSubscriber: data['user_is_subscriber'] as bool? ?? false,
+      subredditType: data['subreddit_type'] as String?,
       iconImg: data['icon_img'] as String?,
       communityIcon: data['community_icon'] as String?,
       bannerImg: data['banner_img'] as String?,
@@ -468,9 +487,16 @@ class ApiSubreddit {
       id: id,
       name: displayName.isNotEmpty ? displayName : fallbackName,
       description: publicDescription,
+      sidebarDescription: description,
       subscriberCount: subscribers,
+      activeUserCount: activeUserCount,
+      createdAt: createdUtc == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(createdUtc! * 1000),
       isNsfw: over18,
+      isQuarantined: quarantine,
       isSubscribed: userIsSubscriber,
+      subredditType: subredditType,
       iconUrl: _iconUrl(),
       bannerUrl: bannerImg ?? bannerBackgroundImage,
     );
@@ -478,9 +504,13 @@ class ApiSubreddit {
 
   String? _iconUrl() {
     final raw = iconImg;
-    if (raw != null && raw.isNotEmpty) return raw.replaceAll('&amp;', '&');
+    if (raw != null && raw.isNotEmpty) {
+      return raw.replaceAll('&amp;', '&');
+    }
     final fallback = communityIcon;
-    if (fallback != null && fallback.isNotEmpty) return fallback.replaceAll('&amp;', '&');
+    if (fallback != null && fallback.isNotEmpty) {
+      return fallback.replaceAll('&amp;', '&');
+    }
     return null;
   }
 }

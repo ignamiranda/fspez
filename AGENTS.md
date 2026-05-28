@@ -10,6 +10,8 @@
 ## Before committing
 - When new files are part of the change, remember that `git diff --stat` omits untracked files. Review `git status --short` and explicitly include intended new files in staging/diff review before committing.
 - After any user-requested commit, end the final response with the next `handoffs/*.md` file to implement and a brief reason.
+- When the user says `commit`, also perform the established cleanup workflow: delete the implemented handoff, run `/update-project-skills`, inspect status/diff/recent log, stage only intended files, commit, then report the next handoff.
+- Run `dart format` only on Dart files. Do not pass YAML or other non-Dart files to `dart format`; use package/tool-specific formatting only when needed.
 
 ## Architecture
 - **Auth**: Cookie-only via WebView CDP (`Network.getCookies`, 10×500ms) → `GET /api/me` for modhash → username extraction (JS eval → API call → cookie heuristic). No OAuth. `AuthAcquirer` orchestrates.
