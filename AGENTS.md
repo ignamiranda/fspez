@@ -4,6 +4,9 @@
 - `flutter run` — Windows desktop (default target)
 - `flutter build windows` — Windows release build
 
+## Reporting feature work
+- When a user-facing feature changes UI or Reddit-side behavior, include quick manual test steps in the final response: command to run, required account/data setup, exact UI path, and expected visible result. Do this even if automated tests passed.
+
 ## Architecture
 - **Auth**: Cookie-only via WebView CDP (`Network.getCookies`, 10×500ms) → `GET /api/me` for modhash → username extraction (JS eval → API call → cookie heuristic). No OAuth. `AuthAcquirer` orchestrates.
 - **State**: Riverpod (`StateNotifierProvider`, `FutureProvider.family`). Pagination via `CursorPaginatedNotifier` → `FeedPageNotifier` (cursor/after, loading). Optimistic updates via `OptimisticStateNotifier<K,V>` → `WriteOperationNotifier<V>`. `VoteNotifier` keeps optimistic on error; `SaveNotifier`/`HideNotifier` revert + rethrow.

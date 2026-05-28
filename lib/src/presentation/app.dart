@@ -6,6 +6,7 @@ import 'screens/inbox_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/login_screen.dart';
 import '../data/auth_providers.dart';
+import '../data/inbox_providers.dart';
 
 class FspezApp extends ConsumerWidget {
   const FspezApp({super.key});
@@ -66,6 +67,8 @@ class _MainShellState extends ConsumerState<_MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = ref.watch(inboxUnreadCountProvider);
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -76,24 +79,46 @@ class _MainShellState extends ConsumerState<_MainShell> {
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Feed',
           ),
           NavigationDestination(
-            icon: Icon(Icons.mail_outlined),
-            selectedIcon: Icon(Icons.mail),
+            icon: _InboxNavIcon(
+              count: unreadCount,
+              icon: Icons.mail_outlined,
+            ),
+            selectedIcon: _InboxNavIcon(
+              count: unreadCount,
+              icon: Icons.mail,
+            ),
             label: 'Inbox',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outlined),
             selectedIcon: Icon(Icons.person),
             label: 'Account',
           ),
         ],
       ),
+    );
+  }
+}
+
+class _InboxNavIcon extends StatelessWidget {
+  final int count;
+  final IconData icon;
+
+  const _InboxNavIcon({required this.count, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Badge(
+      isLabelVisible: count > 0,
+      label: Text(count > 99 ? '99+' : '$count'),
+      child: Icon(icon),
     );
   }
 }

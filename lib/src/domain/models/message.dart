@@ -40,6 +40,44 @@ class Message with EquatableMixin {
     this.firstMessageName,
   });
 
+  Message copyWith({
+    String? id,
+    String? subject,
+    String? body,
+    String? author,
+    String? dest,
+    DateTime? createdAt,
+    bool? isNew,
+    bool? isComment,
+    String? parentId,
+    List<Message>? replies,
+    String? subreddit,
+    String? distinguished,
+    VoteDirection? vote,
+    int? score,
+    String? context,
+    String? firstMessageName,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      subject: subject ?? this.subject,
+      body: body ?? this.body,
+      author: author ?? this.author,
+      dest: dest ?? this.dest,
+      createdAt: createdAt ?? this.createdAt,
+      isNew: isNew ?? this.isNew,
+      isComment: isComment ?? this.isComment,
+      parentId: parentId ?? this.parentId,
+      replies: replies ?? this.replies,
+      subreddit: subreddit ?? this.subreddit,
+      distinguished: distinguished ?? this.distinguished,
+      vote: vote ?? this.vote,
+      score: score ?? this.score,
+      context: context ?? this.context,
+      firstMessageName: firstMessageName ?? this.firstMessageName,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

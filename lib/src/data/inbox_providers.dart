@@ -8,9 +8,12 @@ final inboxRepositoryProvider = Provider<InboxRepository>((ref) {
   return InboxRepository(ref.watch(redditClientProvider));
 });
 
-final inboxProvider =
-    StateNotifierProvider<InboxNotifier, InboxState>((ref) {
+final inboxProvider = StateNotifierProvider<InboxNotifier, InboxState>((ref) {
   final repo = ref.watch(inboxRepositoryProvider);
   final account = ref.watch(activeAccountProvider);
   return InboxNotifier(repo, account);
+});
+
+final inboxUnreadCountProvider = Provider<int>((ref) {
+  return ref.watch(inboxProvider.select((state) => state.unreadCount));
 });

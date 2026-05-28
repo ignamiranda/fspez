@@ -48,8 +48,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.inbox_outlined, size: 64,
-                  color: theme.colorScheme.onSurfaceVariant),
+              Icon(Icons.inbox_outlined,
+                  size: 64, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(height: 16),
               Text('Log in to see your inbox.',
                   style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
@@ -102,8 +102,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     );
   }
 
-  Widget _buildBody(
-      InboxState state, InboxNotifier notifier, ThemeData theme) {
+  Widget _buildBody(InboxState state, InboxNotifier notifier, ThemeData theme) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -115,10 +114,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48,
-                  color: theme.colorScheme.error),
+              Icon(Icons.error_outline,
+                  size: 48, color: theme.colorScheme.error),
               const SizedBox(height: 16),
-              Text(state.error!, textAlign: TextAlign.center,
+              Text(state.error!,
+                  textAlign: TextAlign.center,
                   style: TextStyle(color: theme.colorScheme.error)),
             ],
           ),
@@ -131,8 +131,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined, size: 64,
-                color: theme.colorScheme.onSurfaceVariant),
+            Icon(Icons.inbox_outlined,
+                size: 64, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text('No messages yet.',
                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
@@ -160,14 +160,20 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           return _MessageTile(
             message: msg,
             isExpanded: _expandedIds.contains(msg.id),
-            onToggle: () => setState(() {
+            onToggle: () {
               final id = msg.id;
-              if (_expandedIds.contains(id)) {
-                _expandedIds.remove(id);
-              } else {
-                _expandedIds.add(id);
+              final wasExpanded = _expandedIds.contains(id);
+              setState(() {
+                if (wasExpanded) {
+                  _expandedIds.remove(id);
+                } else {
+                  _expandedIds.add(id);
+                }
+              });
+              if (!wasExpanded && msg.isNew) {
+                notifier.markAsRead(msg);
               }
-            }),
+            },
             onReply: msg.isComment
                 ? null
                 : () {
@@ -245,7 +251,8 @@ class _MessageTile extends StatelessWidget {
                           if (message.isComment)
                             Padding(
                               padding: const EdgeInsets.only(right: 4),
-                              child: Icon(Icons.reply_outlined, size: 14,
+                              child: Icon(Icons.reply_outlined,
+                                  size: 14,
                                   color: theme.colorScheme.onSurfaceVariant),
                             ),
                           Text(
@@ -265,8 +272,7 @@ class _MessageTile extends StatelessWidget {
                               : FontWeight.normal,
                         ),
                         maxLines: isExpanded ? null : 2,
-                        overflow:
-                            isExpanded ? null : TextOverflow.ellipsis,
+                        overflow: isExpanded ? null : TextOverflow.ellipsis,
                       ),
                       if (!isExpanded && message.body.isNotEmpty) ...[
                         const SizedBox(height: 2),
@@ -361,8 +367,8 @@ class _MessageBody extends StatelessWidget {
                     Row(
                       children: [
                         Text(reply.author,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600)),
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(fontWeight: FontWeight.w600)),
                         const SizedBox(width: 8),
                         Text(timeAgo(reply.createdAt),
                             style: theme.textTheme.bodySmall?.copyWith(

@@ -12,6 +12,7 @@ class InboxState with EquatableMixin {
   final bool isLoadingMore;
   final String? error;
   final bool hasMore;
+  final int unreadCount;
 
   const InboxState({
     this.tab = InboxTab.inbox,
@@ -20,6 +21,7 @@ class InboxState with EquatableMixin {
     this.isLoadingMore = false,
     this.error,
     this.hasMore = false,
+    this.unreadCount = 0,
   });
 
   InboxState copyWith({
@@ -29,6 +31,7 @@ class InboxState with EquatableMixin {
     bool? isLoadingMore,
     String? error,
     bool? hasMore,
+    int? unreadCount,
     bool clearError = false,
   }) {
     return InboxState(
@@ -38,23 +41,26 @@ class InboxState with EquatableMixin {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
       hasMore: hasMore ?? this.hasMore,
+      unreadCount: unreadCount ?? this.unreadCount,
     );
   }
 
   @override
   List<Object?> get props =>
-      [tab, messages, isLoading, isLoadingMore, error, hasMore];
+      [tab, messages, isLoading, isLoadingMore, error, hasMore, unreadCount];
 }
 
-class InboxNotifier
-    extends CursorPaginatedNotifier<InboxState, MessageFeed> {
+class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
   final InboxRepository _repository;
   final Account? _account;
 
   InboxNotifier(this._repository, this._account, {bool autoLoad = true})
       : super(const InboxState(isLoading: true), autoLoad: false) {
     if (autoLoad) {
-      Future.microtask(() => loadTab(InboxTab.inbox));
+      Future.microtask(() async {
+        await loadTab(InboxTab.inbox);
+        await refreshUnreadCount();
+      });
     }
   }
 
@@ -68,6 +74,7 @@ class InboxNotifier
         messages: feed.messages,
         isLoading: false,
         hasMore: feed.hasMorePages,
+        unreadCount: tab == InboxTab.unread ? feed.messages.length : null,
       );
     } catch (e) {
       state = state.copyWith(
@@ -80,10 +87,53 @@ class InboxNotifier
   Future<MessageFeed> _fetch(InboxTab tab, {String? after}) {
     final cookie = _account?.sessionCookie;
     return switch (tab) {
-      InboxTab.inbox => _repository.fetchInbox(after: after, sessionCookie: cookie),
-      InboxTab.unread => _repository.fetchUnread(after: after, sessionCookie: cookie),
-      InboxTab.sent => _repository.fetchSent(after: after, sessionCookie: cookie),
+      InboxTab.inbox =>
+        _repository.fetchInbox(after: after, sessionCookie: cookie),
+      InboxTab.unread =>
+        _repository.fetchUnread(after: after, sessionCookie: cookie),
+      InboxTab.sent =>
+        _repository.fetchSent(after: after, sessionCookie: cookie),
     };
+  }
+
+  Future<void> refreshUnreadCount() async {
+    final cookie = _account?.sessionCookie;
+    if (cookie == null) {
+      state = state.copyWith(unreadCount: 0);
+      return;
+    }
+
+    try {
+      final feed = await _repository.fetchUnread(sessionCookie: cookie);
+      state = state.copyWith(unreadCount: feed.messages.length);
+    } catch (_) {
+      // Keep the last known badge count; inbox loading errors are shown in-tab.
+    }
+  }
+
+  Future<void> markAsRead(Message message) async {
+    final cookie = _account?.sessionCookie;
+    if (cookie == null || !message.isNew) return;
+
+    final previousState = state;
+    final updatedMessages = state.messages
+        .where((m) => state.tab != InboxTab.unread || m.id != message.id)
+        .map((m) => m.id == message.id ? m.copyWith(isNew: false) : m)
+        .toList();
+
+    state = state.copyWith(
+      messages: updatedMessages,
+      unreadCount: state.unreadCount > 0 ? state.unreadCount - 1 : 0,
+    );
+
+    try {
+      await _repository.markAsRead(message.fullname, cookie);
+    } catch (_) {
+      state = previousState;
+      await refresh();
+      await refreshUnreadCount();
+      rethrow;
+    }
   }
 
   @override
@@ -94,8 +144,11 @@ class InboxNotifier
   String? extractAfter(MessageFeed page) => page.after;
 
   @override
-  InboxState buildLoadingState(InboxState current) =>
-      InboxState(isLoading: true, tab: current.tab);
+  InboxState buildLoadingState(InboxState current) => InboxState(
+        isLoading: true,
+        tab: current.tab,
+        unreadCount: current.unreadCount,
+      );
 
   @override
   InboxState buildSuccessState(MessageFeed page) => InboxState(
@@ -103,6 +156,9 @@ class InboxNotifier
         messages: page.messages,
         isLoading: false,
         hasMore: page.hasMorePages,
+        unreadCount: page.tab == InboxTab.unread
+            ? page.messages.length
+            : state.unreadCount,
       );
 
   @override
@@ -118,8 +174,11 @@ class InboxNotifier
       );
 
   @override
-  InboxState buildErrorState(String error) =>
-      InboxState(isLoading: false, error: error);
+  InboxState buildErrorState(String error) => InboxState(
+        isLoading: false,
+        error: error,
+        unreadCount: state.unreadCount,
+      );
 
   @override
   InboxState buildErrorWithState(InboxState current, String error) =>
