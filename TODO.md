@@ -6,7 +6,7 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 
 ## Ranked handoffs
 
-1. `handoffs/2026-05-27-bottom-sheet-action-menus-handoff.md` — mobile-first interaction foundation for report/block/share/crosspost/mod actions as menus grow.
+1. `handoffs/2026-05-27-bottom-sheet-action-menus-handoff.md` — approved mobile UX improvement; replace popup menus with thumb-friendly bottom sheets for post actions; high mobile parity value.
 2. `handoffs/2026-05-27-optimistic-action-undo-snackbars-handoff.md` — high mobile trust value; makes destructive/reversible actions feel safer and more polished.
 3. `handoffs/2026-05-27-nsfw-spoiler-blur-reveal-handoff.md` — core Reddit safety/content expectation and important mobile parity. **Partially done**: PostCard blur/reveal and settings toggles implemented; fullscreen media protection remaining.
 4. `handoffs/2026-05-27-account-session-health-relogin-recovery-handoff.md` — reliability foundation for cookie-only auth; prevents confusing failures across votes, saves, submit, inbox, and mod actions.

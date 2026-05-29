@@ -12,6 +12,8 @@
 - Run `dart format` only on Dart files. Do not pass YAML or other non-Dart files to `dart format`; use package/tool-specific formatting only when needed.
 
 ## Commit workflow (mandatory sequence)
+**Never commit, amend, or revert without an explicit user instruction** (e.g. the user says `commit`). Finishing a feature, passing tests, or completing a handoff is NOT approval to commit — stop and wait. Step 1 (delete handoff) only applies when the work being committed corresponds to a handoff file; skip it for ad-hoc bug fixes.
+
 When the user says `commit`, execute **all** steps in order. Do not skip any step:
 
 1. **Delete** the implemented handoff file from `handoffs/`

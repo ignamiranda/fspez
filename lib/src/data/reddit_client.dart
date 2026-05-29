@@ -258,7 +258,7 @@ class RedditClient {
   }
 
   Future<void> deleteContent(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/del', fields: {'id': fullname}, sessionCookie: sessionCookie);
+    await _oldRedditPost('/api/del', fullname, sessionCookie);
   }
 
   Future<void> hide(String fullname, SessionCookie sessionCookie) async {

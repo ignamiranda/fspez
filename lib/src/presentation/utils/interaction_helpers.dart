@@ -23,7 +23,12 @@ Future<void> handleSave(
   }
 }
 
-Future<void> handleDelete(
+/// Shows a confirmation dialog and deletes [fullname] on confirm.
+///
+/// Returns `true` when the delete succeeded, `false` when the user cancelled
+/// or the delete failed. Callers can use the result to refresh UI (e.g.
+/// invalidate a provider so the deleted item disappears immediately).
+Future<bool> handleDelete(
   BuildContext context,
   PostActionsService actions,
   String fullname,
@@ -45,7 +50,7 @@ Future<void> handleDelete(
       ],
     ),
   );
-  if (confirmed != true) return;
+  if (confirmed != true) return false;
   try {
     await actions.delete(fullname);
     if (context.mounted) {
@@ -56,11 +61,13 @@ Future<void> handleDelete(
         ),
       );
     }
+    return true;
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Delete failed: $e')),
       );
     }
+    return false;
   }
 }

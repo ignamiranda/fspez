@@ -341,11 +341,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               });
                             }
                           : null,
-                      onDelete: username != null
+                      onDelete: username != null && c.author == username
                           ? (fullname) {
-                              if (c.author == username) {
-                                handleDelete(context, actions, fullname);
-                              }
+                              handleDelete(context, actions, fullname)
+                                  .then((deleted) {
+                                if (deleted && context.mounted) {
+                                  ref.invalidate(postDetailProvider(
+                                      _postDetailParams(post)));
+                                }
+                              });
                             }
                           : null,
                     )),
