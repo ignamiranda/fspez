@@ -5,6 +5,7 @@ import '../../data/inbox_providers.dart';
 import '../../data/inbox_notifier.dart';
 import '../../domain/models/message.dart';
 import '../../domain/models/message_feed.dart';
+import '../tab_scroll_signal.dart';
 import '../utils/format_utils.dart';
 import '../utils/infinite_scroll.dart';
 import 'compose_screen.dart';
@@ -36,6 +37,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(tabScrollSignalProvider, (_, __) {
+      final c = _inboxScrollController;
+      if (c != null && c.hasClients && c.offset > 0) {
+        c.animateTo(0,
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+    });
     final state = ref.watch(inboxProvider);
     final notifier = ref.read(inboxProvider.notifier);
     final theme = Theme.of(context);

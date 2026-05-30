@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import '../../data/app_settings.dart';
@@ -10,6 +11,7 @@ import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
 import 'media_viewer.dart';
 import 'bottom_sheet_menu.dart';
+import 'user_flair_chip.dart';
 
 class PostCard extends ConsumerStatefulWidget {
   final Post post;
@@ -310,6 +312,49 @@ class _OverflowMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final primaryActions = <BottomSheetAction>[];
     final authorActions = <BottomSheetAction>[];
+
+    // Copy actions
+    primaryActions.add(BottomSheetAction(
+      icon: Icons.link,
+      label: 'Copy Reddit link',
+      onTap: () {
+        final link = 'https://www.reddit.com${post.permalink}';
+        Clipboard.setData(ClipboardData(text: link));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Copied')),
+        );
+      },
+    ));
+
+    if (post.url != null &&
+        !post.url!.startsWith('https://www.reddit.com') &&
+        post.type != PostType.self_) {
+      primaryActions.add(BottomSheetAction(
+        icon: Icons.open_in_new,
+        label: 'Copy external link',
+        onTap: () {
+          Clipboard.setData(ClipboardData(text: post.url!));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Copied')),
+          );
+        },
+      ));
+    }
+
+    final textToCopy = post.selftext != null && post.selftext!.isNotEmpty
+        ? '${post.title}\n\n${post.selftext}'
+        : post.title;
+    primaryActions.add(BottomSheetAction(
+      icon: Icons.content_copy,
+      label: 'Copy text',
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: textToCopy));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Copied')),
+        );
+      },
+    ));
+
     if (onHide != null) {
       primaryActions.add(BottomSheetAction(
         icon: Icons.visibility_off_outlined,
@@ -502,6 +547,10 @@ class _MetadataRow extends StatelessWidget {
             ),
           ),
         ),
+        if (post.authorFlair != null) ...[
+          const SizedBox(width: 4),
+          Flexible(child: UserFlairChip(flair: post.authorFlair!)),
+        ],
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text('·', style: TextStyle(color: cs.onSurfaceVariant)),
@@ -553,6 +602,30 @@ class _MetadataRow extends StatelessWidget {
                     fontSize: 9,
                     color: cs.tertiary,
                     fontWeight: FontWeight.w700)),
+          ),
+        ],
+        if (post.crosspostParent != null) ...[
+          const SizedBox(width: 6),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                border: Border.all(color: cs.tertiary),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Text(
+                post.crosspostParent!.subreddit.name.isNotEmpty
+                    ? 'Crossposted from r/${post.crosspostParent!.subreddit.name}'
+                    : 'Crossposted post',
+                style: TextStyle(
+                  fontSize: 9,
+                  color: cs.tertiary,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ),
         ],
         const Spacer(),

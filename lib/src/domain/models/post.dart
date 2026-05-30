@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/enums/vote_direction.dart';
 import 'subreddit.dart';
+import 'user_flair.dart';
 
 enum PostType { link, self_, image, gallery, video, crosspost, poll }
 
@@ -27,6 +28,7 @@ class Post with EquatableMixin {
   final Post? crosspostParent;
   final List<String> mediaUrls;
   final String? videoUrl;
+  final UserFlair? authorFlair;
 
   String get fullname => 't3_$id';
 
@@ -53,6 +55,7 @@ class Post with EquatableMixin {
     this.crosspostParent,
     this.mediaUrls = const [],
     this.videoUrl,
+    this.authorFlair,
   });
 
   @override
@@ -79,5 +82,6 @@ class Post with EquatableMixin {
         crosspostParent,
         mediaUrls,
         videoUrl,
+        authorFlair,
       ];
 }

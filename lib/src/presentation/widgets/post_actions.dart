@@ -3,6 +3,7 @@ import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
+import 'user_flair_chip.dart';
 
 class PostHeader extends StatelessWidget {
   final Post post;
@@ -65,6 +66,10 @@ class PostHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              if (post.authorFlair != null) ...[
+                const SizedBox(width: 4),
+                Flexible(child: UserFlairChip(flair: post.authorFlair!)),
+              ],
               const SizedBox(width: 4),
               Text(
                 timeAgo(post.createdAt),
@@ -83,7 +88,8 @@ class PostHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(3),
             ),
             child: Text('PINNED',
-                style: TextStyle(fontSize: 9, color: theme.colorScheme.tertiary)),
+                style:
+                    TextStyle(fontSize: 9, color: theme.colorScheme.tertiary)),
           ),
         if (post.isNsfw)
           Container(
@@ -94,6 +100,23 @@ class PostHeader extends StatelessWidget {
             ),
             child: Text('NSFW',
                 style: TextStyle(fontSize: 9, color: theme.colorScheme.error)),
+          ),
+        if (post.crosspostParent != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.tertiary),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(
+              post.crosspostParent!.subreddit.name.isNotEmpty
+                  ? 'Crosspost'
+                  : 'Crosspost',
+              style: TextStyle(
+                fontSize: 9,
+                color: theme.colorScheme.tertiary,
+              ),
+            ),
           ),
       ],
     );
@@ -160,9 +183,8 @@ class PostActions extends StatelessWidget {
                 ? Icons.arrow_upward
                 : Icons.arrow_upward_outlined,
             label: formatCount(post.score),
-            color: vote == VoteDirection.upvote
-                ? theme.colorScheme.primary
-                : null,
+            color:
+                vote == VoteDirection.upvote ? theme.colorScheme.primary : null,
             onTap: () => onVote?.call(VoteDirection.upvote),
           ),
           if (post.upvoteRatio != null) ...[

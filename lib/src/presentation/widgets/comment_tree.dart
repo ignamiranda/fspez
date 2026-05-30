@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
+import 'user_flair_chip.dart';
 
 class CommentTree extends StatefulWidget {
   final Comment comment;
@@ -91,6 +93,12 @@ class _CommentTreeState extends State<CommentTree> {
                           ),
                         ),
                       ),
+                      if (widget.comment.authorFlair != null) ...[
+                        const SizedBox(width: 4),
+                        Flexible(
+                            child: UserFlairChip(
+                                flair: widget.comment.authorFlair!)),
+                      ],
                       if (widget.comment.isSubmitter) ...[
                         const SizedBox(width: 4),
                         Container(
@@ -213,6 +221,40 @@ class _CommentTreeState extends State<CommentTree> {
                                       color: effectiveSaved
                                           ? theme.colorScheme.tertiary
                                           : theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  InkWell(
+                                    onTap: () {
+                                      final link =
+                                          'https://www.reddit.com/comments/${widget.comment.postId}/_/${widget.comment.id}/';
+                                      Clipboard.setData(
+                                          ClipboardData(text: link));
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(content: Text('Copied')),
+                                      );
+                                    },
+                                    child: Icon(
+                                      Icons.link,
+                                      size: 16,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  InkWell(
+                                    onTap: () {
+                                      Clipboard.setData(ClipboardData(
+                                          text: widget.comment.body));
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(content: Text('Copied')),
+                                      );
+                                    },
+                                    child: Icon(
+                                      Icons.content_copy,
+                                      size: 16,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   if (widget.onEdit != null) ...[

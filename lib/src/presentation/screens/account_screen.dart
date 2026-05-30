@@ -1,17 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
+import '../tab_scroll_signal.dart';
 import 'auth_webview_screen.dart';
 import 'saved_screen.dart';
 import 'hidden_screen.dart';
 import 'settings_screen.dart';
 import 'user_profile_screen.dart';
 
-class AccountScreen extends ConsumerWidget {
+class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends ConsumerState<AccountScreen> {
+  ScrollController? _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<int>(tabScrollSignalProvider, (_, __) {
+      final c = _scrollController;
+      if (c != null && c.hasClients && c.offset > 0) {
+        c.animateTo(0,
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+    });
+
     final activeAccount = ref.watch(activeAccountProvider);
     final accounts = ref.watch(accountsProvider);
 
@@ -28,7 +56,7 @@ class AccountScreen extends ConsumerWidget {
       ),
       body: activeAccount == null
           ? _buildLoggedOut(context)
-          : _buildLoggedIn(context, ref, accounts, activeAccount),
+          : _buildLoggedIn(context, accounts, activeAccount),
     );
   }
 
@@ -58,10 +86,11 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoggedIn(BuildContext context, WidgetRef ref,
-      List<dynamic> accounts, dynamic activeAccount) {
+  Widget _buildLoggedIn(
+      BuildContext context, List<dynamic> accounts, dynamic activeAccount) {
     final theme = Theme.of(context);
     return ListView(
+      controller: _scrollController,
       padding: const EdgeInsets.all(16),
       children: [
         Text('Accounts',
@@ -87,13 +116,13 @@ class AccountScreen extends ConsumerWidget {
                 IconButton(
                   icon: Icon(Icons.delete_outline,
                       color: theme.colorScheme.error),
-                  onPressed: () => _removeAccount(context, ref, account),
+                  onPressed: () => _removeAccount(context, account),
                 ),
               ],
             ),
             onTap: account.id == activeAccount.id
                 ? null
-                : () => _switchAccount(ref, account),
+                : () => _switchAccount(account),
           ),
           if (account != accounts.last) const Divider(height: 1),
         ],
@@ -190,7 +219,7 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  void _switchAccount(WidgetRef ref, dynamic account) {
+  void _switchAccount(dynamic account) {
     ref.read(activeAccountProvider.notifier).setActive(account);
   }
 
@@ -200,8 +229,7 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _removeAccount(
-      BuildContext context, WidgetRef ref, dynamic account) async {
+  Future<void> _removeAccount(BuildContext context, dynamic account) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

@@ -4,6 +4,7 @@ import '../../data/auth_providers.dart';
 import '../../data/feed_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
+import '../tab_scroll_signal.dart';
 import '../utils/infinite_scroll.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'search_screen.dart';
@@ -45,6 +46,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(tabScrollSignalProvider, (_, __) {
+      final c = _scrollController;
+      if (c != null && c.hasClients && c.offset > 0) {
+        c.animateTo(0,
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+    });
     final account = ref.watch(activeAccountProvider);
     final loggedIn = account != null;
     final config = _showAll
@@ -56,12 +64,17 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _showAll ? 'Popular' : loggedIn ? 'fspez' : 'Popular',
+          _showAll
+              ? 'Popular'
+              : loggedIn
+                  ? 'fspez'
+                  : 'Popular',
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(feedPageProvider(_buildConfig()).notifier).refresh(),
+            onPressed: () =>
+                ref.read(feedPageProvider(_buildConfig()).notifier).refresh(),
           ),
           IconButton(
             icon: Icon(_showAll ? Icons.home : Icons.whatshot),

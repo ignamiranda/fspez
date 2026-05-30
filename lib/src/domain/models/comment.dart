@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/enums/vote_direction.dart';
+import 'user_flair.dart';
 
 class Comment with EquatableMixin {
   final String id;
@@ -17,6 +18,7 @@ class Comment with EquatableMixin {
   final int depth;
   final List<Comment> replies;
   final bool isCollapsed;
+  final UserFlair? authorFlair;
 
   String get fullname => 't1_$id';
 
@@ -36,6 +38,7 @@ class Comment with EquatableMixin {
     this.depth = 0,
     this.replies = const [],
     this.isCollapsed = false,
+    this.authorFlair,
   });
 
   @override
@@ -55,5 +58,6 @@ class Comment with EquatableMixin {
         depth,
         replies,
         isCollapsed,
+        authorFlair,
       ];
 }

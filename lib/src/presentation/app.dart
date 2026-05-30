@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'tab_scroll_signal.dart';
 import 'theme.dart';
 import 'screens/feed_screen.dart';
 import 'screens/inbox_screen.dart';
@@ -82,7 +83,11 @@ class _MainShellState extends ConsumerState<_MainShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
+          if (index == _selectedIndex) {
+            ref.read(tabScrollSignalProvider.notifier).state++;
+          } else {
+            setState(() => _selectedIndex = index);
+          }
         },
         destinations: [
           const NavigationDestination(

@@ -1,4 +1,5 @@
 import '../domain/models/comment.dart';
+import '../domain/models/user_flair.dart';
 import 'api_responses.dart';
 import 'parsers/shared_parsers.dart';
 
@@ -29,6 +30,12 @@ class CommentParser {
       depth: api.depth,
       replies: api.replies.map(_toDomain).toList(),
       isCollapsed: api.collapsed,
+      authorFlair: UserFlair.fromApi(
+        text: api.authorFlairText,
+        richtext: api.authorFlairRichtext,
+        backgroundColor: api.authorFlairBackgroundColor,
+        textColor: api.authorFlairTextColor,
+      ),
     );
   }
 }

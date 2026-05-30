@@ -2,6 +2,7 @@ import '../domain/models/post.dart';
 import '../domain/models/search_user.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/subreddit_rule.dart';
+import '../domain/models/user_flair.dart';
 import 'parsers/shared_parsers.dart';
 
 class ApiListing {
@@ -55,6 +56,11 @@ class ApiPost {
   final String? crosspostParent;
   final List<String> mediaUrls;
   final String? videoUrl;
+  final String? authorFlairText;
+  final List<dynamic>? authorFlairRichtext;
+  final String? authorFlairBackgroundColor;
+  final String? authorFlairTextColor;
+  final ApiPost? crosspostParentPost;
 
   ApiPost({
     required this.id,
@@ -83,11 +89,21 @@ class ApiPost {
     this.crosspostParent,
     this.mediaUrls = const [],
     this.videoUrl,
+    this.authorFlairText,
+    this.authorFlairRichtext,
+    this.authorFlairBackgroundColor,
+    this.authorFlairTextColor,
+    this.crosspostParentPost,
   });
 
   factory ApiPost.fromJson(Map<String, dynamic> data) {
     final mediaUrls = _parseMediaUrls(data);
     final videoUrl = _parseVideoUrl(data);
+    final crosspostList = data['crosspost_parent_list'] as List<dynamic>?;
+    final crosspostParentPost =
+        (crosspostList != null && crosspostList.isNotEmpty)
+            ? ApiPost.fromJson(crosspostList.first as Map<String, dynamic>)
+            : null;
     return ApiPost(
       id: data['id'] as String,
       title: data['title'] as String? ?? '',
@@ -115,6 +131,12 @@ class ApiPost {
       crosspostParent: data['crosspost_parent'] as String?,
       mediaUrls: mediaUrls,
       videoUrl: videoUrl,
+      authorFlairText: data['author_flair_text'] as String?,
+      authorFlairRichtext: data['author_flair_richtext'] as List<dynamic>?,
+      authorFlairBackgroundColor:
+          data['author_flair_background_color'] as String?,
+      authorFlairTextColor: data['author_flair_text_color'] as String?,
+      crosspostParentPost: crosspostParentPost,
     );
   }
 
@@ -209,8 +231,15 @@ class ApiPost {
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000),
       permalink: permalink,
       upvoteRatio: upvoteRatio,
+      crosspostParent: crosspostParentPost?.toDomain(),
       mediaUrls: mediaUrls,
       videoUrl: videoUrl,
+      authorFlair: UserFlair.fromApi(
+        text: authorFlairText,
+        richtext: authorFlairRichtext,
+        backgroundColor: authorFlairBackgroundColor,
+        textColor: authorFlairTextColor,
+      ),
     );
   }
 
@@ -301,6 +330,10 @@ class ApiComment {
   final int depth;
   final bool collapsed;
   final List<ApiComment> replies;
+  final String? authorFlairText;
+  final List<dynamic>? authorFlairRichtext;
+  final String? authorFlairBackgroundColor;
+  final String? authorFlairTextColor;
 
   ApiComment({
     required this.id,
@@ -318,6 +351,10 @@ class ApiComment {
     required this.depth,
     required this.collapsed,
     required this.replies,
+    this.authorFlairText,
+    this.authorFlairRichtext,
+    this.authorFlairBackgroundColor,
+    this.authorFlairTextColor,
   });
 
   factory ApiComment.fromJson(Map<String, dynamic> data) {
@@ -351,6 +388,11 @@ class ApiComment {
       depth: data['depth'] as int? ?? 0,
       collapsed: data['collapsed'] as bool? ?? false,
       replies: replies,
+      authorFlairText: data['author_flair_text'] as String?,
+      authorFlairRichtext: data['author_flair_richtext'] as List<dynamic>?,
+      authorFlairBackgroundColor:
+          data['author_flair_background_color'] as String?,
+      authorFlairTextColor: data['author_flair_text_color'] as String?,
     );
   }
 }

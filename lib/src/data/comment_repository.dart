@@ -1,6 +1,7 @@
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
+import '../domain/models/user_flair.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/enums/comment_sort.dart';
 import '../domain/enums/vote_direction.dart';
@@ -100,6 +101,12 @@ class CommentRepository {
       depth: api.depth,
       replies: api.replies.map(_commentFromApi).toList(),
       isCollapsed: api.collapsed,
+      authorFlair: UserFlair.fromApi(
+        text: api.authorFlairText,
+        richtext: api.authorFlairRichtext,
+        backgroundColor: api.authorFlairBackgroundColor,
+        textColor: api.authorFlairTextColor,
+      ),
     );
   }
 
