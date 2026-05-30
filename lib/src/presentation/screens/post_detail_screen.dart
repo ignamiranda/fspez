@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import '../../data/auth_providers.dart';
 import '../../data/app_settings.dart';
 import '../../data/comment_providers.dart';
@@ -32,6 +33,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   String? _replyToId;
   String? _replyToName;
   CommentSort _commentSort = CommentSort.best;
+  bool _sensitiveRevealed = false;
 
   @override
   void initState() {
@@ -162,6 +164,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postEffectiveSaved = saveOverrides[postFullname];
     final actions = ref.read(postActionsServiceProvider);
     final username = ref.read(activeAccountProvider)?.username;
+    final settings = ref.watch(appSettingsProvider);
+    final shouldBlur = !_sensitiveRevealed &&
+        ((post.isNsfw && settings.nsfwBlur) ||
+            (post.isSpoiler && settings.spoilerBlur));
 
     return Column(
       children: [
@@ -206,39 +212,75 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   ),
                 ),
               if (post.videoUrl != null)
-                _PostMediaTile(
-                  imageUrl: post.thumbnailUrl ??
-                      (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
-                  isVideo: true,
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: post.mediaUrls,
-                    videoUrl: post.videoUrl,
+                _SensitiveMediaPreview(
+                  isSensitive: shouldBlur,
+                  isNsfw: post.isNsfw,
+                  isSpoiler: post.isSpoiler,
+                  onReveal: () => setState(() => _sensitiveRevealed = true),
+                  child: _PostMediaTile(
+                    imageUrl: post.thumbnailUrl ??
+                        (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
+                    isVideo: true,
+                    onTap: () => MediaViewer.show(
+                      context,
+                      imageUrls: post.mediaUrls,
+                      videoUrl: post.videoUrl,
+                      isNsfw: post.isNsfw,
+                      isSpoiler: post.isSpoiler,
+                      initiallyRevealed: _sensitiveRevealed,
+                    ),
                   ),
                 )
               else if (post.mediaUrls.length >= 2)
-                _PostMediaTile(
-                  imageUrl: post.mediaUrls.first,
-                  badgeText: '${post.mediaUrls.length}',
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: post.mediaUrls,
+                _SensitiveMediaPreview(
+                  isSensitive: shouldBlur,
+                  isNsfw: post.isNsfw,
+                  isSpoiler: post.isSpoiler,
+                  onReveal: () => setState(() => _sensitiveRevealed = true),
+                  child: _PostMediaTile(
+                    imageUrl: post.mediaUrls.first,
+                    badgeText: '${post.mediaUrls.length}',
+                    onTap: () => MediaViewer.show(
+                      context,
+                      imageUrls: post.mediaUrls,
+                      isNsfw: post.isNsfw,
+                      isSpoiler: post.isSpoiler,
+                      initiallyRevealed: _sensitiveRevealed,
+                    ),
                   ),
                 )
               else if (post.mediaUrls.length == 1)
-                _PostMediaTile(
-                  imageUrl: post.mediaUrls.first,
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: post.mediaUrls,
+                _SensitiveMediaPreview(
+                  isSensitive: shouldBlur,
+                  isNsfw: post.isNsfw,
+                  isSpoiler: post.isSpoiler,
+                  onReveal: () => setState(() => _sensitiveRevealed = true),
+                  child: _PostMediaTile(
+                    imageUrl: post.mediaUrls.first,
+                    onTap: () => MediaViewer.show(
+                      context,
+                      imageUrls: post.mediaUrls,
+                      isNsfw: post.isNsfw,
+                      isSpoiler: post.isSpoiler,
+                      initiallyRevealed: _sensitiveRevealed,
+                    ),
                   ),
                 )
               else if (post.type == PostType.image && post.url != null)
-                _PostMediaTile(
-                  imageUrl: post.url!,
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: [post.url!],
+                _SensitiveMediaPreview(
+                  isSensitive: shouldBlur,
+                  isNsfw: post.isNsfw,
+                  isSpoiler: post.isSpoiler,
+                  onReveal: () => setState(() => _sensitiveRevealed = true),
+                  child: _PostMediaTile(
+                    imageUrl: post.url!,
+                    onTap: () => MediaViewer.show(
+                      context,
+                      imageUrls: [post.url!],
+                      isNsfw: post.isNsfw,
+                      isSpoiler: post.isSpoiler,
+                      initiallyRevealed: _sensitiveRevealed,
+                    ),
                   ),
                 )
               else if (post.type == PostType.link && post.url != null)
@@ -451,59 +493,66 @@ class _PostMediaTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final child = ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Image.network(
-            imageUrl,
-            width: double.infinity,
-            fit: BoxFit.fitWidth,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-          if (isVideo)
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.black38,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(16),
-              child: const Icon(
-                Icons.play_arrow,
-                color: Colors.white,
-                size: 40,
-              ),
+      child: Container(
+        color: theme.colorScheme.surfaceContainerHighest,
+        constraints: const BoxConstraints(maxHeight: 340),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Image.network(
+              imageUrl,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
-          if (badgeText != null)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(6),
+            if (isVideo)
+              Container(
+                decoration: const BoxDecoration(
+                  color: Colors.black38,
+                  shape: BoxShape.circle,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.photo_library_outlined,
-                        color: Colors.white, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      badgeText!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                padding: const EdgeInsets.all(16),
+                child: const Icon(
+                  Icons.play_arrow,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ),
+            if (badgeText != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.photo_library_outlined,
+                          color: Colors.white, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        badgeText!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
 
@@ -578,6 +627,93 @@ class _PostDetailHeader extends StatelessWidget {
             onDelete: onDelete,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SensitiveMediaPreview extends StatelessWidget {
+  final bool isSensitive;
+  final bool isNsfw;
+  final bool isSpoiler;
+  final VoidCallback onReveal;
+  final Widget child;
+
+  const _SensitiveMediaPreview({
+    required this.isSensitive,
+    required this.isNsfw,
+    required this.isSpoiler,
+    required this.onReveal,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isSensitive) return child;
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onReveal,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: child,
+          ),
+          Container(color: Colors.black54),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isNsfw)
+                    _SensitivePill(
+                      label: 'NSFW',
+                      color: theme.colorScheme.error,
+                    ),
+                  if (isNsfw && isSpoiler) const SizedBox(width: 6),
+                  if (isSpoiler)
+                    _SensitivePill(
+                      label: 'Spoiler',
+                      color: theme.colorScheme.tertiary,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Tap to reveal',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SensitivePill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _SensitivePill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

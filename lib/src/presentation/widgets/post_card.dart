@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import '../../data/app_settings.dart';
+import '../../domain/enums/feed_density.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
@@ -59,6 +60,22 @@ class _PostCardState extends ConsumerState<PostCard> {
         t != 'spoiler';
   }
 
+  String? get _compactThumbnailUrl {
+    final thumbnail = widget.post.thumbnailUrl;
+    if (thumbnail != null &&
+        thumbnail != 'self' &&
+        thumbnail != 'default' &&
+        thumbnail != 'nsfw' &&
+        thumbnail != 'spoiler') {
+      return thumbnail;
+    }
+    if (widget.post.mediaUrls.isNotEmpty) return widget.post.mediaUrls.first;
+    if (widget.post.type == PostType.image && widget.post.url != null) {
+      return widget.post.url;
+    }
+    return null;
+  }
+
   /// Whether this post's media should be blurred based on settings.
   bool get _shouldBlur {
     final settings = ref.read(appSettingsProvider);
@@ -73,6 +90,14 @@ class _PostCardState extends ConsumerState<PostCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final settings = ref.watch(appSettingsProvider);
+    final density = settings.feedDensity;
+    final compact = density == FeedDensity.compact;
+    final hasFeedMedia = widget.post.videoUrl != null ||
+        widget.post.mediaUrls.isNotEmpty ||
+        (widget.post.type == PostType.image && widget.post.url != null);
+    final titleMaxLines = compact ? 1 : 2;
+    final showSelftext = density == FeedDensity.comfortable;
     final vote = widget.effectiveVote ?? widget.post.vote;
 
     return InkWell(
@@ -83,49 +108,114 @@ class _PostCardState extends ConsumerState<PostCard> {
             bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
           ),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+        padding:
+            EdgeInsets.symmetric(vertical: compact ? 4 : 10, horizontal: 0),
         child: Padding(
-          padding: const EdgeInsets.only(left: 12),
+          padding: EdgeInsets.only(
+              left: 12, top: compact ? 4 : 10, bottom: compact ? 4 : 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _MetadataRow(
-                post: widget.post,
-                theme: theme,
-                cs: cs,
-                onSubredditTap: widget.onSubredditTap,
-                onAuthorTap: widget.onAuthorTap,
-                onEdit: widget.onEdit,
-                onDelete: widget.onDelete,
-                onHide: widget.onHide,
-                onUnhide: widget.onUnhide,
-              ),
-              const SizedBox(height: 2),
-              _TitleWithThumbnail(
-                post: widget.post,
-                hasThumbnail: _hasThumbnail,
-                theme: theme,
-              ),
-              if (widget.post.type == PostType.self_ &&
-                  widget.post.selftext != null &&
-                  widget.post.selftext!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    widget.post.selftext!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              if (compact) ...[
+                _MetadataRow(
+                  post: widget.post,
+                  theme: theme,
+                  cs: cs,
+                  density: density,
+                  onSubredditTap: widget.onSubredditTap,
+                  onAuthorTap: widget.onAuthorTap,
+                  onEdit: widget.onEdit,
+                  onDelete: widget.onDelete,
+                  onHide: widget.onHide,
+                  onUnhide: widget.onUnhide,
                 ),
-              _buildMediaSection(theme, cs),
-              const SizedBox(height: 6),
+                const SizedBox(height: 2),
+                _TitleWithThumbnail(
+                  post: widget.post,
+                  thumbnailUrl: _compactThumbnailUrl,
+                  theme: theme,
+                  maxLines: titleMaxLines,
+                ),
+              ] else if (hasFeedMedia) ...[
+                _MetadataRow(
+                  post: widget.post,
+                  theme: theme,
+                  cs: cs,
+                  density: density,
+                  onSubredditTap: widget.onSubredditTap,
+                  onAuthorTap: widget.onAuthorTap,
+                  onEdit: widget.onEdit,
+                  onDelete: widget.onDelete,
+                  onHide: widget.onHide,
+                  onUnhide: widget.onUnhide,
+                ),
+                const SizedBox(height: 6),
+                _buildMediaSection(theme, cs, density: density),
+                const SizedBox(height: 8),
+                _TitleWithThumbnail(
+                  post: widget.post,
+                  thumbnailUrl: null,
+                  theme: theme,
+                  maxLines: titleMaxLines,
+                ),
+                if (showSelftext &&
+                    widget.post.type == PostType.self_ &&
+                    widget.post.selftext != null &&
+                    widget.post.selftext!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      widget.post.selftext!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ] else ...[
+                _MetadataRow(
+                  post: widget.post,
+                  theme: theme,
+                  cs: cs,
+                  density: density,
+                  onSubredditTap: widget.onSubredditTap,
+                  onAuthorTap: widget.onAuthorTap,
+                  onEdit: widget.onEdit,
+                  onDelete: widget.onDelete,
+                  onHide: widget.onHide,
+                  onUnhide: widget.onUnhide,
+                ),
+                const SizedBox(height: 2),
+                _TitleWithThumbnail(
+                  post: widget.post,
+                  thumbnailUrl: _compactThumbnailUrl,
+                  theme: theme,
+                  maxLines: titleMaxLines,
+                ),
+                if (showSelftext &&
+                    widget.post.type == PostType.self_ &&
+                    widget.post.selftext != null &&
+                    widget.post.selftext!.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: compact ? 2 : 4),
+                    child: Text(
+                      widget.post.selftext!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                _buildMediaSection(theme, cs, density: density),
+              ],
+              SizedBox(height: compact ? 4 : 6),
               _PostActionBar(
                 post: widget.post,
                 theme: theme,
                 cs: cs,
+                density: density,
                 vote: vote,
                 score: widget.post.score,
                 commentCount: widget.post.commentCount,
@@ -141,9 +231,14 @@ class _PostCardState extends ConsumerState<PostCard> {
     );
   }
 
-  Widget _buildMediaSection(ThemeData theme, ColorScheme cs) {
+  Widget _buildMediaSection(
+    ThemeData theme,
+    ColorScheme cs, {
+    required FeedDensity density,
+  }) {
     final post = widget.post;
     final shouldBlur = _shouldBlur;
+    final mediaMaxHeight = density == FeedDensity.compact ? 140.0 : 240.0;
 
     Widget? mediaWidget;
 
@@ -155,6 +250,9 @@ class _PostCardState extends ConsumerState<PostCard> {
           context,
           imageUrls: post.mediaUrls,
           videoUrl: post.videoUrl,
+          isNsfw: post.isNsfw,
+          isSpoiler: post.isSpoiler,
+          initiallyRevealed: _sensitiveRevealed,
         ),
       );
     } else if (post.mediaUrls.length >= 2) {
@@ -165,7 +263,11 @@ class _PostCardState extends ConsumerState<PostCard> {
         onTap: () => MediaViewer.show(
           context,
           imageUrls: post.mediaUrls,
+          isNsfw: post.isNsfw,
+          isSpoiler: post.isSpoiler,
+          initiallyRevealed: _sensitiveRevealed,
         ),
+        maxHeight: mediaMaxHeight,
       );
     } else if (post.mediaUrls.length == 1) {
       mediaWidget = _MediaTile(
@@ -173,7 +275,11 @@ class _PostCardState extends ConsumerState<PostCard> {
         onTap: () => MediaViewer.show(
           context,
           imageUrls: post.mediaUrls,
+          isNsfw: post.isNsfw,
+          isSpoiler: post.isSpoiler,
+          initiallyRevealed: _sensitiveRevealed,
         ),
+        maxHeight: mediaMaxHeight,
       );
     } else if (post.type == PostType.image && post.url != null) {
       mediaWidget = _MediaTile(
@@ -181,7 +287,11 @@ class _PostCardState extends ConsumerState<PostCard> {
         onTap: () => MediaViewer.show(
           context,
           imageUrls: [post.url!],
+          isNsfw: post.isNsfw,
+          isSpoiler: post.isSpoiler,
+          initiallyRevealed: _sensitiveRevealed,
         ),
+        maxHeight: mediaMaxHeight,
       );
     }
 
@@ -434,17 +544,52 @@ class _VoteButton extends StatelessWidget {
 
 class _TitleWithThumbnail extends StatelessWidget {
   final Post post;
-  final bool hasThumbnail;
+  final String? thumbnailUrl;
   final ThemeData theme;
+  final int maxLines;
 
   const _TitleWithThumbnail({
     required this.post,
-    required this.hasThumbnail,
+    required this.thumbnailUrl,
     required this.theme,
+    required this.maxLines,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isCompactTitle = maxLines == 1;
+    final thumbnailSize = isCompactTitle ? 48.0 : 56.0;
+    final thumbnailPadding = isCompactTitle ? 2.0 : 3.0;
+    if (isCompactTitle && thumbnailUrl != null) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ThumbnailFrame(
+            theme: theme,
+            thumbnailUrl: thumbnailUrl!,
+            size: thumbnailSize,
+            padding: thumbnailPadding,
+            iconSize: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                post.title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -455,31 +600,67 @@ class _TitleWithThumbnail extends StatelessWidget {
               fontWeight: FontWeight.w600,
               letterSpacing: -0.2,
             ),
-            maxLines: 3,
+            maxLines: maxLines,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (hasThumbnail && post.type != PostType.image)
+        if (thumbnailUrl != null)
           Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                width: 70,
-                height: 70,
-                child: Image.network(
-                  post.thumbnailUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: Icon(Icons.link,
-                        size: 20, color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                ),
-              ),
+            padding: EdgeInsets.only(left: 8, top: isCompactTitle ? 1 : 0),
+            child: _ThumbnailFrame(
+              theme: theme,
+              thumbnailUrl: thumbnailUrl!,
+              size: thumbnailSize,
+              padding: thumbnailPadding,
+              iconSize: isCompactTitle ? 18 : 16,
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ThumbnailFrame extends StatelessWidget {
+  final ThemeData theme;
+  final String thumbnailUrl;
+  final double size;
+  final double padding;
+  final double iconSize;
+
+  const _ThumbnailFrame({
+    required this.theme,
+    required this.thumbnailUrl,
+    required this.size,
+    required this.padding,
+    required this.iconSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(padding),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          thumbnailUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Icon(
+              Icons.link,
+              size: iconSize,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -488,6 +669,7 @@ class _MetadataRow extends StatelessWidget {
   final Post post;
   final ThemeData theme;
   final ColorScheme cs;
+  final FeedDensity density;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
   final VoidCallback? onEdit;
@@ -499,12 +681,69 @@ class _MetadataRow extends StatelessWidget {
     required this.post,
     required this.theme,
     required this.cs,
+    required this.density,
     this.onSubredditTap,
     this.onAuthorTap,
     this.onEdit,
     this.onDelete,
     this.onHide,
     this.onUnhide,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconUrl = post.subreddit.iconUrl;
+    final compact = density == FeedDensity.compact;
+    final content = compact
+        ? _CompactMetadataContent(
+            post: post,
+            theme: theme,
+            cs: cs,
+            onSubredditTap: onSubredditTap,
+            onAuthorTap: onAuthorTap,
+          )
+        : _ComfortableMetadataContent(
+            post: post,
+            theme: theme,
+            cs: cs,
+            onSubredditTap: onSubredditTap,
+            onAuthorTap: onAuthorTap,
+          );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: content),
+        const SizedBox(width: 4),
+        Padding(
+          padding: EdgeInsets.only(top: compact ? 0 : 2),
+          child: _OverflowMenu(
+            post: post,
+            cs: cs,
+            onEdit: onEdit,
+            onDelete: onDelete,
+            onHide: onHide,
+            onUnhide: onUnhide,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ComfortableMetadataContent extends StatelessWidget {
+  final Post post;
+  final ThemeData theme;
+  final ColorScheme cs;
+  final VoidCallback? onSubredditTap;
+  final VoidCallback? onAuthorTap;
+
+  const _ComfortableMetadataContent({
+    required this.post,
+    required this.theme,
+    required this.cs,
+    this.onSubredditTap,
+    this.onAuthorTap,
   });
 
   @override
@@ -628,16 +867,108 @@ class _MetadataRow extends StatelessWidget {
             ),
           ),
         ],
-        const Spacer(),
-        _OverflowMenu(
-          post: post,
-          cs: cs,
-          onEdit: onEdit,
-          onDelete: onDelete,
-          onHide: onHide,
-          onUnhide: onUnhide,
-        ),
       ],
+    );
+  }
+}
+
+class _CompactMetadataContent extends StatelessWidget {
+  final Post post;
+  final ThemeData theme;
+  final ColorScheme cs;
+  final VoidCallback? onSubredditTap;
+  final VoidCallback? onAuthorTap;
+
+  const _CompactMetadataContent({
+    required this.post,
+    required this.theme,
+    required this.cs,
+    this.onSubredditTap,
+    this.onAuthorTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconUrl = post.subreddit.iconUrl;
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (iconUrl != null && iconUrl.isNotEmpty)
+          ClipOval(
+            child: Image.network(
+              iconUrl,
+              width: 18,
+              height: 18,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+        InkWell(
+          onTap: onSubredditTap,
+          child: Text(
+            'r/${post.subreddit.name}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: cs.primary,
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: onAuthorTap,
+          child: Text(
+            'u/${post.author}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Text(
+          timeAgo(post.createdAt),
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        if (post.isStickied) _CompactTag(label: 'PINNED', color: cs.tertiary),
+        if (post.isNsfw) _CompactTag(label: 'NSFW', color: cs.error),
+        if (post.isSpoiler) _CompactTag(label: 'SPOILER', color: cs.tertiary),
+        if (post.crosspostParent != null)
+          _CompactTag(
+            label: post.crosspostParent!.subreddit.name.isNotEmpty
+                ? 'XPOST r/${post.crosspostParent!.subreddit.name}'
+                : 'XPOST',
+            color: cs.tertiary,
+          ),
+      ],
+    );
+  }
+}
+
+class _CompactTag extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _CompactTag({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }
@@ -646,6 +977,7 @@ class _PostActionBar extends StatelessWidget {
   final Post post;
   final ThemeData theme;
   final ColorScheme cs;
+  final FeedDensity density;
   final VoteDirection vote;
   final int score;
   final int commentCount;
@@ -658,6 +990,7 @@ class _PostActionBar extends StatelessWidget {
     required this.post,
     required this.theme,
     required this.cs,
+    required this.density,
     required this.vote,
     required this.score,
     required this.commentCount,
@@ -671,6 +1004,8 @@ class _PostActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final upActive = vote == VoteDirection.upvote;
     final downActive = vote == VoteDirection.downvote;
+    final compact = density == FeedDensity.compact;
+    final showLabel = density != FeedDensity.compact;
 
     return Row(
       children: [
@@ -704,23 +1039,26 @@ class _PostActionBar extends StatelessWidget {
           activeColor: cs.secondary,
           onTap: () => onVote?.call(VoteDirection.downvote),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: compact ? 10 : 16),
         _ActionItem(
           icon: Icons.chat_bubble_outline,
-          label: formatCount(commentCount),
+          label: showLabel ? formatCount(commentCount) : null,
+          compact: compact,
           onTap: onTap,
           color: cs.onSurfaceVariant,
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: compact ? 10 : 16),
         _ActionItem(
           icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
+          compact: compact,
           onTap: onSave,
           color: isSaved ? cs.primary : cs.onSurfaceVariant,
         ),
         if (post.type != PostType.self_ && post.url != null) ...[
-          const SizedBox(width: 16),
+          SizedBox(width: compact ? 10 : 16),
           _ActionItem(
             icon: Icons.open_in_new,
+            compact: compact,
             onTap: () => openUrl(post.url!),
             color: cs.onSurfaceVariant,
           ),
@@ -864,58 +1202,66 @@ class _MediaTile extends StatelessWidget {
   final VoidCallback onTap;
   final String? badgeText;
   final IconData? badgeIcon;
+  final double maxHeight;
 
   const _MediaTile({
     required this.imageUrl,
     required this.onTap,
     this.badgeText,
     this.badgeIcon,
+    this.maxHeight = 240,
   });
 
   @override
   Widget build(BuildContext context) {
     final child = ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Image.network(
-            imageUrl,
-            width: double.infinity,
-            fit: BoxFit.fitWidth,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-          if (badgeText != null)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (badgeIcon != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Icon(badgeIcon, color: Colors.white, size: 14),
+      child: Container(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Image.network(
+              imageUrl,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+            if (badgeText != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (badgeIcon != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(badgeIcon, color: Colors.white, size: 14),
+                        ),
+                      Text(
+                        badgeText!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    Text(
-                      badgeText!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
 
@@ -934,12 +1280,14 @@ class _ActionItem extends StatelessWidget {
   final String? label;
   final VoidCallback? onTap;
   final Color color;
+  final bool compact;
 
   const _ActionItem({
     required this.icon,
     this.label,
     this.onTap,
     required this.color,
+    this.compact = false,
   });
 
   @override
@@ -948,11 +1296,14 @@ class _ActionItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        padding: EdgeInsets.symmetric(
+          vertical: compact ? 4 : 6,
+          horizontal: compact ? 1 : 2,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: color),
+            Icon(icon, size: compact ? 16 : 17, color: color),
             if (label != null) ...[
               const SizedBox(width: 3),
               Text(

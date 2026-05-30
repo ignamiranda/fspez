@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -15,12 +17,18 @@ class MediaViewer extends StatefulWidget {
   final List<String> imageUrls;
   final String? videoUrl;
   final int initialIndex;
+  final bool isNsfw;
+  final bool isSpoiler;
+  final bool initiallyRevealed;
 
   const MediaViewer({
     super.key,
     required this.imageUrls,
     this.videoUrl,
     this.initialIndex = 0,
+    this.isNsfw = false,
+    this.isSpoiler = false,
+    this.initiallyRevealed = false,
   });
 
   int get _pageCount => (videoUrl != null ? 1 : 0) + imageUrls.length;
@@ -31,6 +39,9 @@ class MediaViewer extends StatefulWidget {
     required List<String> imageUrls,
     String? videoUrl,
     int initialIndex = 0,
+    bool isNsfw = false,
+    bool isSpoiler = false,
+    bool initiallyRevealed = false,
   }) {
     return Navigator.of(context).push(
       PageRouteBuilder(
@@ -39,6 +50,9 @@ class MediaViewer extends StatefulWidget {
           imageUrls: imageUrls,
           videoUrl: videoUrl,
           initialIndex: initialIndex,
+          isNsfw: isNsfw,
+          isSpoiler: isSpoiler,
+          initiallyRevealed: initiallyRevealed,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
@@ -56,13 +70,14 @@ class _MediaViewerState extends State<MediaViewer> {
   late PageController _pageController;
   late int _currentIndex;
   bool _chromeVisible = true;
+  bool _revealed = false;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex =
-        widget.initialIndex.clamp(0, widget._pageCount - 1);
+    _currentIndex = widget.initialIndex.clamp(0, widget._pageCount - 1);
     _pageController = PageController(initialPage: _currentIndex);
+    _revealed = widget.initiallyRevealed || !widget.isNsfw && !widget.isSpoiler;
   }
 
   @override
@@ -72,6 +87,8 @@ class _MediaViewerState extends State<MediaViewer> {
   }
 
   void _toggleChrome() => setState(() => _chromeVisible = !_chromeVisible);
+
+  void _reveal() => setState(() => _revealed = true);
 
   void _close() => Navigator.of(context).pop();
 
@@ -87,24 +104,70 @@ class _MediaViewerState extends State<MediaViewer> {
       body: Stack(
         children: [
           // Main media page view
-          PageView.builder(
-            controller: _pageController,
-            itemCount: widget._pageCount,
-            onPageChanged: (i) => setState(() => _currentIndex = i),
-            itemBuilder: (context, index) {
-              if (_hasVideo && index == 0) {
-                return _VideoPage(
-                  videoUrl: widget.videoUrl!,
-                  onTap: _toggleChrome,
-                );
-              }
-              final imageIndex = _imagePageIndex(index);
-              return _ZoomableImagePage(
-                imageUrl: widget.imageUrls[imageIndex],
-                onTap: _toggleChrome,
-              );
-            },
+          ImageFiltered(
+            imageFilter: !_revealed
+                ? ImageFilter.blur(sigmaX: 18, sigmaY: 18)
+                : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+            child: IgnorePointer(
+              ignoring: !_revealed,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: widget._pageCount,
+                onPageChanged: (i) => setState(() => _currentIndex = i),
+                itemBuilder: (context, index) {
+                  if (_hasVideo && index == 0) {
+                    return _VideoPage(
+                      videoUrl: widget.videoUrl!,
+                      onTap: _toggleChrome,
+                    );
+                  }
+                  final imageIndex = _imagePageIndex(index);
+                  return _ZoomableImagePage(
+                    imageUrl: widget.imageUrls[imageIndex],
+                    onTap: _toggleChrome,
+                  );
+                },
+              ),
+            ),
           ),
+
+          if (!_revealed)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _reveal,
+                child: Container(
+                  color: Colors.black54,
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.isNsfw)
+                            _SensitivePill(
+                              label: 'NSFW',
+                              color: Colors.redAccent,
+                            ),
+                          if (widget.isNsfw && widget.isSpoiler)
+                            const SizedBox(width: 6),
+                          if (widget.isSpoiler)
+                            _SensitivePill(
+                              label: 'Spoiler',
+                              color: Colors.amber,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Tap to reveal',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // Chrome overlay
           if (_chromeVisible) ...[
@@ -213,8 +276,8 @@ class _VideoPageState extends State<_VideoPage> {
   Widget build(BuildContext context) {
     if (_errored) {
       return const Center(
-        child: Icon(Icons.broken_image_outlined,
-            color: Colors.white38, size: 48),
+        child:
+            Icon(Icons.broken_image_outlined, color: Colors.white38, size: 48),
       );
     }
 
@@ -263,9 +326,7 @@ class _VideoPageState extends State<_VideoPage> {
                   ),
                   padding: const EdgeInsets.all(16),
                   child: Icon(
-                    isPlaying
-                        ? Icons.pause
-                        : Icons.play_arrow,
+                    isPlaying ? Icons.pause : Icons.play_arrow,
                     color: Colors.white,
                     size: 40,
                   ),
@@ -505,6 +566,32 @@ class _PageIndicator extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SensitivePill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _SensitivePill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

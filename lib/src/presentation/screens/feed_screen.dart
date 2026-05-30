@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
+import '../../data/app_settings.dart';
 import '../../data/feed_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
+import '../../domain/enums/feed_density.dart';
 import '../tab_scroll_signal.dart';
 import '../utils/infinite_scroll.dart';
 import '../widgets/feed_screen_scaffold.dart';
@@ -55,6 +57,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     });
     final account = ref.watch(activeAccountProvider);
     final loggedIn = account != null;
+    final settings = ref.watch(appSettingsProvider);
+    final settingsNotifier = ref.read(appSettingsProvider.notifier);
     final config = _showAll
         ? FeedPageConfig.popularAll(sort: _sort)
         : loggedIn
@@ -75,6 +79,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: () =>
                 ref.read(feedPageProvider(_buildConfig()).notifier).refresh(),
+          ),
+          IconButton(
+            icon: Icon(_feedDensityIcon(settings.feedDensity)),
+            tooltip: _feedDensityTooltip(settings.feedDensity),
+            onPressed: () => settingsNotifier.setFeedDensity(
+              _nextFeedDensity(settings.feedDensity),
+            ),
           ),
           IconButton(
             icon: Icon(_showAll ? Icons.home : Icons.whatshot),
@@ -108,5 +119,26 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         scrollController: _scrollController!,
       ),
     );
+  }
+
+  FeedDensity _nextFeedDensity(FeedDensity current) {
+    return switch (current) {
+      FeedDensity.comfortable => FeedDensity.compact,
+      FeedDensity.compact => FeedDensity.comfortable,
+    };
+  }
+
+  IconData _feedDensityIcon(FeedDensity current) {
+    return switch (current) {
+      FeedDensity.comfortable => Icons.view_list_outlined,
+      FeedDensity.compact => Icons.view_agenda_outlined,
+    };
+  }
+
+  String _feedDensityTooltip(FeedDensity current) {
+    return switch (current) {
+      FeedDensity.comfortable => 'Switch to compact feed',
+      FeedDensity.compact => 'Switch to comfortable feed',
+    };
   }
 }
