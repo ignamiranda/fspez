@@ -464,8 +464,21 @@ class _MetadataRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconUrl = post.subreddit.iconUrl;
     return Row(
       children: [
+        if (iconUrl != null && iconUrl.isNotEmpty) ...[
+          ClipOval(
+            child: Image.network(
+              iconUrl,
+              width: 20,
+              height: 20,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
         InkWell(
           onTap: onSubredditTap,
           child: Text(
