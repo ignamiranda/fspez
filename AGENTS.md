@@ -17,7 +17,7 @@
 When the user says `commit`, execute **all** steps in order. Do not skip any step:
 
 1. **Delete** the implemented handoff file from `handoffs/`
-2. **Run `/update-skills`** — audit the session and apply any skill/AGENTS.md changes before committing
+2. **Run `/reflect` (full pipeline)** — load the reflect skill and execute each sub-skill in sequence: capture-correction, audit-session-mistakes, audit-tool-utilization, audit-skills-directory, ideate-skills, mine-preferences. Do NOT skip or hand-wave the pipeline even if the session appears clean.
 3. **Inspect** `git status --short`, `git diff --stat`, `git log --oneline -5`
 4. **Stage** only intended files (include new untracked files explicitly)
 5. **Commit** with a concise message
