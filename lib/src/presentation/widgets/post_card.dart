@@ -9,6 +9,7 @@ import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
 import 'media_viewer.dart';
+import 'bottom_sheet_menu.dart';
 
 class PostCard extends ConsumerStatefulWidget {
   final Post post;
@@ -307,49 +308,48 @@ class _OverflowMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = <PopupMenuEntry<String>>[];
-    if (onEdit != null) {
-      entries.add(const PopupMenuItem(value: 'edit', child: Text('Edit')));
-    }
-    if (onDelete != null) {
-      entries.add(const PopupMenuItem(value: 'delete', child: Text('Delete')));
-    }
+    final primaryActions = <BottomSheetAction>[];
+    final authorActions = <BottomSheetAction>[];
     if (onHide != null) {
-      entries.add(const PopupMenuItem(value: 'hide', child: Text('Hide')));
+      primaryActions.add(BottomSheetAction(
+        icon: Icons.visibility_off_outlined,
+        label: 'Hide',
+        onTap: () => onHide!(),
+      ));
     }
     if (onUnhide != null) {
-      entries.add(const PopupMenuItem(value: 'unhide', child: Text('Unhide')));
+      primaryActions.add(BottomSheetAction(
+        icon: Icons.visibility_outlined,
+        label: 'Unhide',
+        onTap: () => onUnhide!(),
+      ));
     }
-    if (entries.isEmpty) return const SizedBox.shrink();
+    if (onEdit != null) {
+      authorActions.add(BottomSheetAction(
+        icon: Icons.edit_outlined,
+        label: 'Edit',
+        onTap: () => onEdit!(),
+      ));
+    }
+    if (onDelete != null) {
+      authorActions.add(BottomSheetAction(
+        icon: Icons.delete_outline,
+        label: 'Delete',
+        onTap: () => onDelete!(),
+        isDestructive: true,
+      ));
+    }
+
+    if (primaryActions.isEmpty && authorActions.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return InkWell(
-      onTap: () {
-        final box = context.findRenderObject() as RenderBox;
-        final offset = box.localToGlobal(Offset.zero);
-        showMenu<String>(
-          context: context,
-          position: RelativeRect.fromLTRB(
-            offset.dx,
-            offset.dy,
-            offset.dx + box.size.width,
-            offset.dy + box.size.height,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          items: entries,
-        ).then((value) {
-          if (value == null) return;
-          switch (value) {
-            case 'edit':
-              onEdit?.call();
-            case 'delete':
-              onDelete?.call();
-            case 'hide':
-              onHide?.call();
-            case 'unhide':
-              onUnhide?.call();
-          }
-        });
-      },
+      onTap: () => showPostActionSheet(
+        context,
+        primaryActions: primaryActions,
+        authorActions: authorActions,
+      ),
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.all(4),
