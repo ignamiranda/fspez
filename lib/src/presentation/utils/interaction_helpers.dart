@@ -8,9 +8,33 @@ void handleVote(
 }
 
 Future<void> handleSave(
-    PostActionsService actions, String fullname, BuildContext context) async {
+  PostActionsService actions,
+  String fullname,
+  BuildContext context, {
+  bool wasSaved = false,
+}) async {
   try {
     await actions.toggleSave(fullname);
+    if (context.mounted) {
+      final message = wasSaved ? 'Removed from saved' : 'Saved';
+      final scaffold = ScaffoldMessenger.of(context);
+      scaffold.hideCurrentSnackBar();
+      scaffold.showSnackBar(SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            try {
+              actions.toggleSave(fullname);
+            } catch (_) {
+              // Undo failed silently; the optimistic revert in the
+              // notifier keeps UI consistent with server state.
+            }
+          },
+        ),
+        duration: const Duration(seconds: 4),
+      ));
+    }
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

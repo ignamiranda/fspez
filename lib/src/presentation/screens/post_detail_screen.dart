@@ -174,7 +174,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 effectiveVote: postEffectiveVote,
                 onVote: (dir) => handleVote(actions, postFullname, dir),
                 effectiveSaved: postEffectiveSaved,
-                onSave: () => handleSave(actions, postFullname, context),
+                onSave: () {
+                  final wasSaved = saveOverrides[postFullname] ?? post.isSaved;
+                  handleSave(actions, postFullname, context,
+                      wasSaved: wasSaved);
+                },
                 onEdit: username != null && post.author == username
                     ? () {
                         showEditSheet(context,

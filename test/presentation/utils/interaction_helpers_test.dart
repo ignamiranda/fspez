@@ -128,5 +128,46 @@ void main() {
 
       expect(handleSave(actions, 't3_test', ctx), completes);
     });
+
+    testWidgets('undo restores saved state after save', (tester) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(_app(Builder(builder: (c) {
+        ctx = c;
+        return const SizedBox.shrink();
+      })));
+
+      // Start unsaved, save it — snackbar shows "Saved".
+      await handleSave(actions, 't3_test', ctx, wasSaved: false);
+      await tester.pump();
+      expect(saveNotifier.effectiveSaved('t3_test', false), true);
+      expect(find.text('Saved'), findsOneWidget);
+
+      // Simulate the snackbar Undo action (calls toggleSave directly).
+      await actions.toggleSave('t3_test');
+      expect(saveNotifier.effectiveSaved('t3_test', false), false);
+    });
+
+    testWidgets('undo restores saved state after unsave', (tester) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(_app(Builder(builder: (c) {
+        ctx = c;
+        return const SizedBox.shrink();
+      })));
+
+      // Start unsaved, save it first.
+      await handleSave(actions, 't3_test', ctx, wasSaved: false);
+      await tester.pump();
+      expect(saveNotifier.effectiveSaved('t3_test', false), true);
+
+      // Now unsave it — snackbar shows "Removed from saved".
+      await handleSave(actions, 't3_test', ctx, wasSaved: true);
+      await tester.pump();
+      expect(saveNotifier.effectiveSaved('t3_test', false), false);
+      expect(find.text('Removed from saved'), findsOneWidget);
+
+      // Simulate the snackbar Undo action.
+      await actions.toggleSave('t3_test');
+      expect(saveNotifier.effectiveSaved('t3_test', false), true);
+    });
   });
 }

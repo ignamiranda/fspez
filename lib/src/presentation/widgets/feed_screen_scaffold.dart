@@ -50,7 +50,16 @@ class FeedScreenScaffold extends ConsumerWidget {
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
       onPostVote: (fullname, dir) => handleVote(actions, fullname, dir),
-      onPostSave: (fullname) => handleSave(actions, fullname, context),
+      onPostSave: (fullname) {
+        final post = state.items.cast<Post?>().firstWhere(
+              (p) => p?.fullname == fullname,
+              orElse: () => null,
+            );
+        final wasSaved = post != null
+            ? (saveOverrides[fullname] ?? post.isSaved)
+            : saveOverrides[fullname] ?? false;
+        handleSave(actions, fullname, context, wasSaved: wasSaved);
+      },
       onPostDelete: account != null
           ? (post) {
               handleDelete(context, actions, post.fullname);
