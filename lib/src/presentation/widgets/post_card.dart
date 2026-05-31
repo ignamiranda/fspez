@@ -19,6 +19,7 @@ class PostCard extends ConsumerStatefulWidget {
   final VoteDirection? effectiveVote;
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
+  final bool showStickiedIndicator;
   final VoidCallback? onSave;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -34,6 +35,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.effectiveVote,
     this.onVote,
     this.effectiveSaved,
+    this.showStickiedIndicator = false,
     this.onSave,
     this.onEdit,
     this.onDelete,
@@ -50,15 +52,6 @@ class PostCard extends ConsumerStatefulWidget {
 
 class _PostCardState extends ConsumerState<PostCard> {
   bool _sensitiveRevealed = false;
-
-  bool get _hasThumbnail {
-    final t = widget.post.thumbnailUrl;
-    return t != null &&
-        t != 'self' &&
-        t != 'default' &&
-        t != 'nsfw' &&
-        t != 'spoiler';
-  }
 
   String? get _compactThumbnailUrl {
     final thumbnail = widget.post.thumbnailUrl;
@@ -122,6 +115,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   theme: theme,
                   cs: cs,
                   density: density,
+                  showStickiedIndicator: widget.showStickiedIndicator,
                   onSubredditTap: widget.onSubredditTap,
                   onAuthorTap: widget.onAuthorTap,
                   onEdit: widget.onEdit,
@@ -142,6 +136,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   theme: theme,
                   cs: cs,
                   density: density,
+                  showStickiedIndicator: widget.showStickiedIndicator,
                   onSubredditTap: widget.onSubredditTap,
                   onAuthorTap: widget.onAuthorTap,
                   onEdit: widget.onEdit,
@@ -179,6 +174,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   theme: theme,
                   cs: cs,
                   density: density,
+                  showStickiedIndicator: widget.showStickiedIndicator,
                   onSubredditTap: widget.onSubredditTap,
                   onAuthorTap: widget.onAuthorTap,
                   onEdit: widget.onEdit,
@@ -670,6 +666,7 @@ class _MetadataRow extends StatelessWidget {
   final ThemeData theme;
   final ColorScheme cs;
   final FeedDensity density;
+  final bool showStickiedIndicator;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
   final VoidCallback? onEdit;
@@ -682,6 +679,7 @@ class _MetadataRow extends StatelessWidget {
     required this.theme,
     required this.cs,
     required this.density,
+    required this.showStickiedIndicator,
     this.onSubredditTap,
     this.onAuthorTap,
     this.onEdit,
@@ -692,13 +690,13 @@ class _MetadataRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconUrl = post.subreddit.iconUrl;
     final compact = density == FeedDensity.compact;
     final content = compact
         ? _CompactMetadataContent(
             post: post,
             theme: theme,
             cs: cs,
+            showStickiedIndicator: showStickiedIndicator,
             onSubredditTap: onSubredditTap,
             onAuthorTap: onAuthorTap,
           )
@@ -706,6 +704,7 @@ class _MetadataRow extends StatelessWidget {
             post: post,
             theme: theme,
             cs: cs,
+            showStickiedIndicator: showStickiedIndicator,
             onSubredditTap: onSubredditTap,
             onAuthorTap: onAuthorTap,
           );
@@ -735,6 +734,7 @@ class _ComfortableMetadataContent extends StatelessWidget {
   final Post post;
   final ThemeData theme;
   final ColorScheme cs;
+  final bool showStickiedIndicator;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
 
@@ -742,6 +742,7 @@ class _ComfortableMetadataContent extends StatelessWidget {
     required this.post,
     required this.theme,
     required this.cs,
+    required this.showStickiedIndicator,
     this.onSubredditTap,
     this.onAuthorTap,
   });
@@ -800,7 +801,7 @@ class _ComfortableMetadataContent extends StatelessWidget {
             color: cs.onSurfaceVariant,
           ),
         ),
-        if (post.isStickied) ...[
+        if (showStickiedIndicator && post.isStickied) ...[
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -876,6 +877,7 @@ class _CompactMetadataContent extends StatelessWidget {
   final Post post;
   final ThemeData theme;
   final ColorScheme cs;
+  final bool showStickiedIndicator;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
 
@@ -883,6 +885,7 @@ class _CompactMetadataContent extends StatelessWidget {
     required this.post,
     required this.theme,
     required this.cs,
+    required this.showStickiedIndicator,
     this.onSubredditTap,
     this.onAuthorTap,
   });
@@ -930,7 +933,8 @@ class _CompactMetadataContent extends StatelessWidget {
             color: cs.onSurfaceVariant,
           ),
         ),
-        if (post.isStickied) _CompactTag(label: 'PINNED', color: cs.tertiary),
+        if (showStickiedIndicator && post.isStickied)
+          _CompactTag(label: 'PINNED', color: cs.tertiary),
         if (post.isNsfw) _CompactTag(label: 'NSFW', color: cs.error),
         if (post.isSpoiler) _CompactTag(label: 'SPOILER', color: cs.tertiary),
         if (post.crosspostParent != null)

@@ -18,6 +18,7 @@ class PostList extends StatelessWidget {
   final void Function(Post post)? onPostTap;
   final void Function(Post post)? onSubredditTap;
   final void Function(Post post)? onAuthorTap;
+  final bool showStickiedIndicator;
   final String emptyMessage;
   final ScrollController? scrollController;
   final Widget? footer;
@@ -39,6 +40,7 @@ class PostList extends StatelessWidget {
     this.onPostTap,
     this.onSubredditTap,
     this.onAuthorTap,
+    this.showStickiedIndicator = false,
     this.emptyMessage = 'No posts yet.',
     this.scrollController,
     this.footer,
@@ -72,13 +74,10 @@ class PostList extends StatelessWidget {
         return PostCard(
           post: post,
           effectiveVote: voteOverrides[fullname],
-          onVote: onPostVote != null
-              ? (dir) => onPostVote!(fullname, dir)
-              : null,
+          onVote:
+              onPostVote != null ? (dir) => onPostVote!(fullname, dir) : null,
           effectiveSaved: saveOverrides[fullname],
-          onSave: onPostSave != null
-              ? () => onPostSave!(fullname)
-              : null,
+          onSave: onPostSave != null ? () => onPostSave!(fullname) : null,
           onEdit: onPostEdit != null && post.author == currentUsername
               ? () => onPostEdit!(post)
               : null,
@@ -88,16 +87,12 @@ class PostList extends StatelessWidget {
           onHide: onPostHide != null && !hiddenFullnames.contains(post.fullname)
               ? () => onPostHide!(post)
               : null,
-          onUnhide: onPostUnhide != null
-              ? () => onPostUnhide!(post)
-              : null,
+          onUnhide: onPostUnhide != null ? () => onPostUnhide!(post) : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
-          onSubredditTap: onSubredditTap != null
-              ? () => onSubredditTap!(post)
-              : null,
-          onAuthorTap: onAuthorTap != null
-              ? () => onAuthorTap!(post)
-              : null,
+          showStickiedIndicator: showStickiedIndicator,
+          onSubredditTap:
+              onSubredditTap != null ? () => onSubredditTap!(post) : null,
+          onAuthorTap: onAuthorTap != null ? () => onAuthorTap!(post) : null,
         );
       },
     );

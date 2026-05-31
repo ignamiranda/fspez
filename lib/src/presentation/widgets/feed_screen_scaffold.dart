@@ -47,6 +47,7 @@ class FeedScreenScaffold extends ConsumerWidget {
       scrollController: scrollController,
       posts: state.items,
       onRefresh: () async => notifier.refresh(),
+      showStickiedIndicator: config.kind == FeedPageKind.subreddit,
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
       onPostVote: (fullname, dir) => handleVote(actions, fullname, dir),
