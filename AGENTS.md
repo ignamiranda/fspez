@@ -23,6 +23,9 @@ When the user says `commit`, execute **all** steps in order. Do not skip any ste
 5. **Commit** with a concise message
 6. **Report** the next `handoffs/*.md` file to implement and a brief reason
 
+## Reflect reporting
+- When `/reflect` finds any correction, mistake, or workflow issue, report the concrete lesson and where it was routed; do not summarize the pass as having no durable updates unless the pass truly found nothing to capture.
+
 ## Auto-trigger: `/reorder-todo` on TODO.md edits
 Whenever you insert or remove a handoff entry in `TODO.md`, run `pwsh ~/.config/opencode/skills/reorder-todo/scripts/reorder-todo.ps1` to renumber. Never manually rewrite the entire file just to fix numbering.
 
