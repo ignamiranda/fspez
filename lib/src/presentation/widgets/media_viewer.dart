@@ -430,21 +430,75 @@ class _ZoomableImagePage extends StatefulWidget {
 
 class _ZoomableImagePageState extends State<_ZoomableImagePage> {
   final _transformationController = TransformationController();
+  ImageStream? _imageStream;
+  ImageStreamListener? _imageStreamListener;
+  Size? _imageSize;
+  String? _resolvedImageUrl;
   bool _errored = false;
+
+  static const double _longImageAspectRatioThreshold = 0.25;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_resolvedImageUrl != widget.imageUrl) {
+      _resolveImageSize();
+    }
+  }
+
+  void _resolveImageSize() {
+    if (_imageStreamListener != null) {
+      _imageStream?.removeListener(_imageStreamListener!);
+    }
+
+    _imageSize = null;
+    _resolvedImageUrl = widget.imageUrl;
+    final provider = NetworkImage(widget.imageUrl);
+    final stream = provider.resolve(createLocalImageConfiguration(context));
+    final listener = ImageStreamListener(
+      (info, _) {
+        if (!mounted) return;
+        setState(() {
+          _imageSize = Size(
+            info.image.width.toDouble(),
+            info.image.height.toDouble(),
+          );
+        });
+      },
+      onError: (_, __) {
+        if (mounted) setState(() => _errored = true);
+      },
+    );
+    _imageStream = stream;
+    _imageStreamListener = listener;
+    stream.addListener(listener);
+  }
 
   @override
   void didUpdateWidget(_ZoomableImagePage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl) {
       _transformationController.value = Matrix4.identity();
+      _imageSize = null;
+      _resolvedImageUrl = null;
       _errored = false;
+      _resolveImageSize();
     }
   }
 
   @override
   void dispose() {
+    if (_imageStreamListener != null) {
+      _imageStream?.removeListener(_imageStreamListener!);
+    }
     _transformationController.dispose();
     super.dispose();
+  }
+
+  bool get _isLongImage {
+    final size = _imageSize;
+    if (size == null || size.width == 0) return false;
+    return size.width / size.height < _longImageAspectRatioThreshold;
   }
 
   void _onDoubleTap() {
@@ -465,46 +519,103 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_imageSize == null && !_errored) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Colors.white54,
+          strokeWidth: 2,
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: widget.onTap,
-      onDoubleTap: _onDoubleTap,
-      child: InteractiveViewer(
-        transformationController: _transformationController,
-        minScale: 1.0,
-        maxScale: 5.0,
-        boundaryMargin: const EdgeInsets.all(double.infinity),
-        child: Center(
-          child: _errored
-              ? const Icon(Icons.broken_image_outlined,
-                  color: Colors.white38, size: 48)
-              : Image.network(
-                  widget.imageUrl,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    final total =
-                        loadingProgress.expectedTotalBytes?.toDouble();
-                    final progress = total != null
-                        ? loadingProgress.cumulativeBytesLoaded / total
-                        : null;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.white54,
-                        value: progress,
-                        strokeWidth: 2,
-                      ),
-                    );
-                  },
-                  errorBuilder: (_, __, ___) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) setState(() => _errored = true);
-                    });
-                    return const Icon(Icons.broken_image_outlined,
-                        color: Colors.white38, size: 48);
-                  },
-                ),
-        ),
+      onDoubleTap: _isLongImage ? null : _onDoubleTap,
+      child: _isLongImage ? _buildLongImage(context) : _buildZoomableImage(),
+    );
+  }
+
+  Widget _buildZoomableImage() {
+    return InteractiveViewer(
+      transformationController: _transformationController,
+      minScale: 1.0,
+      maxScale: 5.0,
+      boundaryMargin: const EdgeInsets.all(double.infinity),
+      child: Center(
+        child: _errored
+            ? const Icon(Icons.broken_image_outlined,
+                color: Colors.white38, size: 48)
+            : Image.network(
+                widget.imageUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  final total = loadingProgress.expectedTotalBytes?.toDouble();
+                  final progress = total != null
+                      ? loadingProgress.cumulativeBytesLoaded / total
+                      : null;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white54,
+                      value: progress,
+                      strokeWidth: 2,
+                    ),
+                  );
+                },
+                errorBuilder: (_, __, ___) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _errored = true);
+                  });
+                  return const Icon(Icons.broken_image_outlined,
+                      color: Colors.white38, size: 48);
+                },
+              ),
       ),
+    );
+  }
+
+  Widget _buildLongImage(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: _errored
+                  ? const Icon(Icons.broken_image_outlined,
+                      color: Colors.white38, size: 48)
+                  : Image.network(
+                      widget.imageUrl,
+                      width: constraints.maxWidth,
+                      fit: BoxFit.fitWidth,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        final total =
+                            loadingProgress.expectedTotalBytes?.toDouble();
+                        final progress = total != null
+                            ? loadingProgress.cumulativeBytesLoaded / total
+                            : null;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white54,
+                            value: progress,
+                            strokeWidth: 2,
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) setState(() => _errored = true);
+                        });
+                        return const Icon(Icons.broken_image_outlined,
+                            color: Colors.white38, size: 48);
+                      },
+                    ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
