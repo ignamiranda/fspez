@@ -4,6 +4,7 @@ import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import 'award_badge.dart';
+import 'reddit_body.dart';
 import 'user_flair_chip.dart';
 
 class CommentTree extends StatefulWidget {
@@ -148,7 +149,8 @@ class _CommentTreeState extends State<CommentTree> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      if (widget.showAwards && widget.comment.awardCount > 0) ...[
+                      if (widget.showAwards &&
+                          widget.comment.awardCount > 0) ...[
                         const SizedBox(width: 8),
                         AwardBadge(awardCount: widget.comment.awardCount),
                       ],
@@ -164,8 +166,7 @@ class _CommentTreeState extends State<CommentTree> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const SizedBox(height: 4),
-                              Text(widget.comment.body,
-                                  style: theme.textTheme.bodyMedium),
+                              RedditBody(widget.comment.body),
                               const SizedBox(height: 4),
                               Row(
                                 children: [

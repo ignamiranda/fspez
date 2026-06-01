@@ -16,6 +16,7 @@ import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
 import '../widgets/media_viewer.dart';
 import '../widgets/post_actions.dart';
+import '../widgets/reddit_body.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
 
@@ -209,10 +210,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               if (post.selftext != null && post.selftext!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    post.selftext!,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  child: RedditBody(post.selftext!),
                 ),
               if (post.videoUrl != null)
                 _SensitiveMediaPreview(
@@ -764,7 +762,6 @@ class _PostDetailHeader extends StatelessWidget {
           const SizedBox(height: 8),
           PostActions(
             post: post,
-            showAwards: showAwards,
             effectiveVote: effectiveVote,
             onVote: onVote,
             effectiveSaved: effectiveSaved,

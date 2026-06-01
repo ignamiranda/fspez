@@ -8,6 +8,7 @@ import '../../domain/models/message_feed.dart';
 import '../tab_scroll_signal.dart';
 import '../utils/format_utils.dart';
 import '../utils/infinite_scroll.dart';
+import '../widgets/reddit_body.dart';
 import 'compose_screen.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -338,10 +339,7 @@ class _MessageBody extends StatelessWidget {
             ),
             const SizedBox(height: 4),
           ],
-          Text(
-            message.body,
-            style: theme.textTheme.bodyMedium,
-          ),
+          RedditBody(message.body),
           if (onReply != null) ...[
             const SizedBox(height: 8),
             SizedBox(
@@ -384,7 +382,7 @@ class _MessageBody extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(reply.body, style: theme.textTheme.bodySmall),
+                    RedditBody(reply.body),
                   ],
                 ),
               ),
