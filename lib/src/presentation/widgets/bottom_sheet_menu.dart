@@ -100,6 +100,65 @@ Widget _buildActionTile(BuildContext ctx, BottomSheetAction action) {
   );
 }
 
+/// Shows a modal bottom sheet with a radio-style list for selecting from
+/// [values]. Uses [labelFn] to get the display text for each value.
+/// The current selection is highlighted with [currentValue].
+/// Returns the selected value, or null if dismissed.
+Future<T?> showRadioBottomSheet<T>(
+  BuildContext context, {
+  required String title,
+  required T currentValue,
+  required List<T> values,
+  required String Function(T) labelFn,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _DragHandle(),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title,
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            RadioGroup<T>(
+              groupValue: currentValue,
+              onChanged: (value) {
+                if (value != null) {
+                  Navigator.of(ctx).pop(value);
+                }
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: values
+                    .map((v) => RadioListTile<T>(
+                          title: Text(labelFn(v)),
+                          value: v,
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _DragHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

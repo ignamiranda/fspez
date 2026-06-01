@@ -11,6 +11,7 @@ import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
 import '../utils/open_url.dart';
+import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
 import '../widgets/media_viewer.dart';
@@ -314,19 +315,20 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       ),
                     ),
                     const Spacer(),
-                    PopupMenuButton<CommentSort>(
-                      initialValue: _commentSort,
-                      tooltip: 'Sort comments',
-                      onSelected: (sort) {
-                        if (sort == _commentSort) return;
-                        setState(() => _commentSort = sort);
-                      },
-                      itemBuilder: (_) => CommentSort.values.map((sort) {
-                        return PopupMenuItem(
-                          value: sort,
-                          child: Text(sort.label),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () async {
+                        final sort = await showRadioBottomSheet<CommentSort>(
+                          context,
+                          title: 'Sort comments',
+                          currentValue: _commentSort,
+                          values: CommentSort.values,
+                          labelFn: (s) => s.label,
                         );
-                      }).toList(),
+                        if (sort != null && sort != _commentSort) {
+                          setState(() => _commentSort = sort);
+                        }
+                      },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,

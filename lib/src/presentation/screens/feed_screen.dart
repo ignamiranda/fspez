@@ -8,6 +8,7 @@ import '../../domain/enums/feed_sort.dart';
 import '../../domain/enums/feed_density.dart';
 import '../tab_scroll_signal.dart';
 import '../utils/infinite_scroll.dart';
+import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'search_screen.dart';
 
@@ -94,17 +95,20 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               setState(() => _showAll = !_showAll);
             },
           ),
-          PopupMenuButton<FeedSort>(
+          IconButton(
             icon: const Icon(Icons.sort),
-            onSelected: (sort) {
-              setState(() => _sort = sort);
-            },
-            itemBuilder: (_) => FeedSort.values.map((sort) {
-              return PopupMenuItem(
-                value: sort,
-                child: Text(sort.label),
+            onPressed: () async {
+              final sort = await showRadioBottomSheet<FeedSort>(
+                context,
+                title: 'Sort feed',
+                currentValue: _sort,
+                values: FeedSort.values,
+                labelFn: (s) => s.label,
               );
-            }).toList(),
+              if (sort != null && sort != _sort) {
+                setState(() => _sort = sort);
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.search),

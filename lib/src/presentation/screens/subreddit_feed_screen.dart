@@ -10,6 +10,7 @@ import '../../domain/models/subreddit.dart';
 import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
 import '../utils/reddit_markdown.dart';
+import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import '../widgets/subreddit_rules_sheet.dart';
 import 'submit_screen.dart';
@@ -94,17 +95,20 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
             onPressed: () =>
                 ref.read(feedPageProvider(config).notifier).refresh(),
           ),
-          PopupMenuButton<FeedSort>(
+          IconButton(
             icon: const Icon(Icons.sort),
-            onSelected: (sort) {
-              setState(() => _sort = sort);
-            },
-            itemBuilder: (_) => FeedSort.values.map((sort) {
-              return PopupMenuItem(
-                value: sort,
-                child: Text(sort.label),
+            onPressed: () async {
+              final sort = await showRadioBottomSheet<FeedSort>(
+                context,
+                title: 'Sort feed',
+                currentValue: _sort,
+                values: FeedSort.values,
+                labelFn: (s) => s.label,
               );
-            }).toList(),
+              if (sort != null && sort != _sort) {
+                setState(() => _sort = sort);
+              }
+            },
           ),
         ],
       ),
