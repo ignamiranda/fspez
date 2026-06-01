@@ -95,7 +95,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check for opening crosspost flow from feed/detail, validation errors, and submit failure/success if safe.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for submit/client/post-detail discovery if needed.
 - Use `reddit-api-auth` for endpoint/auth details if implementing Reddit crosspost calls.

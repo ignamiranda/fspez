@@ -62,7 +62,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check for own text post edit, own comment edit, and a non-editable/link/media post case.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` if more code discovery is needed.
 - Use `@fixer` for bounded implementation after the desired remaining behavior is confirmed.

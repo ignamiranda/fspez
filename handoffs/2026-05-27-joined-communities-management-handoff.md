@@ -104,9 +104,9 @@ Run after implementation:
   - Open a community and confirm it navigates to the existing subreddit page.
   - Unsubscribe from a test community, confirm prompt and list refresh.
 
-## Suggested skills / agents
+## Suggested agents
 
-- Use `@librarian` or the `reddit-api-auth` skill if endpoint behavior is unclear.
+- Use `@librarian` or `reddit-api-auth` guidance if endpoint behavior is unclear.
 - Reuse explorer session `exp-2 Check post edit implementation` for account/subreddit/client context if needed.
 - Use `@fixer` for bounded implementation after endpoint/model reuse is clear.
 - Use `@designer` if the community list layout needs visual polish.

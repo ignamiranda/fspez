@@ -109,7 +109,7 @@ Run after implementation:
   - Login from setup: auth flow returns cleanly.
   - Existing stored preferences/account: setup does not interrupt normal launch.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use `@designer` for mobile onboarding layout, copy, and flow polish.
 - Reuse explorer session `exp-2 Check post edit implementation` only if needing existing app/feed/auth context.

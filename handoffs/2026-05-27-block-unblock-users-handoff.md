@@ -87,7 +87,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check is recommended for confirmation dialogs and profile/menu flows.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use `@explorer` first only if more discovery is needed; existing inventory session is `exp-2 Inventory implemented Reddit features`.
 - Use `reddit-api-auth` for block/unblock endpoint/auth details if implementing Reddit write calls.

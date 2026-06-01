@@ -90,7 +90,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check with a moderator account and a non-moderator account if available.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-1 Find inbox implementation` for inbox/message architecture context if more discovery is needed.
 - Use `reddit-api-auth` for endpoint/auth details if implementing modmail API calls.

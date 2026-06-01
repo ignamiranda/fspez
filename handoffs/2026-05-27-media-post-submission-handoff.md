@@ -93,7 +93,7 @@ Run after implementation:
 - `flutter test` if any tests are added/changed.
 - Manual `flutter run` check is recommended because this touches file picking/upload UI.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use `@explorer` first for submit/client/dependency discovery. Reuse existing inventory session if helpful: `exp-2 Inventory implemented Reddit features`.
 - Use `@librarian` or Context7 for Flutter picker/upload package docs if adding or using a file/media picker dependency.

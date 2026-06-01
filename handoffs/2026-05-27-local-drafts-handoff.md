@@ -111,7 +111,7 @@ Run after implementation:
   - Start a direct message, leave, reopen, confirm draft restores.
   - Switch accounts if practical and confirm drafts do not bleed between users.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for submit/comment/post-detail context if more discovery is needed.
 - Use `@fixer` for bounded implementation once draft keying and persistence approach are chosen.

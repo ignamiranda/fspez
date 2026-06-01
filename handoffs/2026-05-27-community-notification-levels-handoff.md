@@ -104,9 +104,9 @@ Run after implementation:
   - Try a non-joined subreddit and confirm the UI behaves correctly.
   - Confirm subscribe/unsubscribe still works independently.
 
-## Suggested skills / agents
+## Suggested agents
 
-- Use `@librarian` or the `reddit-api-auth` skill for endpoint/auth research before implementation.
+- Use `@librarian` or `reddit-api-auth` guidance for endpoint/auth research before implementation.
 - Reuse explorer session `exp-2 Check post edit implementation` for subreddit screen/client context if needed.
 - Use `@fixer` for bounded implementation once endpoint behavior is verified.
 - Use `@oracle` if endpoint behavior suggests notification off and community mute are semantically overlapping.

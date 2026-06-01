@@ -105,7 +105,7 @@ Run after implementation:
   - Confirm existing feed content is not blanked on failure.
   - Confirm scroll position behavior feels stable.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use `@designer` for mobile refresh indicator/status feedback polish.
 - Reuse explorer session `exp-2 Check post edit implementation` for feed/subreddit context if needed.

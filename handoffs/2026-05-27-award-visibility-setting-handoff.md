@@ -96,7 +96,7 @@ Run after implementation:
 - `flutter test` if model/parser tests are added or updated.
 - Manual `flutter run` check recommended for setting toggle and award visibility in feed/detail/comment surfaces.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use existing explorer inventory session if more discovery is needed: `exp-2 Inventory implemented Reddit features`.
 - Use `@fixer` for bounded model/parser/UI/settings implementation after fields and settings pattern are known.

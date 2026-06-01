@@ -116,7 +116,7 @@ Run after implementation:
   - Restart app and confirm recents persist.
   - Clear recents and confirm empty state.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for navigation/account/profile context if needed.
 - Use `@fixer` for bounded implementation after storage/provider shape is chosen.

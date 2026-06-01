@@ -107,7 +107,7 @@ Run after implementation:
   - Confirm NSFW/spoiler media is not prefetched/revealed unexpectedly.
   - Confirm no obvious scroll jank or runaway network usage.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use `@oracle` if choosing between Flutter image cache, dependency cache, or custom cache policy becomes ambiguous.
 - Reuse explorer session `exp-2 Check post edit implementation` for feed/post/media context if needed.

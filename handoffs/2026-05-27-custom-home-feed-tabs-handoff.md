@@ -96,7 +96,7 @@ Run after implementation:
   - Confirm selected tabs load, refresh, and paginate correctly.
   - Confirm bottom navigation still works as before.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use `@designer` for mobile tab layout and management UI polish.
 - Reuse explorer session `exp-2 Check post edit implementation` for feed/subreddit context if needed.

@@ -97,7 +97,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check for form validation, adding/removing options, failed submit, and a successful poll submit if safe/test account is available.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for submit/client discovery if needed; it has already read `submit_screen.dart`, `subreddit_feed_screen.dart`, and `reddit_client.dart`.
 - Use `reddit-api-auth` for endpoint/auth details if implementing Reddit poll creation calls.

@@ -102,7 +102,7 @@ Run after implementation:
   - Open video; confirm aspect ratio and controls remain usable.
   - Open a tall image/comic and confirm it does not crop unexpectedly.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Use `@designer` for gesture/interaction polish if implementing directly.
 - Reuse explorer session `exp-2 Check post edit implementation` if more media viewer context is needed.

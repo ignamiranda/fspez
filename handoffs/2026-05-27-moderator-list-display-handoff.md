@@ -92,7 +92,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check on a subreddit with visible moderators and one unavailable/private case if practical.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for subreddit screen/client context if more discovery is needed.
 - Use `@fixer` for bounded implementation after endpoint/model/UI targets are confirmed.

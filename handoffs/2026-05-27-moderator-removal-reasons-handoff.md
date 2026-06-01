@@ -94,7 +94,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check with a moderator account on a test subreddit if available.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for post/detail/client/subreddit context if more discovery is needed.
 - Use `reddit-api-auth` for endpoint/auth details if implementing moderator API calls.

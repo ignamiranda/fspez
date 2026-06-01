@@ -96,7 +96,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check on a subreddit with a public wiki, one without/disabled wiki, and internal wiki links if available.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for subreddit screen and client context if more discovery is needed.
 - Use `@librarian` or Context7 if adding/using a markdown rendering package.

@@ -91,7 +91,7 @@ Run after implementation:
 - `flutter test` if tests are added/changed.
 - Manual `flutter run` check recommended for a subreddit with optional flair and one that requires flair.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check comment collapse` if more discovery is needed; it has already read `submit_screen.dart` and related presentation files.
 - Use `reddit-api-auth` for Reddit flair/submit endpoint auth details if implementing write/API calls.

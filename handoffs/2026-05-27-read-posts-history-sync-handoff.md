@@ -99,7 +99,7 @@ Run after implementation:
   - Restart app and confirm state persists.
   - Check same post in another list if practical.
 
-## Suggested skills / agents
+## Suggested agents
 
 - Reuse explorer session `exp-2 Check post edit implementation` for feed/post/detail context if more discovery is needed.
 - Use `@fixer` for bounded implementation after read-state ownership and persistence target are known.
