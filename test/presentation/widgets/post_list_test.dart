@@ -138,5 +138,25 @@ void main() {
       expect(votedFullname, 't3_1');
       expect(votedDirection, VoteDirection.upvote);
     });
+
+    testWidgets('exposes semantic labels for post actions', (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(_withTestProviders(testPrefs)(MaterialApp(
+          home: Scaffold(
+            body: PostList(
+              posts: [_createPost('1')],
+            ),
+          ),
+        )));
+
+        expect(find.bySemanticsLabel('Upvote'), findsOneWidget);
+        expect(find.bySemanticsLabel('Downvote'), findsOneWidget);
+        expect(find.bySemanticsLabel('Save'), findsOneWidget);
+        expect(find.bySemanticsLabel('More actions'), findsOneWidget);
+      } finally {
+        semantics.dispose();
+      }
+    });
   });
 }

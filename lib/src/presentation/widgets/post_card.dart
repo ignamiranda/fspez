@@ -509,9 +509,22 @@ class _OverflowMenu extends StatelessWidget {
         authorActions: authorActions,
       ),
       borderRadius: BorderRadius.circular(4),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(Icons.more_horiz, size: 18, color: cs.onSurfaceVariant),
+      child: Semantics(
+        button: true,
+        label: 'More actions',
+        child: Tooltip(
+          message: 'More actions',
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            child: Center(
+              child: Icon(
+                Icons.more_horiz,
+                size: 18,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -522,6 +535,7 @@ class _VoteButton extends StatelessWidget {
   final bool active;
   final Color color;
   final Color activeColor;
+  final String semanticLabel;
   final VoidCallback onTap;
 
   const _VoteButton({
@@ -529,17 +543,29 @@ class _VoteButton extends StatelessWidget {
     required this.active,
     required this.color,
     required this.activeColor,
+    required this.semanticLabel,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(icon, size: 20, color: color),
+    return Semantics(
+      button: true,
+      selected: active,
+      label: semanticLabel,
+      enabled: true,
+      child: Tooltip(
+        message: semanticLabel,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(4),
+            child: Center(
+              child: Icon(icon, size: 20, color: color),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1039,6 +1065,7 @@ class _PostActionBar extends StatelessWidget {
           active: upActive,
           color: upActive ? cs.primary : cs.onSurfaceVariant,
           activeColor: cs.primary,
+          semanticLabel: upActive ? 'Upvoted' : 'Upvote',
           onTap: () => onVote?.call(VoteDirection.upvote),
         ),
         Padding(
@@ -1062,12 +1089,14 @@ class _PostActionBar extends StatelessWidget {
           active: downActive,
           color: downActive ? cs.secondary : cs.onSurfaceVariant,
           activeColor: cs.secondary,
+          semanticLabel: downActive ? 'Downvoted' : 'Downvote',
           onTap: () => onVote?.call(VoteDirection.downvote),
         ),
         SizedBox(width: compact ? 10 : 16),
         _ActionItem(
           icon: Icons.chat_bubble_outline,
           label: showLabel ? formatCount(commentCount) : null,
+          semanticLabel: 'Comments',
           compact: compact,
           onTap: onTap,
           color: cs.onSurfaceVariant,
@@ -1075,6 +1104,7 @@ class _PostActionBar extends StatelessWidget {
         SizedBox(width: compact ? 10 : 16),
         _ActionItem(
           icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
+          semanticLabel: isSaved ? 'Unsave' : 'Save',
           compact: compact,
           onTap: onSave,
           color: isSaved ? cs.primary : cs.onSurfaceVariant,
@@ -1083,6 +1113,7 @@ class _PostActionBar extends StatelessWidget {
           SizedBox(width: compact ? 10 : 16),
           _ActionItem(
             icon: Icons.open_in_new,
+            semanticLabel: 'Open link',
             compact: compact,
             onTap: () => openUrl(post.url!),
             color: cs.onSurfaceVariant,
@@ -1462,6 +1493,7 @@ class _MediaTile extends StatelessWidget {
 class _ActionItem extends StatelessWidget {
   final IconData icon;
   final String? label;
+  final String semanticLabel;
   final VoidCallback? onTap;
   final Color color;
   final bool compact;
@@ -1469,6 +1501,7 @@ class _ActionItem extends StatelessWidget {
   const _ActionItem({
     required this.icon,
     this.label,
+    required this.semanticLabel,
     this.onTap,
     required this.color,
     this.compact = false,
@@ -1476,30 +1509,41 @@ class _ActionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: compact ? 4 : 6,
-          horizontal: compact ? 1 : 2,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: compact ? 16 : 17, color: color),
-            if (label != null) ...[
-              const SizedBox(width: 3),
-              Text(
-                label!,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: color,
-                ),
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      enabled: onTap != null,
+      child: Tooltip(
+        message: semanticLabel,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: compact ? 10 : 11,
+                horizontal: compact ? 8 : 10,
               ),
-            ],
-          ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: compact ? 16 : 17, color: color),
+                  if (label != null) ...[
+                    const SizedBox(width: 3),
+                    Text(
+                      label!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
