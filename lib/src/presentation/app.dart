@@ -6,10 +6,13 @@ import 'screens/feed_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/auth_webview_screen.dart';
 import '../data/app_settings.dart';
 import '../data/auth_providers.dart';
 import '../data/inbox_providers.dart';
+import '../data/session_health.dart';
 import '../domain/enums/app_theme_mode.dart';
+import '../domain/models/session_cookie.dart';
 
 class FspezApp extends ConsumerWidget {
   const FspezApp({super.key});
@@ -64,6 +67,7 @@ class _MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<_MainShell> {
   int _selectedIndex = 0;
+  SessionHealthStatus? _lastHealthStatus;
 
   static const _screens = <Widget>[
     FeedScreen(),
@@ -74,6 +78,63 @@ class _MainShellState extends ConsumerState<_MainShell> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(inboxUnreadCountProvider);
+
+    ref.listen(sessionHealthProvider, (_, next) {
+      final health = next.valueOrNull;
+
+      // Apply modhash from API response if stored cookie lacked one
+      if (health?.newModhash != null) {
+        final account = ref.read(activeAccountProvider);
+        if (account != null &&
+            account.sessionCookie.modhash != health!.newModhash) {
+          ref.read(activeAccountProvider.notifier).updateSessionCookie(
+                SessionCookie(
+                  value: account.sessionCookie.value,
+                  expiresAt: account.sessionCookie.expiresAt,
+                  rawCookie: account.sessionCookie.rawCookie,
+                  modhash: health.newModhash,
+                ),
+              );
+        }
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        final messenger = ScaffoldMessenger.of(context);
+        if (health == null || !health.needsRecovery) {
+          messenger.clearMaterialBanners();
+          _lastHealthStatus = null;
+          return;
+        }
+
+        if (_lastHealthStatus == health.status) return;
+        _lastHealthStatus = health.status;
+
+        messenger.clearMaterialBanners();
+        messenger.showMaterialBanner(
+          MaterialBanner(
+            content: Text('${health.title}. ${health.message}'),
+            actions: [
+              TextButton(
+                onPressed: () => setState(() => _selectedIndex = 2),
+                child: const Text('Account'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AuthWebViewScreen(),
+                    ),
+                  );
+                },
+                child: Text(health.actionLabel),
+              ),
+            ],
+          ),
+        );
+      });
+    });
 
     return Scaffold(
       body: IndexedStack(

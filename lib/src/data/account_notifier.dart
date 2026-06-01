@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/account.dart';
+import '../domain/models/session_cookie.dart';
 import 'account_repository.dart';
 
 class AccountListVersionNotifier extends StateNotifier<int> {
@@ -57,6 +58,20 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
     if (state?.id == accountId) {
       state = _repository.loadActive();
     }
+    _listVersion.bump();
+  }
+
+  Future<void> updateSessionCookie(SessionCookie newCookie) async {
+    final current = state;
+    if (current == null) return;
+    final updated = Account(
+      id: current.id,
+      username: current.username,
+      sessionCookie: newCookie,
+      isDefault: current.isDefault,
+    );
+    await _repository.save(updated);
+    state = updated;
     _listVersion.bump();
   }
 }

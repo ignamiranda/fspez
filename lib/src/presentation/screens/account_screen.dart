@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
+import '../../data/session_health.dart';
 import '../tab_scroll_signal.dart';
 import 'auth_webview_screen.dart';
 import 'saved_screen.dart';
@@ -42,6 +43,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
     final activeAccount = ref.watch(activeAccountProvider);
     final accounts = ref.watch(accountsProvider);
+    final sessionHealth = ref.watch(sessionHealthProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -56,7 +58,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ),
       body: activeAccount == null
           ? _buildLoggedOut(context)
-          : _buildLoggedIn(context, accounts, activeAccount),
+          : _buildLoggedIn(context, accounts, activeAccount, sessionHealth),
     );
   }
 
@@ -87,12 +89,27 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildLoggedIn(
-      BuildContext context, List<dynamic> accounts, dynamic activeAccount) {
+    BuildContext context,
+    List<dynamic> accounts,
+    dynamic activeAccount,
+    SessionHealth? sessionHealth,
+  ) {
     final theme = Theme.of(context);
     return ListView(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
       children: [
+        if (sessionHealth != null && sessionHealth.needsRecovery)
+          _SessionHealthCard(
+            health: sessionHealth,
+            onRelogin: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
+              );
+            },
+          ),
+        if (sessionHealth != null && sessionHealth.needsRecovery)
+          const SizedBox(height: 16),
         Text('Accounts',
             style: theme.textTheme.titleSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -250,5 +267,76 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (confirmed == true) {
       ref.read(activeAccountProvider.notifier).removeAccount(account.id);
     }
+  }
+}
+
+class _SessionHealthCard extends StatelessWidget {
+  final SessionHealth health;
+  final VoidCallback onRelogin;
+
+  const _SessionHealthCard({
+    required this.health,
+    required this.onRelogin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      color: theme.colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warning_amber_outlined,
+                    color: theme.colorScheme.onErrorContainer),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    health.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.onErrorContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${health.message} Tap another account below or re-login.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onErrorContainer,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: onRelogin,
+                  child: Text(health.actionLabel),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AuthWebViewScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Add account'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
