@@ -246,6 +246,7 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     if (post.videoUrl != null) {
       mediaWidget = _InlineVideoPlayer(
+        postKey: post.fullname,
         videoUrl: post.videoUrl!,
         thumbnailUrl: post.thumbnailUrl,
         onTap: () => MediaViewer.show(
@@ -1124,11 +1125,13 @@ const _kVideoVisibilityThreshold = 0.5;
 /// viewport, pauses when scrolled out, and shows mute/unmute + play/pause
 /// overlays.
 class _InlineVideoPlayer extends StatefulWidget {
+  final String postKey;
   final String videoUrl;
   final String? thumbnailUrl;
   final VoidCallback? onTap;
 
   const _InlineVideoPlayer({
+    required this.postKey,
     required this.videoUrl,
     this.thumbnailUrl,
     this.onTap,
@@ -1144,6 +1147,7 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
   bool _errored = false;
   bool _isPlaying = false;
   bool _isMuted = true;
+  double _lastVisibleFraction = 0;
 
   @override
   void initState() {
@@ -1165,6 +1169,9 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
         _controller = controller;
         _initialized = true;
       });
+      if (_lastVisibleFraction > _kVideoVisibilityThreshold) {
+        _play();
+      }
       // Do NOT auto-play immediately — visibility will trigger playback.
     } catch (_) {
       if (mounted) setState(() => _errored = true);
@@ -1194,6 +1201,7 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
+    _lastVisibleFraction = info.visibleFraction;
     if (!_initialized || _controller == null) return;
     final visible = info.visibleFraction > _kVideoVisibilityThreshold;
     if (visible && !_isPlaying) {
@@ -1300,7 +1308,7 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: VisibilityDetector(
-        key: ValueKey('inline_video_${widget.videoUrl}'),
+        key: ValueKey('inline_video_${widget.postKey}_${widget.videoUrl}'),
         onVisibilityChanged: _onVisibilityChanged,
         child: GestureDetector(onTap: widget.onTap, child: child),
       ),

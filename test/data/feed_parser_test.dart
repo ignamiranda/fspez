@@ -220,6 +220,18 @@ void main() {
       });
       expect(downvoted.vote, VoteDirection.downvote);
     });
+
+    test('parses award count', () {
+      final post = parser.parsePost({
+        'id': 'award',
+        'title': 'Awarded',
+        'permalink': '/r/test/award',
+        'created_utc': 1000000000,
+        'total_awards_received': 3,
+      });
+
+      expect(post.awardCount, 3);
+    });
   });
 
   group('parseFeed', () {
