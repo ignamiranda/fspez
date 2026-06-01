@@ -7,7 +7,6 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 ## Ranked handoffs
 
 - `handoffs/2026-05-27-optimistic-action-undo-snackbars-handoff.md` — high mobile trust value; makes destructive/reversible actions feel safer and more polished. **Partially done**: save/hide snackbars already exist; hidden-feed unhide undo snackbar added; vote/delete remain unchanged.
-- `handoffs/2026-05-27-mobile-accessibility-comfort-audit-handoff.md` — mobile quality foundation: dynamic text, touch targets, semantics, and reduced motion affect every screen and future UI handoff.
 - `handoffs/2026-05-27-offline-cache-stale-while-revalidate-handoff.md` — major perceived performance/reliability upgrade; makes the app feel instant and resilient.
 - `handoffs/2026-05-27-media-prefetching-feed-handoff.md` — mobile performance polish for media-heavy browsing; valuable after/alongside cache and sensitive-content policy.
 - `handoffs/2026-05-27-pull-to-refresh-polish-handoff.md` — core mobile feed interaction polish; high frequency user action.
@@ -71,6 +70,7 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 - **Dark mode/theme support** — Light/Dark/AMOLED/System theme switching with persistence via `AppThemeMode`. `FspezTheme.amoled()` with pure black backgrounds. (Was handoff #23)
 - **Subreddit icon display in feed cards** — Added 20×20 circular subreddit icon (from `sr_detail.icon_img`) next to `r/name` in `PostCard._MetadataRow`; graceful empty on missing/error. (Was handoff #17)
 - **Relative timestamps across all surfaces** — Comment timestamps now display `timeAgo()` in `CommentTree` header (author · relative time); `timeAgo` already covered feed, post detail, and inbox. (Was handoff #28)
+- **Mobile accessibility comfort audit** — Applied foundational comfort improvements: larger nav labels/height for dynamic text readability, 48×48 minimum tap targets via shared button theme, expanded list-tile vertical padding, reduced-motion behavior for feed scroll-to-top (jump instead of animate when accessibility reduce-motion is enabled), feed action tooltips, and explicit inbox badge semantics label for screen readers. Source handoff file was already absent from `handoffs/`; completed from ranked TODO scope.
 
 ## Notes
 

@@ -186,10 +186,13 @@ class _InboxNavIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Badge(
-      isLabelVisible: count > 0,
-      label: Text(count > 99 ? '99+' : '$count'),
-      child: Icon(icon),
+    return Semantics(
+      label: count > 0 ? 'Inbox, $count unread messages' : 'Inbox',
+      child: Badge(
+        isLabelVisible: count > 0,
+        label: Text(count > 99 ? '99+' : '$count'),
+        child: Icon(icon),
+      ),
     );
   }
 }

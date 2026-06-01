@@ -52,8 +52,15 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     ref.listen<int>(tabScrollSignalProvider, (_, __) {
       final c = _scrollController;
       if (c != null && c.hasClients && c.offset > 0) {
-        c.animateTo(0,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        final reduceMotion =
+            MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        if (reduceMotion) {
+          c.jumpTo(0);
+        } else {
+          c.animateTo(0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut);
+        }
       }
     });
     final account = ref.watch(activeAccountProvider);
@@ -78,6 +85,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh feed',
             onPressed: () =>
                 ref.read(feedPageProvider(_buildConfig()).notifier).refresh(),
           ),
@@ -97,6 +105,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.sort),
+            tooltip: 'Sort feed',
             onPressed: () async {
               final sort = await showRadioBottomSheet<FeedSort>(
                 context,
@@ -112,6 +121,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.search),
+            tooltip: 'Search',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SearchScreen()),
             ),
