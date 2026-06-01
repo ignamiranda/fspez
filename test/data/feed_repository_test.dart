@@ -22,12 +22,23 @@ void main() {
     repository = FeedRepository(client);
   });
 
+  void stubFeedResponses(String jsonBody, {String htmlBody = '<html></html>'}) {
+    when(() => mockHttp.get(
+          any(),
+          headers: any(named: 'headers'),
+        )).thenAnswer((invocation) async {
+      final uri = invocation.positionalArguments[0] as Uri;
+      if (uri.path.endsWith('.json')) {
+        return http.Response(jsonBody, 200);
+      }
+      return http.Response(htmlBody, 200,
+          headers: {'content-type': 'text/html'});
+    });
+  }
+
   group('fetchSaved', () {
     test('GETs user saved endpoint and returns feed', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('''
+      stubFeedResponses('''
         {
           "data": {
             "children": [
@@ -54,7 +65,7 @@ void main() {
             "before": null
           }
         }
-      ''', 200));
+      ''');
 
       final feed = await repository.fetchSaved('testuser');
 
@@ -65,36 +76,30 @@ void main() {
       expect(feed.hasMorePages, true);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/user/testuser/saved.json'
+            Uri.parse('https://old.reddit.com/user/testuser/saved.json'
                 '?limit=25&sr_detail=true'),
             headers: any(named: 'headers'),
           )).called(1);
     });
 
     test('passes after cursor', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('''
+      stubFeedResponses('''
         {"data": {"children": [], "after": null, "before": null}}
-      ''', 200));
+      ''');
 
       await repository.fetchSaved('testuser', after: 't3_cursor');
 
       verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/user/testuser/saved.json'
+            Uri.parse('https://old.reddit.com/user/testuser/saved.json'
                 '?after=t3_cursor&limit=25&sr_detail=true'),
             headers: any(named: 'headers'),
           )).called(1);
     });
 
     test('sends cookie when session provided', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('''
+      stubFeedResponses('''
         {"data": {"children": [], "after": null, "before": null}}
-      ''', 200));
+      ''');
 
       final cookie = SessionCookie(
         value: 'session_val',
@@ -130,16 +135,43 @@ void main() {
     });
 
     test('returns saved FeedKind', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('''
+      stubFeedResponses('''
         {"data": {"children": [], "after": null, "before": null}}
-      ''', 200));
+      ''');
 
       final feed = await repository.fetchSaved('testuser');
 
       expect(feed.kind.name, 'saved');
+    });
+
+    test('overlays award counts from html feed markup', () async {
+      stubFeedResponses(
+        '''
+        {
+          "data": {
+            "children": [
+              {
+                "kind": "t3",
+                "data": {
+                  "id": "saved1",
+                  "title": "Saved Post 1",
+                  "permalink": "/r/test/1",
+                  "created_utc": 1000000000
+                }
+              }
+            ],
+            "after": null,
+            "before": null
+          }
+        }
+      ''',
+        htmlBody:
+            '<shreddit-post id="t3_saved1" award-count="4"></shreddit-post>',
+      );
+
+      final feed = await repository.fetchSaved('testuser');
+
+      expect(feed.posts.single.awardCount, 4);
     });
   });
 }

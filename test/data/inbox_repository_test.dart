@@ -58,7 +58,7 @@ void main() {
       expect(feed.hasMorePages, true);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/message/inbox.json'
+            Uri.parse('https://old.reddit.com/message/inbox.json'
                 '?limit=25&mark=true'),
             headers: any(named: 'headers'),
           )).called(1);
@@ -75,7 +75,7 @@ void main() {
       await repository.fetchInbox(after: 't4_cursor');
 
       verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/message/inbox.json'
+            Uri.parse('https://old.reddit.com/message/inbox.json'
                 '?after=t4_cursor&limit=25&mark=true'),
             headers: any(named: 'headers'),
           )).called(1);
@@ -115,7 +115,7 @@ void main() {
       expect(feed.messages[0].isNew, true);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/message/unread.json'
+            Uri.parse('https://old.reddit.com/message/unread.json'
                 '?limit=25&mark=true'),
             headers: any(named: 'headers'),
           )).called(1);
@@ -136,7 +136,7 @@ void main() {
       expect(feed.tab, InboxTab.sent);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/message/sent.json'
+            Uri.parse('https://old.reddit.com/message/sent.json'
                 '?limit=25&mark=true'),
             headers: any(named: 'headers'),
           )).called(1);

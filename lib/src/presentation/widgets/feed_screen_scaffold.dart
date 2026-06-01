@@ -38,12 +38,53 @@ class FeedScreenScaffold extends ConsumerWidget {
     final hidden =
         hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
     final account = ref.watch(activeAccountProvider);
+    Widget? statusBanner;
 
-    if (state.isLoading) {
+    if (state.error != null && state.items.isNotEmpty) {
+      statusBanner = Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        color: Colors.orange.shade100,
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                state.error!,
+                style: const TextStyle(fontSize: 12),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            TextButton(
+              onPressed: () => notifier.refresh(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    } else if (state.isStale && state.items.isNotEmpty) {
+      statusBanner = Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        color: Colors.grey.shade100,
+        child: const Row(
+          children: [
+            Icon(Icons.access_time, size: 14),
+            SizedBox(width: 4),
+            Text('Cached', style: TextStyle(fontSize: 11)),
+          ],
+        ),
+      );
+    }
+
+    // Full-screen spinner only when loading with no cached items.
+    if (state.isLoading && state.items.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return PostList(
+    final postList = PostList(
       scrollController: scrollController,
       posts: state.items,
       onRefresh: () async => notifier.refresh(),
@@ -134,5 +175,27 @@ class FeedScreenScaffold extends ConsumerWidget {
             )
           : null,
     );
+
+    // Wrapping with status banners when cached/stale/error content is shown.
+    if (state.isLoading && state.items.isNotEmpty) {
+      return Column(
+        children: [
+          const LinearProgressIndicator(),
+          if (statusBanner != null) statusBanner,
+          Expanded(child: postList),
+        ],
+      );
+    }
+
+    if (statusBanner != null) {
+      return Column(
+        children: [
+          statusBanner,
+          Expanded(child: postList),
+        ],
+      );
+    }
+
+    return postList;
   }
 }

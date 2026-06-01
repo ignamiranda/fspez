@@ -13,6 +13,7 @@ class PaginatedListState<T> with EquatableMixin {
   final bool isLoadingMore;
   final String? error;
   final bool hasMore;
+  final bool isStale;
 
   const PaginatedListState({
     this.items = const [],
@@ -20,6 +21,7 @@ class PaginatedListState<T> with EquatableMixin {
     this.isLoadingMore = false,
     this.error,
     this.hasMore = false,
+    this.isStale = false,
   });
 
   /// Convenience constructor for the initial-loading state.
@@ -28,7 +30,8 @@ class PaginatedListState<T> with EquatableMixin {
         isLoading = true,
         isLoadingMore = false,
         error = null,
-        hasMore = false;
+        hasMore = false,
+        isStale = false;
 
   PaginatedListState<T> copyWith({
     List<T>? items,
@@ -36,6 +39,7 @@ class PaginatedListState<T> with EquatableMixin {
     bool? isLoadingMore,
     String? error,
     bool? hasMore,
+    bool? isStale,
     bool clearError = false,
   }) {
     return PaginatedListState<T>(
@@ -44,6 +48,7 @@ class PaginatedListState<T> with EquatableMixin {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
       hasMore: hasMore ?? this.hasMore,
+      isStale: isStale ?? this.isStale,
     );
   }
 
@@ -62,5 +67,6 @@ class PaginatedListState<T> with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [items, isLoading, isLoadingMore, error, hasMore];
+  List<Object?> get props =>
+      [items, isLoading, isLoadingMore, error, hasMore, isStale];
 }

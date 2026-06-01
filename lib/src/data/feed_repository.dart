@@ -3,6 +3,7 @@ import '../domain/models/session_cookie.dart';
 import '../domain/enums/feed_sort.dart';
 import 'reddit_client.dart';
 import 'feed_parser.dart';
+import 'reddit_award_html_parser.dart';
 
 class FeedRepository {
   final RedditClient _client;
@@ -60,15 +61,13 @@ class FeedRepository {
     String? after,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/r/$subredditName',
-        queryParams: {
-          'sort': sort.label,
-          if (after != null) 'after': after,
-          'limit': '25',
-          'sr_detail': 'true',
-        },
-        sessionCookie: sessionCookie);
-    return _parser.parseFeed(data, FeedKind.home, sort);
+    return _fetchFeed(
+      '/r/$subredditName',
+      sort,
+      after,
+      FeedKind.home,
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<Feed> search(
@@ -76,17 +75,18 @@ class FeedRepository {
     String? after,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/search',
-        queryParams: {
-          'q': query,
-          'restrict_sr': 'off',
-          'sort': 'relevance',
-          'limit': '25',
-          'sr_detail': 'true',
-          if (after != null) 'after': after,
-        },
-        sessionCookie: sessionCookie);
-    return _parser.parseFeed(data, FeedKind.popular, FeedSort.new_);
+    return _fetchFeed(
+      '/search',
+      FeedSort.new_,
+      after,
+      FeedKind.popular,
+      extraQueryParams: {
+        'q': query,
+        'restrict_sr': 'off',
+        'sort': 'relevance',
+      },
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<Feed> fetchUserPosts(
@@ -95,15 +95,13 @@ class FeedRepository {
     String? after,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/user/$username/submitted',
-        queryParams: {
-          'sort': sort.label,
-          if (after != null) 'after': after,
-          'limit': '25',
-          'sr_detail': 'true',
-        },
-        sessionCookie: sessionCookie);
-    return _parser.parseFeed(data, FeedKind.user, sort);
+    return _fetchFeed(
+      '/user/$username/submitted',
+      sort,
+      after,
+      FeedKind.user,
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<Feed> fetchSaved(
@@ -111,14 +109,14 @@ class FeedRepository {
     String? after,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/user/$username/saved',
-        queryParams: {
-          if (after != null) 'after': after,
-          'limit': '25',
-          'sr_detail': 'true',
-        },
-        sessionCookie: sessionCookie);
-    return _parser.parseFeed(data, FeedKind.saved, FeedSort.new_);
+    return _fetchFeed(
+      '/user/$username/saved',
+      FeedSort.new_,
+      after,
+      FeedKind.saved,
+      includeSort: false,
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<Feed> fetchHidden(
@@ -126,14 +124,14 @@ class FeedRepository {
     String? after,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/user/$username/hidden',
-        queryParams: {
-          if (after != null) 'after': after,
-          'limit': '25',
-          'sr_detail': 'true',
-        },
-        sessionCookie: sessionCookie);
-    return _parser.parseFeed(data, FeedKind.saved, FeedSort.new_);
+    return _fetchFeed(
+      '/user/$username/hidden',
+      FeedSort.new_,
+      after,
+      FeedKind.saved,
+      includeSort: false,
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<Feed> _fetchFeed(
@@ -142,19 +140,54 @@ class FeedRepository {
     String? after,
     FeedKind kind, {
     String? multiredditName,
+    Map<String, String>? extraQueryParams,
+    bool includeSort = true,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get(path,
-        queryParams: {
-          'sort': sort.label,
-          if (after != null) 'after': after,
-          'limit': '25',
-          'sr_detail': 'true',
-        },
-        sessionCookie: sessionCookie);
-    return _parser.parseFeed(data, kind, sort,
-        multiredditName: multiredditName);
+    final queryParams = {
+      if (includeSort) 'sort': sort.label,
+      if (after != null) 'after': after,
+      'limit': '25',
+      'sr_detail': 'true',
+      ...?extraQueryParams,
+    };
+    final data = await _client.get(
+      path,
+      queryParams: queryParams,
+      sessionCookie: sessionCookie,
+    );
+    final feed = _parser.parseFeed(
+      data,
+      kind,
+      sort,
+      multiredditName: multiredditName,
+    );
+
+    try {
+      final html = await _client.getHtml(
+        path,
+        queryParams: queryParams,
+        sessionCookie: sessionCookie,
+      );
+      final awardCounts = RedditAwardHtmlParser.parseAwardCounts(html);
+      if (awardCounts.isEmpty) return feed;
+
+      return Feed(
+        kind: feed.kind,
+        sort: feed.sort,
+        posts: feed.posts
+            .map(
+              (post) => post.copyWith(
+                awardCount: awardCounts[post.fullname] ?? post.awardCount,
+              ),
+            )
+            .toList(),
+        after: feed.after,
+        before: feed.before,
+        multiredditName: feed.multiredditName,
+      );
+    } catch (_) {
+      return feed;
+    }
   }
 }
-
-

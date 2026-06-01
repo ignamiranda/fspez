@@ -65,7 +65,7 @@ void main() {
 
     verify(
       () => mockHttp.get(
-        Uri.parse('https://www.reddit.com/r/flutter/about.json'),
+        Uri.parse('https://old.reddit.com/r/flutter/about.json'),
         headers: any(named: 'headers'),
       ),
     ).called(1);
@@ -109,7 +109,7 @@ void main() {
 
     verify(
       () => mockHttp.get(
-        Uri.parse('https://www.reddit.com/r/flutter/about/rules.json'),
+        Uri.parse('https://old.reddit.com/r/flutter/about/rules.json'),
         headers: any(named: 'headers'),
       ),
     ).called(1);

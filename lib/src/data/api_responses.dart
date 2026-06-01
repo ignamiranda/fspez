@@ -279,10 +279,28 @@ class ApiPost {
 
   static int _awardCount(Map<String, dynamic> data) {
     final totalAwards = data['total_awards_received'];
-    if (totalAwards is num) return totalAwards.toInt();
+    if (totalAwards is num) {
+      final count = totalAwards.toInt();
+      if (count > 0) return count;
+    }
 
     final allAwardings = data['all_awardings'];
-    if (allAwardings is List) return allAwardings.length;
+    if (allAwardings is List) {
+      final counted = allAwardings
+          .whereType<Map<String, dynamic>>()
+          .fold<int>(0, (sum, award) {
+        final count = award['count'];
+        if (count is num) return sum + count.toInt();
+        if (count is String) {
+          final parsed = int.tryParse(count);
+          if (parsed != null) return sum + parsed;
+        }
+        return sum + 1;
+      });
+      if (counted > 0) return counted;
+
+      if (allAwardings.isNotEmpty) return allAwardings.length;
+    }
 
     final gildings = data['gildings'];
     if (gildings is Map<String, dynamic>) {

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/feed_pagination.dart';
 import 'package:fspez/src/data/paginated_notifier.dart';
 
+import 'package:fspez/src/domain/models/feed.dart';
 import 'package:fspez/src/domain/models/post.dart';
 import 'package:fspez/src/domain/models/subreddit.dart';
 import 'package:fspez/src/domain/enums/feed_sort.dart';
@@ -15,6 +16,15 @@ Post _post(String id) {
     createdAt: DateTime.now(),
     permalink: '/r/test/$id',
     type: PostType.link,
+  );
+}
+
+Feed _feed({required List<Post> posts, String? after}) {
+  return Feed(
+    kind: FeedKind.home,
+    sort: FeedSort.hot,
+    posts: posts,
+    after: after,
   );
 }
 
@@ -223,6 +233,135 @@ void main() {
         FeedPageConfig.user('alice'),
         equals(FeedPageConfig.user('alice')),
       );
+    });
+  });
+
+  group('FeedPageNotifier cache seeding', () {
+    test('seedFromCache populates state and sets isStale', () {
+      final notifier = FeedPageNotifier(
+        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+          items: [],
+        )),
+        autoLoad: false,
+      );
+
+      notifier.seedFromCache(
+        _feed(posts: [_post('1'), _post('2')], after: 'cursor'),
+        isStale: true,
+      );
+
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.items.length, 2);
+      expect(notifier.state.isStale, isTrue);
+      expect(notifier.state.error, isNull);
+      expect(notifier.state.hasMore, isTrue);
+      expect(notifier.after, 'cursor');
+    });
+
+    test('seedFromCache with isStale:false does not mark content as stale', () {
+      final notifier = FeedPageNotifier(
+        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+          items: [],
+        )),
+        autoLoad: false,
+      );
+
+      notifier.seedFromCache(_feed(posts: [_post('1')]), isStale: false);
+
+      expect(notifier.state.isStale, isFalse);
+    });
+
+    test('loadInitial with cached items preserves them on failure', () async {
+      final notifier = FeedPageNotifier(
+        fetchPage: ({after}) => Future.error(Exception('Refresh failed')),
+        autoLoad: false,
+      );
+
+      notifier.seedFromCache(_feed(posts: [_post('1')], after: 'cursor1'),
+          isStale: true);
+      await notifier.loadInitial();
+
+      // Cached items should be preserved on error.
+      expect(notifier.state.items.length, 1);
+      expect(notifier.state.items[0].id, '1');
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.error, isNotNull);
+      expect(notifier.state.isStale, isTrue);
+      expect(notifier.after, 'cursor1');
+    });
+
+    test('loadInitial with cached items replaces them on success', () async {
+      final notifier = FeedPageNotifier(
+        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+          items: [_post('fresh')],
+        )),
+        autoLoad: false,
+      );
+
+      notifier.seedFromCache(_feed(posts: [_post('stale')]), isStale: true);
+      await notifier.loadInitial();
+
+      // Fresh items replace cached items.
+      expect(notifier.state.items.length, 1);
+      expect(notifier.state.items[0].id, 'fresh');
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.error, isNull);
+    });
+
+    test('loadInitial seeding then success clears isStale', () async {
+      final notifier = FeedPageNotifier(
+        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+          items: [_post('fresh')],
+        )),
+        autoLoad: false,
+      );
+
+      notifier.seedFromCache(_feed(posts: [_post('stale')]), isStale: true);
+      await notifier.loadInitial();
+
+      expect(notifier.state.isStale, isFalse);
+    });
+
+    test('refresh preserves items from previous load on failure', () async {
+      var shouldFail = false;
+      final notifier = FeedPageNotifier(
+        fetchPage: ({after}) async {
+          if (shouldFail) {
+            throw Exception('Refresh failed');
+          }
+          return PaginatedResult<Post>(
+            items: [_post('1')],
+          );
+        },
+        autoLoad: false,
+      );
+
+      // Initial success load.
+      await notifier.loadInitial();
+      expect(notifier.state.items.length, 1);
+
+      // Now make the next refresh fail.
+      shouldFail = true;
+
+      await notifier.refresh();
+
+      // Previous items should be preserved.
+      expect(notifier.state.items.length, 1);
+      expect(notifier.state.items[0].id, '1');
+      expect(notifier.state.error, isNotNull);
+    });
+
+    test('loadInitial without cached items still blanks on error', () async {
+      final notifier = FeedPageNotifier(
+        fetchPage: ({after}) => Future.error(Exception('API error')),
+        autoLoad: false,
+      );
+
+      await notifier.loadInitial();
+
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.error, isNotNull);
+      expect(notifier.state.items, isEmpty);
     });
   });
 }

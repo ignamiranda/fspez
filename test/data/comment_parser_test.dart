@@ -304,6 +304,59 @@ void main() {
       expect(comments[0].awardCount, 2);
     });
 
+    test('sums award counts from all_awardings', () {
+      final children = [
+        {
+          'kind': 't1',
+          'data': {
+            'id': 'a',
+            'body': 'Awarded comment',
+            'author': 'user',
+            'score': 1,
+            'created_utc': 1000000000,
+            'depth': 0,
+            'collapsed': false,
+            'all_awardings': [
+              {'count': 1},
+              {'count': 4},
+            ],
+            'replies': '',
+          },
+        },
+      ];
+
+      final comments = parser.parseComments(children);
+
+      expect(comments[0].awardCount, 5);
+    });
+
+    test('falls through zero total_awards_received to all_awardings', () {
+      final children = [
+        {
+          'kind': 't1',
+          'data': {
+            'id': 'b',
+            'body': 'Awarded comment',
+            'author': 'user',
+            'score': 1,
+            'created_utc': 1000000000,
+            'depth': 0,
+            'collapsed': false,
+            'total_awards_received': 0,
+            'all_awardings': [
+              {'count': 1},
+              {'count': 4},
+            ],
+            'replies': '',
+          },
+        },
+      ];
+
+      final comments = parser.parseComments(children);
+
+      expect(comments[0].awardCount, 5);
+    });
+
     test('parses saved and stickied flags', () {
       final children = [
         {

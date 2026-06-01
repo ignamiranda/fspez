@@ -154,7 +154,6 @@ class _LetterAvatar extends StatelessWidget {
 
 class PostActions extends StatelessWidget {
   final Post post;
-  final bool showAwards;
   final VoteDirection? effectiveVote;
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
@@ -167,7 +166,6 @@ class PostActions extends StatelessWidget {
   const PostActions({
     super.key,
     required this.post,
-    this.showAwards = true,
     this.effectiveVote,
     this.onVote,
     this.effectiveSaved,

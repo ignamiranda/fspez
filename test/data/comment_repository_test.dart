@@ -102,7 +102,7 @@ void main() {
       expect(detail.comments[1].body, 'Second comment');
 
       verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/r/flutter/comments/post1.json'),
+            Uri.parse('https://old.reddit.com/r/flutter/comments/post1.json'),
             headers: any(named: 'headers'),
           )).called(1);
     });
@@ -268,7 +268,7 @@ void main() {
 
       verify(() => mockHttp.get(
             Uri.parse(
-                'https://www.reddit.com/r/flutter/comments/post1.json?sort=new'),
+                'https://old.reddit.com/r/flutter/comments/post1.json?sort=new'),
             headers: any(named: 'headers'),
           )).called(1);
     });
@@ -360,6 +360,77 @@ void main() {
           404,
         )),
       );
+    });
+
+    test('applies award counts from html markup', () async {
+      final responseJson = [
+        {
+          'kind': 'Listing',
+          'data': {
+            'children': [
+              {
+                'kind': 't3',
+                'data': {
+                  'id': 'post1',
+                  'title': 'Test Post',
+                  'author': 'testuser',
+                  'subreddit': 'flutter',
+                  'subreddit_id': 't5_2qh30',
+                  'permalink': '/r/flutter/comments/post1/test_post/',
+                  'created_utc': 1000000000,
+                },
+              },
+            ],
+          },
+        },
+        {
+          'kind': 'Listing',
+          'data': {
+            'children': [
+              {
+                'kind': 't1',
+                'data': {
+                  'id': 'c1',
+                  'body': 'First comment',
+                  'author': 'user1',
+                  'score': 10,
+                  'created_utc': 1000000001,
+                  'depth': 0,
+                  'collapsed': false,
+                  'replies': '',
+                },
+              },
+            ],
+          },
+        },
+      ];
+
+      when(() => mockHttp.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((invocation) async {
+        final uri = invocation.positionalArguments[0] as Uri;
+        if (uri.path.endsWith('.json')) {
+          return http.Response(jsonEncode(responseJson), 200);
+        }
+        if (uri.path.contains('/svc/shreddit/comments/')) {
+          return http.Response(
+            '<shreddit-comment id="t1_c1" award-count="2"></shreddit-comment>',
+            200,
+            headers: {'content-type': 'text/html'},
+          );
+        }
+        return http.Response(
+          '<shreddit-post id="t3_post1" award-count="7"></shreddit-post><faceplate-partial name="TopComments_test" src="/svc/shreddit/comments/r/flutter/post1?seeker-session=false&render-mode=partial&referer="></faceplate-partial>',
+          200,
+          headers: {'content-type': 'text/html'},
+        );
+      });
+
+      final detail = await repository.fetchComments('flutter', 'post1');
+
+      expect(detail.post.awardCount, 7);
+      expect(detail.comments.single.awardCount, 2);
     });
   });
 }

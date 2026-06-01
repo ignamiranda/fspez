@@ -15,7 +15,7 @@ class AwardBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
-        border: Border.all(color: cs.tertiary.withOpacity(0.8)),
+        border: Border.all(color: cs.tertiary.withValues(alpha: 0.8)),
         borderRadius: BorderRadius.circular(2),
       ),
       child: Row(

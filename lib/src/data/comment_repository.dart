@@ -7,6 +7,7 @@ import '../domain/enums/comment_sort.dart';
 import '../domain/enums/vote_direction.dart';
 import 'reddit_client.dart';
 import 'api_responses.dart';
+import 'reddit_award_html_parser.dart';
 
 class PostDetail {
   final Post post;
@@ -67,6 +68,44 @@ class CommentRepository {
 
     final comments = _parseComments(commentsChildren);
 
+    try {
+      final mainHtml = await _client.getHtml(
+        '/r/$subreddit/comments/$postId',
+        queryParams: sort != null ? {'sort': sort.queryValue} : null,
+        sessionCookie: sessionCookie,
+      );
+
+      final awardCounts = <String, int>{}
+        ..addAll(RedditAwardHtmlParser.parseAwardCounts(mainHtml));
+
+      final partialPath =
+          RedditAwardHtmlParser.extractCommentsPartialPath(mainHtml);
+      if (partialPath != null) {
+        final partialUri = Uri.parse(partialPath);
+        final partialHtml = await _client.getHtml(
+          partialUri.path,
+          queryParams: partialUri.queryParameters.isEmpty
+              ? null
+              : partialUri.queryParameters,
+          sessionCookie: sessionCookie,
+        );
+        awardCounts.addAll(RedditAwardHtmlParser.parseAwardCounts(partialHtml));
+      }
+
+      if (awardCounts.isNotEmpty) {
+        return PostDetail(
+          post: post.copyWith(
+            awardCount: awardCounts[post.fullname] ?? post.awardCount,
+          ),
+          comments: comments
+              .map((comment) => _applyAwards(comment, awardCounts))
+              .toList(),
+        );
+      }
+    } catch (_) {
+      // Keep the JSON-derived detail when HTML award extraction fails.
+    }
+
     return PostDetail(post: post, comments: comments);
   }
 
@@ -108,6 +147,15 @@ class CommentRepository {
         backgroundColor: api.authorFlairBackgroundColor,
         textColor: api.authorFlairTextColor,
       ),
+    );
+  }
+
+  Comment _applyAwards(Comment comment, Map<String, int> awardCounts) {
+    return comment.copyWith(
+      awardCount: awardCounts[comment.fullname] ?? comment.awardCount,
+      replies: comment.replies
+          .map((reply) => _applyAwards(reply, awardCounts))
+          .toList(),
     );
   }
 

@@ -1,28 +1,68 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'feed_parser.dart';
 import 'feed_pagination.dart';
+import 'feed_cache.dart';
 import 'paginated_list_state.dart';
 import 'paginated_notifier.dart';
 
 final feedParserProvider = Provider<FeedParser>((ref) => FeedParser());
+
+final feedCacheProvider = Provider<FeedCache>((ref) {
+  return FeedCache(ref.watch(sharedPrefsProvider));
+});
 
 final feedPageProvider = StateNotifierProvider.family<FeedPageNotifier,
     PaginatedListState<Post>, FeedPageConfig>((ref, config) {
   final client = ref.watch(redditClientProvider);
   final parser = ref.watch(feedParserProvider);
   final account = ref.watch(activeAccountProvider);
-  return FeedPageNotifier(
+  final cache = ref.watch(feedCacheProvider);
+
+  final accountId = account?.id ?? 'anon';
+
+  // Try to seed from cache
+  final cachedEntry = cache.get(accountId, config);
+  Feed? cachedFeed;
+  var isCachedStale = false;
+  if (cachedEntry != null) {
+    try {
+      final kind = feedKindForConfig(config);
+      cachedFeed = parser.parseFeed(cachedEntry.data, kind, config.sort);
+      isCachedStale = cachedEntry.isOlderThan(FeedCache.staleAfter);
+    } catch (_) {
+      // Corrupt cache entry — remove silently.
+      cache.remove(accountId, config);
+    }
+  }
+
+  final notifier = FeedPageNotifier(
     fetchPage: ({after}) async {
-      final feed = await fetchForConfig(account, config, after,
-          client: client, parser: parser);
+      final feed = await fetchForConfig(
+        account,
+        config,
+        after,
+        client: client,
+        parser: parser,
+        onRawResponse:
+            after == null ? (data) => cache.set(accountId, config, data) : null,
+      );
       return PaginatedResult<Post>(
         items: feed.posts,
         after: feed.after,
         hasMore: feed.hasMorePages,
       );
     },
+    autoLoad: cachedFeed == null,
   );
+
+  if (cachedFeed != null) {
+    notifier.seedFromCache(cachedFeed, isStale: isCachedStale);
+    Future.microtask(() => notifier.refresh());
+  }
+
+  return notifier;
 });

@@ -7,6 +7,7 @@ import '../domain/enums/feed_sort.dart';
 import 'reddit_client.dart';
 import 'feed_parser.dart';
 import 'paginated_notifier.dart';
+import 'paginated_list_state.dart';
 
 class FeedPageConfig with EquatableMixin {
   final FeedPageKind kind;
@@ -62,6 +63,54 @@ class FeedPageNotifier extends PaginatedNotifier<Post> {
     required Future<PaginatedResult<Post>> Function({String? after}) fetchPage,
     bool autoLoad = true,
   }) : super(fetchPage: fetchPage, autoLoad: autoLoad);
+
+  /// Seeds cached items directly into state (skips loading state).
+  ///
+  /// This is used by [feedPageProvider] on construction when a cached first-page
+  /// response is available. The notifier will still perform a background refresh
+  /// via [loadInitial] after seeding.
+  void seedFromCache(
+    Feed feed, {
+    required bool isStale,
+  }) {
+    state = PaginatedListState<Post>(
+      items: feed.posts,
+      isLoading: false,
+      hasMore: feed.hasMorePages,
+      isStale: isStale,
+    );
+    after = feed.after;
+  }
+
+  @override
+  PaginatedListState<Post> buildErrorState(String error) {
+    // Preserve existing items (from cache or previous load) when a refresh
+    // fails, rather than returning an empty error state.
+    if (state.items.isNotEmpty) {
+      return state.copyWith(isLoading: false, error: error);
+    }
+    return PaginatedListState<Post>(isLoading: false, error: error);
+  }
+
+  @override
+  Future<void> loadInitial() async {
+    final previousState = state;
+    final previousAfter = after;
+    state = buildLoadingState(state);
+    after = null;
+    try {
+      final page = await fetchPage(after: null);
+      after = extractAfter(page);
+      state = buildSuccessState(page);
+    } catch (e) {
+      after = previousAfter;
+      if (previousState.items.isNotEmpty) {
+        state = previousState.copyWith(isLoading: false, error: e.toString());
+      } else {
+        state = buildErrorState(e.toString());
+      }
+    }
+  }
 }
 
 String _pathForSort(FeedSort sort) {
@@ -95,6 +144,7 @@ Future<Feed> _fetchFeed(
   String? after, {
   SessionCookie? cookie,
   Map<String, String>? queryOverrides,
+  void Function(Map<String, dynamic> rawData)? onRawResponse,
 }) async {
   final params = <String, String>{
     'sort': sort.label,
@@ -105,7 +155,22 @@ Future<Feed> _fetchFeed(
   };
   final data =
       await client.get(path, queryParams: params, sessionCookie: cookie);
+  if (onRawResponse != null) onRawResponse(data);
   return parser.parseFeed(data, kind, sort);
+}
+
+/// Maps a [FeedPageConfig] to the [FeedKind] expected by [FeedParser.parseFeed].
+FeedKind feedKindForConfig(FeedPageConfig config) {
+  return switch (config.kind) {
+    FeedPageKind.home => FeedKind.home,
+    FeedPageKind.popular => FeedKind.popular,
+    FeedPageKind.popularAll => FeedKind.popular,
+    FeedPageKind.saved => FeedKind.saved,
+    FeedPageKind.hidden => FeedKind.saved,
+    FeedPageKind.search => FeedKind.popular,
+    FeedPageKind.subreddit => FeedKind.home,
+    FeedPageKind.user => FeedKind.user,
+  };
 }
 
 Future<Feed> fetchForConfig(
@@ -114,27 +179,29 @@ Future<Feed> fetchForConfig(
   String? after, {
   required RedditClient client,
   required FeedParser parser,
+  void Function(Map<String, dynamic> rawData)? onRawResponse,
 }) {
   final cookie = account?.sessionCookie;
   return switch (config.kind) {
     FeedPageKind.home => _fetchFeed(client, parser, _pathForSort(config.sort),
         config.sort, FeedKind.home, after,
-        cookie: cookie),
+        cookie: cookie, onRawResponse: onRawResponse),
     FeedPageKind.popular => _fetchFeed(
         client, parser, '/r/popular', FeedSort.hot, FeedKind.popular, after,
-        cookie: cookie),
+        cookie: cookie, onRawResponse: onRawResponse),
     FeedPageKind.popularAll => _fetchFeed(client, parser,
         _popularPathForSort(config.sort), config.sort, FeedKind.popular, after,
-        cookie: cookie),
+        cookie: cookie, onRawResponse: onRawResponse),
     FeedPageKind.saved => _fetchFeed(client, parser,
         '/user/${account!.username}/saved', config.sort, FeedKind.saved, after,
-        cookie: cookie),
+        cookie: cookie, onRawResponse: onRawResponse),
     FeedPageKind.hidden => _fetchFeed(client, parser,
         '/user/${account!.username}/hidden', config.sort, FeedKind.saved, after,
-        cookie: cookie),
+        cookie: cookie, onRawResponse: onRawResponse),
     FeedPageKind.search => _fetchFeed(
           client, parser, '/search', config.sort, FeedKind.popular, after,
           cookie: cookie,
+          onRawResponse: onRawResponse,
           queryOverrides: {
             'q': config.identifier!,
             'restrict_sr': 'off',
@@ -142,7 +209,7 @@ Future<Feed> fetchForConfig(
           }),
     FeedPageKind.subreddit => _fetchFeed(client, parser,
         '/r/${config.identifier!}', config.sort, FeedKind.home, after,
-        cookie: cookie),
+        cookie: cookie, onRawResponse: onRawResponse),
     FeedPageKind.user => _fetchFeed(
         client,
         parser,
@@ -150,6 +217,7 @@ Future<Feed> fetchForConfig(
         config.sort,
         FeedKind.user,
         after,
-        cookie: cookie),
+        cookie: cookie,
+        onRawResponse: onRawResponse),
   };
 }

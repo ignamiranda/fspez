@@ -196,7 +196,7 @@ void main() {
 
       verify(() => mockHttp.get(
             Uri.parse(
-                'https://www.reddit.com/user/sorter/comments.json?limit=25&sort=top'),
+                'https://old.reddit.com/user/sorter/comments.json?limit=25&sort=top'),
             headers: any(named: 'headers'),
           )).called(1);
     });

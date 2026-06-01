@@ -11,6 +11,7 @@ void main() {
       expect(state.isLoadingMore, isFalse);
       expect(state.error, isNull);
       expect(state.hasMore, isFalse);
+      expect(state.isStale, isFalse);
     });
 
     test('initial() returns loading state', () {
@@ -21,6 +22,7 @@ void main() {
       expect(state.isLoadingMore, isFalse);
       expect(state.error, isNull);
       expect(state.hasMore, isFalse);
+      expect(state.isStale, isFalse);
     });
 
     test('custom constructor sets all fields', () {
@@ -30,6 +32,7 @@ void main() {
         isLoadingMore: true,
         error: 'something went wrong',
         hasMore: true,
+        isStale: true,
       );
 
       expect(state.items, ['a', 'b']);
@@ -37,6 +40,7 @@ void main() {
       expect(state.isLoadingMore, isTrue);
       expect(state.error, 'something went wrong');
       expect(state.hasMore, isTrue);
+      expect(state.isStale, isTrue);
     });
 
     group('copyWith', () {
@@ -70,6 +74,12 @@ void main() {
         expect(copy.hasMore, isTrue);
       });
 
+      test('replaces isStale', () {
+        const state = PaginatedListState<int>(isStale: false);
+        final copy = state.copyWith(isStale: true);
+        expect(copy.isStale, isTrue);
+      });
+
       test('clearError forces error to null', () {
         const state = PaginatedListState<int>(error: 'old');
         final copy = state.copyWith(clearError: true);
@@ -89,6 +99,7 @@ void main() {
           isLoadingMore: true,
           error: 'err',
           hasMore: true,
+          isStale: true,
         );
         final copy = state.copyWith(items: [2]);
 
@@ -97,6 +108,7 @@ void main() {
         expect(copy.isLoadingMore, isTrue);
         expect(copy.error, 'err');
         expect(copy.hasMore, isTrue);
+        expect(copy.isStale, isTrue);
       });
     });
 
@@ -117,10 +129,12 @@ void main() {
         final state = PaginatedListState<String>(
           items: ['a', 'b'],
           hasMore: true,
+          isStale: true,
         );
         final result = state.removeItem((s) => s == 'a');
         expect(result.items, ['b']);
         expect(result.hasMore, isTrue);
+        expect(result.isStale, isTrue);
       });
     });
 
@@ -136,11 +150,13 @@ void main() {
           items: ['a'],
           hasMore: true,
           error: 'err',
+          isStale: true,
         );
         final result = state.replaceItem((s) => s == 'a', 'b');
         expect(result.items, ['b']);
         expect(result.hasMore, isTrue);
         expect(result.error, 'err');
+        expect(result.isStale, isTrue);
       });
     });
 
@@ -149,6 +165,12 @@ void main() {
         const a = PaginatedListState<String>(items: ['a'], hasMore: true);
         const b = PaginatedListState<String>(items: ['a'], hasMore: true);
         expect(a, equals(b));
+      });
+
+      test('different isStale are not equal', () {
+        const a = PaginatedListState<String>(isStale: true);
+        const b = PaginatedListState<String>(isStale: false);
+        expect(a, isNot(equals(b)));
       });
 
       test('different items are not equal', () {

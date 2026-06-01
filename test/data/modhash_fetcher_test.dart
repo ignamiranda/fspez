@@ -36,7 +36,7 @@ void main() {
 
     expect(modhash, 'abc123modhash');
     verify(() => mockHttp.get(
-          Uri.parse('https://www.reddit.com/api/me.json'),
+          Uri.parse('https://old.reddit.com/api/me.json'),
           headers: any(named: 'headers'),
         )).called(1);
   });

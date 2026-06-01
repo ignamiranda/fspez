@@ -232,6 +232,37 @@ void main() {
 
       expect(post.awardCount, 3);
     });
+
+    test('sums award counts from all_awardings', () {
+      final post = parser.parsePost({
+        'id': 'award-types',
+        'title': 'Awarded',
+        'permalink': '/r/test/award-types',
+        'created_utc': 1000000000,
+        'all_awardings': [
+          {'count': 2},
+          {'count': 5},
+        ],
+      });
+
+      expect(post.awardCount, 7);
+    });
+
+    test('falls through zero total_awards_received to all_awardings', () {
+      final post = parser.parsePost({
+        'id': 'award-zero-total',
+        'title': 'Awarded',
+        'permalink': '/r/test/award-zero-total',
+        'created_utc': 1000000000,
+        'total_awards_received': 0,
+        'all_awardings': [
+          {'count': 2},
+          {'count': 5},
+        ],
+      });
+
+      expect(post.awardCount, 7);
+    });
   });
 
   group('parseFeed', () {

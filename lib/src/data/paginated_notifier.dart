@@ -50,6 +50,7 @@ class PaginatedNotifier<T>
         items: page.items,
         isLoading: false,
         hasMore: page.hasMore,
+        isStale: false,
       );
 
   @override
@@ -63,6 +64,7 @@ class PaginatedNotifier<T>
         items: [...current.items, ...page.items],
         isLoading: false,
         hasMore: page.hasMore,
+        isStale: current.isStale,
       );
 
   @override

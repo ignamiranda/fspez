@@ -6,7 +6,9 @@ enum ApiEndpoint { json, form, oldReddit, comment, submit, compose }
 
 class RedditClient {
   static const _baseUrl = 'https://www.reddit.com';
-  static const _browserUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+  static const _readBaseUrl = 'https://old.reddit.com';
+  static const _browserUA =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
   final http.Client _httpClient;
 
@@ -66,14 +68,38 @@ class RedditClient {
     }
   }
 
+  Map<String, String> _headersForHtml(SessionCookie? cookie) {
+    final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+    return {
+      'User-Agent': _browserUA,
+      'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Cookie': c,
+    };
+  }
+
   Future<Map<String, dynamic>> get(String path,
-      {Map<String, String>? queryParams,
-      SessionCookie? sessionCookie}) async {
-    final uri = Uri.parse('$_baseUrl$path.json')
+      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+    final uri = Uri.parse('$_readBaseUrl$path.json')
         .replace(queryParameters: queryParams);
-    final response =
-        await _httpClient.get(uri, headers: _headersFor(ApiEndpoint.json, sessionCookie));
+    final response = await _httpClient.get(uri,
+        headers: _headersFor(ApiEndpoint.json, sessionCookie));
     return _handleResponse(response);
+  }
+
+  Future<String> getHtml(String path,
+      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+    final uri =
+        Uri.parse('$_baseUrl$path').replace(queryParameters: queryParams);
+    final response =
+        await _httpClient.get(uri, headers: _headersForHtml(sessionCookie));
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.body;
+    }
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
   }
 
   Future<Map<String, dynamic>> post(String path,
@@ -101,12 +127,11 @@ class RedditClient {
   }
 
   Future<dynamic> getRaw(String path,
-      {Map<String, String>? queryParams,
-      SessionCookie? sessionCookie}) async {
-    final uri = Uri.parse('$_baseUrl$path.json')
+      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+    final uri = Uri.parse('$_readBaseUrl$path.json')
         .replace(queryParameters: queryParams);
-    final response =
-        await _httpClient.get(uri, headers: _headersFor(ApiEndpoint.json, sessionCookie));
+    final response = await _httpClient.get(uri,
+        headers: _headersFor(ApiEndpoint.json, sessionCookie));
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
     }
@@ -117,8 +142,7 @@ class RedditClient {
   }
 
   Future<Map<String, dynamic>> postForm(String path,
-      {Map<String, String>? fields,
-      SessionCookie? sessionCookie}) async {
+      {Map<String, String>? fields, SessionCookie? sessionCookie}) async {
     final uri = Uri.parse('$_baseUrl$path');
     final response = await _httpClient.post(
       uri,
@@ -158,7 +182,8 @@ class RedditClient {
     await _oldRedditPost('/api/unsave', fullname, sessionCookie);
   }
 
-  Future<void> _oldRedditPost(String path, String fullname, SessionCookie sessionCookie) async {
+  Future<void> _oldRedditPost(
+      String path, String fullname, SessionCookie sessionCookie) async {
     final uri = Uri.parse('https://old.reddit.com$path');
     final response = await _httpClient.post(
       uri,
@@ -212,11 +237,13 @@ class RedditClient {
           if (jsonField is Map) {
             final errors = jsonField['errors'];
             if (errors is List && errors.isNotEmpty) {
-              throw RedditApiException(statusCode: response.statusCode, message: response.body);
+              throw RedditApiException(
+                  statusCode: response.statusCode, message: response.body);
             }
           }
           if (decoded['error'] != null) {
-            throw RedditApiException(statusCode: response.statusCode, message: response.body);
+            throw RedditApiException(
+                statusCode: response.statusCode, message: response.body);
           }
         }
       } catch (_) {}
@@ -257,16 +284,19 @@ class RedditClient {
     _httpClient.close();
   }
 
-  Future<void> deleteContent(String fullname, SessionCookie sessionCookie) async {
+  Future<void> deleteContent(
+      String fullname, SessionCookie sessionCookie) async {
     await _oldRedditPost('/api/del', fullname, sessionCookie);
   }
 
   Future<void> hide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/hide', fields: {'id': fullname}, sessionCookie: sessionCookie);
+    await postForm('/api/hide',
+        fields: {'id': fullname}, sessionCookie: sessionCookie);
   }
 
   Future<void> unhide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/unhide', fields: {'id': fullname}, sessionCookie: sessionCookie);
+    await postForm('/api/unhide',
+        fields: {'id': fullname}, sessionCookie: sessionCookie);
   }
 }
 
