@@ -12,9 +12,6 @@ class SaveException implements Exception {
 class SaveNotifier extends WriteOperationNotifier<bool> {
   SaveNotifier(super.redditClient, super.sessionCookie);
 
-  @override
-  bool get shouldRevertOnError => true;
-
   Future<void> toggle(String fullname) async {
     final current = state[fullname] ?? false;
     final next = !current;

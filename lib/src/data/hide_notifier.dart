@@ -3,9 +3,6 @@ import 'write_operation_notifier.dart';
 class HideNotifier extends WriteOperationNotifier<bool> {
   HideNotifier(super.redditClient, super.sessionCookie);
 
-  @override
-  bool get shouldRevertOnError => true;
-
   Future<void> toggle(String fullname) async {
     final previous = state[fullname];
     if (previous == true) return;

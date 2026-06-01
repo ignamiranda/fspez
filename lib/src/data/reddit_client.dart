@@ -1,98 +1,27 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../domain/models/session_cookie.dart';
+import 'http_transport.dart';
 
 enum ApiEndpoint { json, form, oldReddit, comment, submit, compose }
 
 class RedditClient {
-  static const _baseUrl = 'https://www.reddit.com';
-  static const _readBaseUrl = 'https://old.reddit.com';
-  static const _browserUA =
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+  final HttpTransport _transport;
 
-  final http.Client _httpClient;
-
-  RedditClient({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
-
-  Map<String, String> _headersFor(ApiEndpoint kind, SessionCookie? cookie) {
-    switch (kind) {
-      case ApiEndpoint.json:
-        return {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/json',
-          if (cookie != null) 'Cookie': 'reddit_session=${cookie.value}',
-        };
-      case ApiEndpoint.form:
-        return {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          if (cookie != null) 'Cookie': 'reddit_session=${cookie.value}',
-        };
-      case ApiEndpoint.oldReddit:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': _browserUA,
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Accept': '*/*',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
-      case ApiEndpoint.comment:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
-      case ApiEndpoint.submit:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': _browserUA,
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Accept': '*/*',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
-      case ApiEndpoint.compose:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
-    }
-  }
-
-  Map<String, String> _headersForHtml(SessionCookie? cookie) {
-    final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-    return {
-      'User-Agent': _browserUA,
-      'Accept':
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Cookie': c,
-    };
-  }
+  RedditClient({http.Client? httpClient, HttpTransport? transport})
+      : _transport = transport ?? HttpTransport(httpClient: httpClient);
 
   Future<Map<String, dynamic>> get(String path,
       {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
-    final uri = Uri.parse('$_readBaseUrl$path.json')
-        .replace(queryParameters: queryParams);
-    final response = await _httpClient.get(uri,
-        headers: _headersFor(ApiEndpoint.json, sessionCookie));
-    return _handleResponse(response);
+    final uri = _transport.readJsonUri(path, queryParams: queryParams);
+    final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
+    return _transport.handleJsonResponse(response);
   }
 
   Future<String> getHtml(String path,
       {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
-    final uri =
-        Uri.parse('$_baseUrl$path').replace(queryParameters: queryParams);
-    final response =
-        await _httpClient.get(uri, headers: _headersForHtml(sessionCookie));
+    final uri = _transport.webUri(path, queryParams: queryParams);
+    final response = await _transport.getHtml(uri, sessionCookie);
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return response.body;
     }
@@ -104,62 +33,44 @@ class RedditClient {
 
   Future<Map<String, dynamic>> post(String path,
       {Map<String, dynamic>? body, SessionCookie? sessionCookie}) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final response = await _httpClient.post(
+    final uri = _transport.webUri(path);
+    final response = await _transport.post(
       uri,
-      headers: _headersFor(ApiEndpoint.json, sessionCookie),
+      ApiEndpoint.json,
+      sessionCookie,
       body: body != null ? jsonEncode(body) : null,
     );
-    return _handleResponse(response);
-  }
-
-  Map<String, dynamic> _handleResponse(http.Response response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (response.body.isEmpty) return {};
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map<String, dynamic>) return decoded;
-      return {};
-    }
-    throw RedditApiException(
-      statusCode: response.statusCode,
-      message: response.body,
-    );
+    return _transport.handleJsonResponse(response);
   }
 
   Future<dynamic> getRaw(String path,
       {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
-    final uri = Uri.parse('$_readBaseUrl$path.json')
-        .replace(queryParameters: queryParams);
-    final response = await _httpClient.get(uri,
-        headers: _headersFor(ApiEndpoint.json, sessionCookie));
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
-    }
-    throw RedditApiException(
-      statusCode: response.statusCode,
-      message: response.body,
-    );
+    final uri = _transport.readJsonUri(path, queryParams: queryParams);
+    final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
+    return _transport.handleRawJsonResponse(response);
   }
 
   Future<Map<String, dynamic>> postForm(String path,
       {Map<String, String>? fields, SessionCookie? sessionCookie}) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final response = await _httpClient.post(
+    final uri = _transport.webUri(path);
+    final response = await _transport.post(
       uri,
-      headers: _headersFor(ApiEndpoint.form, sessionCookie),
+      ApiEndpoint.form,
+      sessionCookie,
       body: fields != null ? Uri(queryParameters: fields).query : null,
     );
-    return _handleResponse(response);
+    return _transport.handleJsonResponse(response);
   }
 
   Future<Map<String, dynamic>> submit({
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final uri = Uri.parse('https://old.reddit.com/api/submit');
-    final response = await _httpClient.post(
+    final uri = _transport.oldRedditUri('/api/submit');
+    final response = await _transport.post(
       uri,
-      headers: _headersFor(ApiEndpoint.submit, sessionCookie),
+      ApiEndpoint.submit,
+      sessionCookie,
       body: Uri(queryParameters: fields).query,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -184,10 +95,11 @@ class RedditClient {
 
   Future<void> _oldRedditPost(
       String path, String fullname, SessionCookie sessionCookie) async {
-    final uri = Uri.parse('https://old.reddit.com$path');
-    final response = await _httpClient.post(
+    final uri = _transport.oldRedditUri(path);
+    final response = await _transport.post(
       uri,
-      headers: _headersFor(ApiEndpoint.oldReddit, sessionCookie),
+      ApiEndpoint.oldReddit,
+      sessionCookie,
       body: 'id=$fullname',
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -204,10 +116,11 @@ class RedditClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final uri = Uri.parse('https://www.reddit.com/api/comment');
-    final response = await _httpClient.post(
+    final uri = _transport.webUri('/api/comment');
+    final response = await _transport.post(
       uri,
-      headers: _headersFor(ApiEndpoint.comment, sessionCookie),
+      ApiEndpoint.comment,
+      sessionCookie,
       body: Uri(queryParameters: fields).query,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -223,10 +136,11 @@ class RedditClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final uri = Uri.parse('https://www.reddit.com/api/compose');
-    final response = await _httpClient.post(
+    final uri = _transport.webUri('/api/compose');
+    final response = await _transport.post(
       uri,
-      headers: _headersFor(ApiEndpoint.compose, sessionCookie),
+      ApiEndpoint.compose,
+      sessionCookie,
       body: Uri(queryParameters: fields).query,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -265,10 +179,11 @@ class RedditClient {
       'text': text,
       if (sessionCookie.modhash != null) 'uh': sessionCookie.modhash!,
     };
-    final uri = Uri.parse('https://www.reddit.com/api/editusertext');
-    final response = await _httpClient.post(
+    final uri = _transport.webUri('/api/editusertext');
+    final response = await _transport.post(
       uri,
-      headers: _headersFor(ApiEndpoint.comment, sessionCookie),
+      ApiEndpoint.comment,
+      sessionCookie,
       body: Uri(queryParameters: fields).query,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -281,7 +196,7 @@ class RedditClient {
   }
 
   void dispose() {
-    _httpClient.close();
+    _transport.dispose();
   }
 
   Future<void> deleteContent(

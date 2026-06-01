@@ -3,6 +3,7 @@ import '../domain/models/search_user.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/subreddit_rule.dart';
 import '../domain/models/user_flair.dart';
+import 'post_mapping.dart' as post_mapping;
 import 'parsers/shared_parsers.dart';
 
 class ApiListing {
@@ -99,8 +100,8 @@ class ApiPost {
   });
 
   factory ApiPost.fromJson(Map<String, dynamic> data) {
-    final mediaUrls = _parseMediaUrls(data);
-    final videoUrl = _parseVideoUrl(data);
+    final mediaUrls = post_mapping.parseMediaUrls(data);
+    final videoUrl = post_mapping.parseVideoUrl(data);
     final crosspostList = data['crosspost_parent_list'] as List<dynamic>?;
     final crosspostParentPost =
         (crosspostList != null && crosspostList.isNotEmpty)
@@ -123,7 +124,7 @@ class ApiPost {
       saved: data['saved'] as bool? ?? false,
       stickied: data['stickied'] as bool? ?? false,
       locked: data['locked'] as bool? ?? false,
-      awardCount: _awardCount(data),
+      awardCount: post_mapping.awardCount(data),
       createdUtc: (data['created_utc'] as num).toInt(),
       permalink: data['permalink'] as String? ?? '',
       upvoteRatio: (data['upvote_ratio'] as num?)?.toDouble(),
@@ -143,85 +144,24 @@ class ApiPost {
     );
   }
 
-  /// Extracts ordered image URLs from a gallery post's [media_metadata].
-  ///
-  /// Reddit gallery posts store image data in `media_metadata` keyed by image ID
-  /// and ordering in `gallery_data.items[].media_id`. Falls back to iterating
-  /// `media_metadata` keys if `gallery_data` is absent.
-  ///
-  /// Returns the source (`s.u`) URL when available, otherwise the largest
-  /// preview (`p[last].u`).
-  static List<String> _parseMediaUrls(Map<String, dynamic> data) {
-    final metadata = data['media_metadata'] as Map<String, dynamic>?;
-    if (metadata == null) return const [];
-
-    List<String> ids;
-    final galleryData = data['gallery_data'] as Map<String, dynamic>?;
-    final items = galleryData?['items'] as List<dynamic>?;
-    if (items != null && items.isNotEmpty) {
-      ids = items
-          .map((item) => (item as Map<String, dynamic>)['media_id'] as String?)
-          .whereType<String>()
-          .toList();
-    } else {
-      ids = metadata.keys.toList();
-    }
-
-    final urls = <String>[];
-    for (final id in ids) {
-      final entry = metadata[id] as Map<String, dynamic>?;
-      if (entry == null) continue;
-      if (entry['status'] == 'valid') {
-        final s = entry['s'] as Map<String, dynamic>?;
-        if (s != null) {
-          final u = s['u'] as String?;
-          if (u != null) {
-            urls.add(u.replaceAll('&amp;', '&'));
-            continue;
-          }
-        }
-        // Fallback to largest preview
-        final previews = entry['p'] as List<dynamic>?;
-        if (previews != null && previews.isNotEmpty) {
-          final last = previews.last as Map<String, dynamic>;
-          final u = last['u'] as String?;
-          if (u != null) {
-            urls.add(u.replaceAll('&amp;', '&'));
-          }
-        }
-      }
-    }
-    return urls;
-  }
-
-  /// Extracts the direct MP4 URL from a video post's [media.reddit_video].
-  ///
-  /// Returns the [fallback_url] (DASH MP4) when available, which is the most
-  /// reliable direct-playable video URL. Strips the `?source=fallback` query
-  /// param to keep the URL clean.
-  static String? _parseVideoUrl(Map<String, dynamic> data) {
-    final media = data['media'] as Map<String, dynamic>?;
-    if (media == null) return null;
-    final redditVideo = media['reddit_video'] as Map<String, dynamic>?;
-    if (redditVideo == null) return null;
-    final fallbackUrl = redditVideo['fallback_url'] as String?;
-    if (fallbackUrl == null) return null;
-    return fallbackUrl.replaceAll('&amp;', '&');
-  }
-
   Post toDomain() {
     return Post(
       id: id,
       title: title,
       selftext: selftext,
       url: url,
-      thumbnailUrl: _cleanThumbnail(thumbnail),
-      type: _inferType(),
+      thumbnailUrl: post_mapping.cleanThumbnail(thumbnail),
+      type: post_mapping.inferPostType(
+        postHint: postHint,
+        isGallery: isGallery,
+        isSelf: isSelf,
+        crosspostParent: crosspostParent,
+      ),
       author: author,
       subreddit: Subreddit(
         id: subredditId,
         name: subreddit,
-        iconUrl: _subredditIcon(),
+        iconUrl: post_mapping.subredditIcon(srDetail),
       ),
       score: score,
       commentCount: numComments,
@@ -247,74 +187,6 @@ class ApiPost {
     );
   }
 
-  PostType _inferType() {
-    final hint = postHint;
-    if (hint == 'image') return PostType.image;
-    if (hint == 'link') return PostType.link;
-    if (hint == 'hosted:video') return PostType.video;
-    if (hint == 'rich:video') return PostType.video;
-    if (isGallery == true) return PostType.gallery;
-    if (isSelf == true) return PostType.self_;
-    if (crosspostParent != null) return PostType.crosspost;
-    return PostType.link;
-  }
-
-  String? _subredditIcon() {
-    if (srDetail == null) return null;
-    final icon = srDetail!['icon_img'] as String?;
-    if (icon != null && icon.isNotEmpty) return _cleanUrl(icon);
-    final communityIcon = srDetail!['community_icon'] as String?;
-    if (communityIcon != null && communityIcon.isNotEmpty) {
-      return _cleanUrl(communityIcon);
-    }
-    return null;
-  }
-
-  String? _cleanThumbnail(String? t) {
-    if (t == null || t == 'self' || t == 'default' || t == 'nsfw') return null;
-    return _cleanUrl(t);
-  }
-
-  String _cleanUrl(String url) => url.replaceAll('&amp;', '&');
-
-  static int _awardCount(Map<String, dynamic> data) {
-    final totalAwards = data['total_awards_received'];
-    if (totalAwards is num) {
-      final count = totalAwards.toInt();
-      if (count > 0) return count;
-    }
-
-    final allAwardings = data['all_awardings'];
-    if (allAwardings is List) {
-      final counted = allAwardings
-          .whereType<Map<String, dynamic>>()
-          .fold<int>(0, (sum, award) {
-        final count = award['count'];
-        if (count is num) return sum + count.toInt();
-        if (count is String) {
-          final parsed = int.tryParse(count);
-          if (parsed != null) return sum + parsed;
-        }
-        return sum + 1;
-      });
-      if (counted > 0) return counted;
-
-      if (allAwardings.isNotEmpty) return allAwardings.length;
-    }
-
-    final gildings = data['gildings'];
-    if (gildings is Map<String, dynamic>) {
-      final count = gildings.values
-          .whereType<num>()
-          .fold<int>(0, (sum, value) => sum + value.toInt());
-      if (count > 0) return count;
-    }
-
-    final gilded = data['gilded'];
-    if (gilded is num) return gilded.toInt();
-
-    return 0;
-  }
 }
 
 class ApiSearchUser {
@@ -427,7 +299,7 @@ class ApiComment {
       isSubmitter: data['is_submitter'] as bool? ?? false,
       distinguished: data['distinguished'] as String?,
       stickied: data['stickied'] as bool? ?? false,
-      awardCount: ApiPost._awardCount(data),
+      awardCount: post_mapping.awardCount(data),
       createdUtc: (data['created_utc'] as num).toInt(),
       linkId: data['link_id'] as String? ?? '',
       parentId: data['parent_id'] as String?,

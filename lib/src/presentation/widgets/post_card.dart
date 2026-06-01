@@ -15,6 +15,7 @@ import 'award_badge.dart';
 import 'media_viewer.dart';
 import 'bottom_sheet_menu.dart';
 import 'user_flair_chip.dart';
+import 'video_playback_coordinator.dart';
 
 class PostCard extends ConsumerStatefulWidget {
   final Post post;
@@ -30,6 +31,7 @@ class PostCard extends ConsumerStatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
+  final VideoPlaybackCoordinator? videoPlaybackCoordinator;
 
   const PostCard({
     super.key,
@@ -46,6 +48,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.onTap,
     this.onSubredditTap,
     this.onAuthorTap,
+    this.videoPlaybackCoordinator,
   });
 
   @override
@@ -249,6 +252,8 @@ class _PostCardState extends ConsumerState<PostCard> {
         postKey: post.fullname,
         videoUrl: post.videoUrl!,
         thumbnailUrl: post.thumbnailUrl,
+        videoPlaybackCoordinator: widget.videoPlaybackCoordinator ??
+            GlobalVideoPlaybackCoordinator.instance,
         onTap: () => MediaViewer.show(
           context,
           imageUrls: post.mediaUrls,
@@ -1125,30 +1130,6 @@ class _PostActionBar extends StatelessWidget {
 }
 
 /// Ensures only one inline video plays at a time across the feed.
-class InlineVideoManager {
-  static VideoPlayerController? _activeController;
-
-  /// Activates [controller], pausing any previously active one.
-  static void activate(VideoPlayerController controller) {
-    if (_activeController != null && _activeController != controller) {
-      _activeController!.pause();
-    }
-    _activeController = controller;
-    controller.play();
-  }
-
-  /// Deactivates [controller] if it was the active one.
-  static void deactivate(VideoPlayerController controller) {
-    if (_activeController == controller) {
-      _activeController?.pause();
-      _activeController = null;
-    }
-  }
-
-  /// Returns the currently active controller, if any.
-  static VideoPlayerController? get activeController => _activeController;
-}
-
 /// Fraction of the widget that must be visible to trigger auto-play.
 const _kVideoVisibilityThreshold = 0.5;
 
@@ -1160,10 +1141,12 @@ class _InlineVideoPlayer extends StatefulWidget {
   final String videoUrl;
   final String? thumbnailUrl;
   final VoidCallback? onTap;
+  final VideoPlaybackCoordinator videoPlaybackCoordinator;
 
   const _InlineVideoPlayer({
     required this.postKey,
     required this.videoUrl,
+    required this.videoPlaybackCoordinator,
     this.thumbnailUrl,
     this.onTap,
   });
@@ -1213,7 +1196,7 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
   void dispose() {
     if (_controller != null) {
       _controller!.removeListener(_onControllerUpdate);
-      InlineVideoManager.deactivate(_controller!);
+      widget.videoPlaybackCoordinator.deactivate(_controller!);
       _controller!.dispose();
     }
     super.dispose();
@@ -1226,7 +1209,7 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
       setState(() => _isPlaying = nowPlaying);
       // If the video ended naturally, ensure the manager knows it's done.
       if (!nowPlaying && _controller != null) {
-        InlineVideoManager.deactivate(_controller!);
+        widget.videoPlaybackCoordinator.deactivate(_controller!);
       }
     }
   }
@@ -1249,13 +1232,13 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
     if (value.isCompleted) {
       _controller!.seekTo(Duration.zero);
     }
-    InlineVideoManager.activate(_controller!);
+    widget.videoPlaybackCoordinator.activate(_controller!);
     if (mounted) setState(() => _isPlaying = true);
   }
 
   void _pause() {
     if (_controller == null) return;
-    InlineVideoManager.deactivate(_controller!);
+    widget.videoPlaybackCoordinator.deactivate(_controller!);
     if (mounted) setState(() => _isPlaying = false);
   }
 

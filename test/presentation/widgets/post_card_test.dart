@@ -1,14 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:video_player/video_player.dart';
-import 'package:fspez/src/presentation/widgets/post_card.dart';
+import 'package:fspez/src/presentation/widgets/video_playback_coordinator.dart';
 
 class MockVideoPlayerController extends Mock implements VideoPlayerController {}
 
 class MockVideoPlayerValue extends Mock implements VideoPlayerValue {}
 
 void main() {
-  group('InlineVideoManager', () {
+  group('GlobalVideoPlaybackCoordinator', () {
+    final coordinator = GlobalVideoPlaybackCoordinator.instance;
     late MockVideoPlayerController controllerA;
     late MockVideoPlayerController controllerB;
 
@@ -35,31 +36,31 @@ void main() {
 
     tearDown(() {
       // Reset the manager singleton between tests
-      final current = InlineVideoManager.activeController;
+      final current = coordinator.activeController;
       if (current != null) {
-        InlineVideoManager.deactivate(current);
+        coordinator.deactivate(current);
       }
     });
 
     test('activate plays controller and sets it as active', () {
-      InlineVideoManager.activate(controllerA);
+      coordinator.activate(controllerA);
 
       verify(() => controllerA.play()).called(1);
-      expect(InlineVideoManager.activeController, controllerA);
+      expect(coordinator.activeController, controllerA);
     });
 
     test('activate pauses previous and plays new', () {
-      InlineVideoManager.activate(controllerA);
-      InlineVideoManager.activate(controllerB);
+      coordinator.activate(controllerA);
+      coordinator.activate(controllerB);
 
       verify(() => controllerA.pause()).called(1);
       verify(() => controllerB.play()).called(1);
-      expect(InlineVideoManager.activeController, controllerB);
+      expect(coordinator.activeController, controllerB);
     });
 
     test('activate same controller does not pause it', () {
-      InlineVideoManager.activate(controllerA);
-      InlineVideoManager.activate(controllerA);
+      coordinator.activate(controllerA);
+      coordinator.activate(controllerA);
 
       // activate always plays, but the important thing is pause is never called
       verify(() => controllerA.play()).called(2);
@@ -67,24 +68,24 @@ void main() {
     });
 
     test('deactivate pauses and clears active controller', () {
-      InlineVideoManager.activate(controllerA);
-      InlineVideoManager.deactivate(controllerA);
+      coordinator.activate(controllerA);
+      coordinator.deactivate(controllerA);
 
       verify(() => controllerA.pause()).called(1);
-      expect(InlineVideoManager.activeController, isNull);
+      expect(coordinator.activeController, isNull);
     });
 
     test('deactivate non-active controller does nothing', () {
-      InlineVideoManager.activate(controllerA);
-      InlineVideoManager.deactivate(controllerB);
+      coordinator.activate(controllerA);
+      coordinator.deactivate(controllerB);
 
       // controllerA should still be playing
       verifyNever(() => controllerB.pause());
-      expect(InlineVideoManager.activeController, controllerA);
+      expect(coordinator.activeController, controllerA);
     });
 
     test('activeController returns null when no controller active', () {
-      expect(InlineVideoManager.activeController, isNull);
+      expect(coordinator.activeController, isNull);
     });
   });
 }

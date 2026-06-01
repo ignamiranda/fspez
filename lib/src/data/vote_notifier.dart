@@ -4,16 +4,18 @@ import 'write_operation_notifier.dart';
 class VoteNotifier extends WriteOperationNotifier<VoteDirection> {
   VoteNotifier(super.redditClient, super.sessionCookie);
 
-  @override
-  bool get shouldRevertOnError => false;
-
   Future<void> vote(String fullname, VoteDirection direction) async {
     final previous = state[fullname];
     try {
-      await write(fullname, direction, previous, () =>
-          redditClient.postForm('/api/vote',
-              fields: {'id': fullname, 'dir': direction.value.toString()},
-              sessionCookie: sessionCookie));
+      await write(
+        fullname,
+        direction,
+        previous,
+        () => redditClient.postForm('/api/vote',
+            fields: {'id': fullname, 'dir': direction.value.toString()},
+            sessionCookie: sessionCookie),
+        onError: WriteErrorPolicy.keepOptimistic,
+      );
     } catch (_) {}
   }
 
