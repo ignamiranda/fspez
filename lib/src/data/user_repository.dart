@@ -1,6 +1,7 @@
 import '../domain/models/session_cookie.dart';
 import '../domain/models/user_profile.dart';
 import '../domain/models/user_comment.dart';
+import '../domain/enums/comment_sort.dart';
 import 'reddit_client.dart';
 import 'parsers/shared_parsers.dart';
 
@@ -27,21 +28,22 @@ class UserRepository {
       iconUrl: _iconUrl(about),
       isGold: about['is_gold'] as bool? ?? false,
       isMod: about['is_mod'] as bool? ?? false,
-      subredditName: (about['subreddit'] as Map<String, dynamic>?)?
-          ['name'] as String?,
+      subredditName:
+          (about['subreddit'] as Map<String, dynamic>?)?['name'] as String?,
     );
   }
 
   Future<List<UserComment>> fetchComments(
     String username, {
     String? after,
+    CommentSort sort = CommentSort.new_,
     SessionCookie? sessionCookie,
   }) async {
     final data = await _client.get('/user/$username/comments',
         queryParams: {
           if (after != null) 'after': after,
           'limit': '25',
-          'sort': 'new',
+          'sort': sort.queryValue,
         },
         sessionCookie: sessionCookie);
 

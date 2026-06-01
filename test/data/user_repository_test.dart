@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/user_repository.dart';
 import 'package:fspez/src/data/reddit_client.dart';
+import 'package:fspez/src/domain/enums/comment_sort.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
@@ -176,6 +177,28 @@ void main() {
       final comments = await repository.fetchComments('lurker');
 
       expect(comments, isEmpty);
+    });
+
+    test('sends the requested comment sort', () async {
+      when(() => mockHttp.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('''
+        {
+          "data": {
+            "children": [],
+            "after": null
+          }
+        }
+      ''', 200));
+
+      await repository.fetchComments('sorter', sort: CommentSort.top);
+
+      verify(() => mockHttp.get(
+            Uri.parse(
+                'https://www.reddit.com/user/sorter/comments.json?limit=25&sort=top'),
+            headers: any(named: 'headers'),
+          )).called(1);
     });
   });
 }

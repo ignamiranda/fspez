@@ -4,6 +4,8 @@ import '../../data/auth_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../data/feed_providers.dart';
 import '../../data/user_providers.dart';
+import '../../domain/enums/comment_sort.dart';
+import '../../domain/enums/feed_sort.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/user_profile.dart';
@@ -11,6 +13,7 @@ import '../../domain/models/user_comment.dart';
 import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
 import '../utils/profile_formatters.dart';
+import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'post_detail_screen.dart';
 
@@ -26,6 +29,8 @@ class UserProfileScreen extends ConsumerStatefulWidget {
 class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  FeedSort _postsSort = FeedSort.new_;
+  CommentSort _commentsSort = CommentSort.new_;
   List<UserComment> _comments = [];
   bool _commentsLoading = true;
   String? _commentsError;
@@ -35,17 +40,69 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _scrollController = createInfiniteScrollController(
-      () => ref.read(feedPageProvider(FeedPageConfig.user(widget.username)).notifier).loadMore(),
-    );
+    _tabController.addListener(_handleTabChanged);
+    _scrollController = _createPostsScrollController();
     _loadComments();
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChanged);
     _tabController.dispose();
     _scrollController?.dispose();
     super.dispose();
+  }
+
+  void _handleTabChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  FeedPageConfig _postsConfig() {
+    return FeedPageConfig.user(widget.username, sort: _postsSort);
+  }
+
+  ScrollController _createPostsScrollController() {
+    return createInfiniteScrollController(
+      () => ref.read(feedPageProvider(_postsConfig()).notifier).loadMore(),
+    );
+  }
+
+  Future<void> _showSortMenu() async {
+    if (_tabController.index == 2) return;
+
+    if (_tabController.index == 0) {
+      final sort = await showRadioBottomSheet<FeedSort>(
+        context,
+        title: 'Sort posts',
+        currentValue: _postsSort,
+        values: FeedSort.values,
+        labelFn: (s) => s.label,
+      );
+      if (sort != null && sort != _postsSort) {
+        final oldController = _scrollController;
+        setState(() {
+          _postsSort = sort;
+          _scrollController = _createPostsScrollController();
+        });
+        oldController?.dispose();
+      }
+      return;
+    }
+
+    final sort = await showRadioBottomSheet<CommentSort>(
+      context,
+      title: 'Sort comments',
+      currentValue: _commentsSort,
+      values: CommentSort.values,
+      labelFn: (s) => s.label,
+    );
+    if (sort != null && sort != _commentsSort) {
+      setState(() {
+        _commentsSort = sort;
+      });
+      await _loadComments();
+    }
   }
 
   Future<void> _loadComments() async {
@@ -56,8 +113,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     try {
       final repo = ref.read(userRepositoryProvider);
       final sessionCookie = ref.read(activeAccountProvider)?.sessionCookie;
-      final comments = await repo.fetchComments(widget.username,
-          sessionCookie: sessionCookie);
+      final comments = await repo.fetchComments(
+        widget.username,
+        sort: _commentsSort,
+        sessionCookie: sessionCookie,
+      );
       if (mounted) {
         setState(() {
           _comments = comments;
@@ -82,6 +142,17 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text('u/${widget.username}'),
+        actions: _tabController.index == 2
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  tooltip: _tabController.index == 0
+                      ? 'Sort posts'
+                      : 'Sort comments',
+                  onPressed: _showSortMenu,
+                ),
+              ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -103,7 +174,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 
   Widget _buildPostsTab() {
-    final config = FeedPageConfig.user(widget.username);
+    final config = _postsConfig();
 
     return FeedScreenScaffold(
       config: config,
@@ -124,8 +195,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
           children: [
             Icon(Icons.error_outline, size: 40, color: theme.colorScheme.error),
             const SizedBox(height: 8),
-            Text('Failed to load comments',
-                style: theme.textTheme.bodySmall),
+            Text('Failed to load comments', style: theme.textTheme.bodySmall),
             const SizedBox(height: 16),
             TextButton(onPressed: _loadComments, child: const Text('Retry')),
           ],
@@ -138,8 +208,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_bubble_outline, size: 48,
-                color: theme.colorScheme.onSurfaceVariant),
+            Icon(Icons.chat_bubble_outline,
+                size: 48, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
             Text('No comments yet.',
                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
@@ -151,6 +221,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     return RefreshIndicator(
       onRefresh: _loadComments,
       child: ListView.separated(
+        key: ValueKey(_commentsSort),
         itemCount: _comments.length,
         separatorBuilder: (_, __) =>
             Divider(height: 1, color: theme.dividerColor),
@@ -211,8 +282,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.arrow_upward, size: 14,
-                          color: theme.colorScheme.onSurfaceVariant),
+                      Icon(Icons.arrow_upward,
+                          size: 14, color: theme.colorScheme.onSurfaceVariant),
                       const SizedBox(width: 2),
                       Text(
                         '${comment.score}',
@@ -231,8 +302,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     );
   }
 
-  Widget _buildAboutTab(
-      AsyncValue<UserProfile> profileAsync, ThemeData theme) {
+  Widget _buildAboutTab(AsyncValue<UserProfile> profileAsync, ThemeData theme) {
     return profileAsync.when(
       data: (profile) => ListView(
         padding: const EdgeInsets.all(16),
@@ -266,8 +336,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 const SizedBox(height: 4),
                 if (profile.isGold)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade100,
                       borderRadius: BorderRadius.circular(4),
@@ -317,11 +387,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.person_off_outlined, size: 48,
-                color: theme.colorScheme.error),
+            Icon(Icons.person_off_outlined,
+                size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 8),
-            Text('Could not load profile.',
-                style: theme.textTheme.bodySmall),
+            Text('Could not load profile.', style: theme.textTheme.bodySmall),
           ],
         ),
       ),
@@ -364,8 +433,8 @@ class _InfoRow extends StatelessWidget {
         Text(label, style: theme.textTheme.bodyMedium),
         const Spacer(),
         Text(value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600)),
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600)),
       ],
     );
   }
