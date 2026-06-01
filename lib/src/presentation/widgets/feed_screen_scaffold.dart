@@ -105,8 +105,49 @@ class FeedScreenScaffold extends ConsumerWidget {
         handleSave(actions, fullname, context, wasSaved: wasSaved);
       },
       onPostDelete: account != null
-          ? (post) {
-              handleDelete(context, actions, post.fullname);
+          ? (post) async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Delete'),
+                  content: const Text('This cannot be undone.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: Text('Delete',
+                          style: TextStyle(
+                              color: Theme.of(ctx).colorScheme.error)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true) return;
+              notifier.removeItem((p) => p.fullname == post.fullname);
+              var undone = false;
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: const Text('Post deleted'),
+                    action: SnackBarAction(
+                      label: 'Undo',
+                      onPressed: () {
+                        undone = true;
+                        notifier.refresh();
+                      },
+                    ),
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+
+              await Future<void>.delayed(const Duration(seconds: 4));
+              if (undone) return;
+              await actions.delete(post.fullname);
             }
           : null,
       currentUsername: account?.username,
