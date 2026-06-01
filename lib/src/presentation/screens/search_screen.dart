@@ -10,7 +10,9 @@ import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialSubredditScope;
+
+  const SearchScreen({super.key, this.initialSubredditScope});
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -22,16 +24,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   final _scrollControllers = <ScrollController>[];
   bool _hasSearched = false;
   String _lastQuery = '';
+  String? _subredditScope;
   late TabController _tabController;
 
-  static const _tabs = ['Posts', 'Communities', 'Comments', 'Media', 'Profiles'];
+  static const _tabs = [
+    'Posts',
+    'Communities',
+    'Comments',
+    'Media',
+    'Profiles'
+  ];
 
   @override
   void initState() {
     super.initState();
+    _subredditScope = widget.initialSubredditScope;
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(_onTabChanged);
   }
+
+  SearchRequest get _request => (
+        query: _lastQuery,
+        subreddit: _subredditScope,
+      );
 
   @override
   void dispose() {
@@ -80,15 +95,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   void _loadMore(int tabIndex) {
     switch (tabIndex) {
       case 0: // Posts
-        ref.read(searchPostsProvider(_lastQuery).notifier).loadMore();
+        ref.read(searchPostsProvider(_request).notifier).loadMore();
       case 1: // Communities
-        ref.read(searchCommunitiesProvider(_lastQuery).notifier).loadMore();
+        ref.read(searchCommunitiesProvider(_request).notifier).loadMore();
       case 2: // Comments
-        ref.read(searchCommentsProvider(_lastQuery).notifier).loadMore();
+        ref.read(searchCommentsProvider(_request).notifier).loadMore();
       case 3: // Media
-        ref.read(searchPostsProvider(_lastQuery).notifier).loadMore();
+        ref.read(searchPostsProvider(_request).notifier).loadMore();
       case 4: // Profiles
-        ref.read(searchUsersProvider(_lastQuery).notifier).loadMore();
+        ref.read(searchUsersProvider(_request).notifier).loadMore();
     }
   }
 
@@ -99,14 +114,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         title: TextField(
           controller: _searchController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Search Reddit...',
+          decoration: InputDecoration(
+            hintText: _subredditScope == null
+                ? 'Search Reddit...'
+                : 'Search in r/${_subredditScope!}...',
             border: InputBorder.none,
           ),
           textInputAction: TextInputAction.search,
           onSubmitted: (_) => _search(),
         ),
         actions: [
+          if (_subredditScope != null)
+            IconButton(
+              tooltip: 'Search all of Reddit',
+              icon: const Icon(Icons.public),
+              onPressed: () => setState(() => _subredditScope = null),
+            ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: _search,
@@ -121,14 +144,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
             : null,
       ),
       body: _hasSearched
-          ? TabBarView(
-              controller: _tabController,
+          ? Column(
               children: [
-                _PostsTab(query: _lastQuery, scrollController: _scrollControllers[0]),
-                _CommunitiesTab(query: _lastQuery, scrollController: _scrollControllers[1]),
-                _CommentsTab(query: _lastQuery, scrollController: _scrollControllers[2]),
-                _MediaTab(query: _lastQuery, scrollController: _scrollControllers[3]),
-                _ProfilesTab(query: _lastQuery, scrollController: _scrollControllers[4]),
+                if (_subredditScope != null)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        Chip(
+                          avatar: const Icon(Icons.travel_explore, size: 16),
+                          label: Text('Searching in r/${_subredditScope!}'),
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _PostsTab(
+                          request: _request,
+                          scrollController: _scrollControllers[0]),
+                      _CommunitiesTab(
+                          request: _request,
+                          scrollController: _scrollControllers[1]),
+                      _CommentsTab(
+                          request: _request,
+                          scrollController: _scrollControllers[2]),
+                      _MediaTab(
+                          request: _request,
+                          scrollController: _scrollControllers[3]),
+                      _ProfilesTab(
+                          request: _request,
+                          scrollController: _scrollControllers[4]),
+                    ],
+                  ),
+                ),
               ],
             )
           : const Center(
@@ -141,15 +193,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
 // ── Posts Tab ─────────────────────────────────────────────────────────────────
 
 class _PostsTab extends ConsumerWidget {
-  final String query;
+  final SearchRequest request;
   final ScrollController scrollController;
 
-  const _PostsTab({required this.query, required this.scrollController});
+  const _PostsTab({required this.request, required this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(searchPostsProvider(query));
-    final notifier = ref.read(searchPostsProvider(query).notifier);
+    final state = ref.watch(searchPostsProvider(request));
+    final notifier = ref.read(searchPostsProvider(request).notifier);
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -209,15 +261,16 @@ class _PostsTab extends ConsumerWidget {
 // ── Communities Tab ───────────────────────────────────────────────────────────
 
 class _CommunitiesTab extends ConsumerWidget {
-  final String query;
+  final SearchRequest request;
   final ScrollController scrollController;
 
-  const _CommunitiesTab({required this.query, required this.scrollController});
+  const _CommunitiesTab(
+      {required this.request, required this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(searchCommunitiesProvider(query));
-    final notifier = ref.read(searchCommunitiesProvider(query).notifier);
+    final state = ref.watch(searchCommunitiesProvider(request));
+    final notifier = ref.read(searchCommunitiesProvider(request).notifier);
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -263,15 +316,15 @@ class _CommunitiesTab extends ConsumerWidget {
 // ── Comments Tab ──────────────────────────────────────────────────────────────
 
 class _CommentsTab extends ConsumerWidget {
-  final String query;
+  final SearchRequest request;
   final ScrollController scrollController;
 
-  const _CommentsTab({required this.query, required this.scrollController});
+  const _CommentsTab({required this.request, required this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(searchCommentsProvider(query));
-    final notifier = ref.read(searchCommentsProvider(query).notifier);
+    final state = ref.watch(searchCommentsProvider(request));
+    final notifier = ref.read(searchCommentsProvider(request).notifier);
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -412,15 +465,15 @@ class _CommentCard extends StatelessWidget {
 // ── Media Tab ─────────────────────────────────────────────────────────────────
 
 class _MediaTab extends ConsumerWidget {
-  final String query;
+  final SearchRequest request;
   final ScrollController scrollController;
 
-  const _MediaTab({required this.query, required this.scrollController});
+  const _MediaTab({required this.request, required this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(searchPostsProvider(query));
-    final notifier = ref.read(searchPostsProvider(query).notifier);
+    final state = ref.watch(searchPostsProvider(request));
+    final notifier = ref.read(searchPostsProvider(request).notifier);
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -431,10 +484,12 @@ class _MediaTab extends ConsumerWidget {
     }
 
     // Client-side filter for image/video/gallery posts
-    final mediaPosts = state.items.where((p) =>
-        p.type == PostType.image ||
-        p.type == PostType.video ||
-        p.type == PostType.gallery).toList();
+    final mediaPosts = state.items
+        .where((p) =>
+            p.type == PostType.image ||
+            p.type == PostType.video ||
+            p.type == PostType.gallery)
+        .toList();
 
     if (mediaPosts.isEmpty) {
       return const Center(child: Text('No media results found.'));
@@ -486,15 +541,15 @@ class _MediaTab extends ConsumerWidget {
 // ── Profiles Tab ──────────────────────────────────────────────────────────────
 
 class _ProfilesTab extends ConsumerWidget {
-  final String query;
+  final SearchRequest request;
   final ScrollController scrollController;
 
-  const _ProfilesTab({required this.query, required this.scrollController});
+  const _ProfilesTab({required this.request, required this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(searchUsersProvider(query));
-    final notifier = ref.read(searchUsersProvider(query).notifier);
+    final state = ref.watch(searchUsersProvider(request));
+    final notifier = ref.read(searchUsersProvider(request).notifier);
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());

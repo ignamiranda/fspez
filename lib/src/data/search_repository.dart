@@ -16,14 +16,22 @@ class SearchRepository {
   SearchRepository(this._client, {FeedParser? parser})
       : _parser = parser ?? FeedParser();
 
+  String _searchPath(String? subreddit) {
+    if (subreddit == null || subreddit.isEmpty) {
+      return '/search';
+    }
+    return '/r/$subreddit/search';
+  }
+
   /// Searches for posts matching [query].
   Future<PaginatedResult<Post>> searchPosts(
     String query, {
     String? after,
+    String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    final page =
-        await _search(query, after: after, sessionCookie: sessionCookie);
+    final page = await _search(query,
+        after: after, subreddit: subreddit, sessionCookie: sessionCookie);
     return PaginatedResult<Post>(
       items: page.posts,
       after: page.after,
@@ -35,12 +43,14 @@ class SearchRepository {
   Future<PaginatedResult<Subreddit>> searchCommunities(
     String query, {
     String? after,
+    String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/search',
+    final data = await _client.get(_searchPath(subreddit),
         queryParams: {
           'q': query,
           'type': 'sr',
+          if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
           'sort': 'relevance',
           'limit': '25',
           if (after != null) 'after': after,
@@ -66,12 +76,14 @@ class SearchRepository {
   Future<PaginatedResult<SearchUser>> searchUsers(
     String query, {
     String? after,
+    String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/search',
+    final data = await _client.get(_searchPath(subreddit),
         queryParams: {
           'q': query,
           'type': 'user',
+          if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
           'sort': 'relevance',
           'limit': '25',
           if (after != null) 'after': after,
@@ -97,22 +109,30 @@ class SearchRepository {
   Future<PaginatedResult<Post>> searchComments(
     String query, {
     String? after,
+    String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
     // Comment search via JSON API returns t3 posts, not comments.
     // We reuse searchPosts and render selftext as comment body.
-    return searchPosts(query, after: after, sessionCookie: sessionCookie);
+    return searchPosts(
+      query,
+      after: after,
+      subreddit: subreddit,
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<Feed> _search(
     String query, {
     String? after,
+    String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/search',
+    final data = await _client.get(_searchPath(subreddit),
         queryParams: {
           'q': query,
-          'restrict_sr': 'off',
+          'restrict_sr':
+              subreddit != null && subreddit.isNotEmpty ? 'on' : 'off',
           'sort': 'relevance',
           'limit': '25',
           'sr_detail': 'true',

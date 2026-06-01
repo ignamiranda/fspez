@@ -7,7 +7,6 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 ## Ranked handoffs
 
 - `handoffs/2026-05-27-optimistic-action-undo-snackbars-handoff.md` — high mobile trust value; makes destructive/reversible actions feel safer and more polished. **Partially done**: save/hide snackbars already exist; hidden-feed unhide undo snackbar added; vote/delete remain unchanged.
-- `handoffs/2026-05-27-nsfw-spoiler-blur-reveal-handoff.md` — core Reddit safety/content expectation and important mobile parity. **Partially done**: PostCard blur/reveal and settings toggles implemented; fullscreen media protection remaining.
 - `handoffs/2026-05-27-mobile-accessibility-comfort-audit-handoff.md` — mobile quality foundation: dynamic text, touch targets, semantics, and reduced motion affect every screen and future UI handoff.
 - `handoffs/2026-05-27-offline-cache-stale-while-revalidate-handoff.md` — major perceived performance/reliability upgrade; makes the app feel instant and resilient.
 - `handoffs/2026-05-27-media-prefetching-feed-handoff.md` — mobile performance polish for media-heavy browsing; valuable after/alongside cache and sensitive-content policy.
@@ -24,7 +23,6 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 - `handoffs/2026-05-27-community-mute-unmute-handoff.md` — important feed control and official-app parity.
 - `handoffs/2026-05-27-joined-communities-management-handoff.md` — mobile navigation and account utility; improves discovery of subscribed communities.
 - `handoffs/2026-05-27-swipe-back-gesture-handoff.md` — very high-frequency mobile navigation gesture; affects every pushed screen; simple routing-wide change via `CupertinoPageTransitionsBuilder`.
-- `handoffs/2026-05-27-search-within-subreddit-handoff.md` — high-utility daily feature; reuses existing search infrastructure with `restrict_sr=on`; very cheap.
 - `handoffs/2026-05-27-swipe-gestures-feed-handoff.md` — very high mobile delight; transforms feed interaction; most Reddit-mobile-native gesture pattern.
 - `handoffs/2026-05-27-account-age-karma-profile-handoff.md` — simple visual parity; data already flows from `/user/{username}/about.json`; cheap to implement.
 - `handoffs/2026-05-27-subreddit-time-range-sort-handoff.md` — post-sort polish; cheap UI addition for Top sort (hour/day/week/month/year/all).

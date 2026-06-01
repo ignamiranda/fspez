@@ -13,6 +13,7 @@ import '../utils/reddit_markdown.dart';
 import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import '../widgets/subreddit_rules_sheet.dart';
+import 'search_screen.dart';
 import 'submit_screen.dart';
 
 class SubredditFeedScreen extends ConsumerStatefulWidget {
@@ -90,6 +91,17 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
       appBar: AppBar(
         title: Text('r/${widget.subredditName}'),
         actions: [
+          IconButton(
+            tooltip: 'Search in this subreddit',
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SearchScreen(
+                  initialSubredditScope: widget.subredditName,
+                ),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () =>

@@ -8,6 +8,8 @@ import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/search_user.dart';
 
+typedef SearchRequest = ({String query, String? subreddit});
+
 final searchRepositoryProvider = Provider<SearchRepository>((ref) {
   return SearchRepository(ref.watch(redditClientProvider));
 });
@@ -15,45 +17,67 @@ final searchRepositoryProvider = Provider<SearchRepository>((ref) {
 // ── Query-based family providers ──────────────────────────────────────────────
 
 final searchPostsProvider = StateNotifierProvider.family<
-    PaginatedNotifier<Post>, PaginatedListState<Post>, String>((ref, query) {
+    PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
+  ref,
+  request,
+) {
   final repo = ref.watch(searchRepositoryProvider);
   final account = ref.watch(activeAccountProvider);
   return PaginatedNotifier<Post>(
-    fetchPage: ({after}) => repo.searchPosts(query,
-        after: after, sessionCookie: account?.sessionCookie),
+    fetchPage: ({after}) => repo.searchPosts(
+      request.query,
+      after: after,
+      subreddit: request.subreddit,
+      sessionCookie: account?.sessionCookie,
+    ),
   );
 });
 
 final searchCommunitiesProvider = StateNotifierProvider.family<
     PaginatedNotifier<Subreddit>,
     PaginatedListState<Subreddit>,
-    String>((ref, query) {
+    SearchRequest>((ref, request) {
   final repo = ref.watch(searchRepositoryProvider);
   final account = ref.watch(activeAccountProvider);
   return PaginatedNotifier<Subreddit>(
-    fetchPage: ({after}) => repo.searchCommunities(query,
-        after: after, sessionCookie: account?.sessionCookie),
+    fetchPage: ({after}) => repo.searchCommunities(
+      request.query,
+      after: after,
+      subreddit: request.subreddit,
+      sessionCookie: account?.sessionCookie,
+    ),
   );
 });
 
 final searchUsersProvider = StateNotifierProvider.family<
     PaginatedNotifier<SearchUser>,
     PaginatedListState<SearchUser>,
-    String>((ref, query) {
+    SearchRequest>((ref, request) {
   final repo = ref.watch(searchRepositoryProvider);
   final account = ref.watch(activeAccountProvider);
   return PaginatedNotifier<SearchUser>(
-    fetchPage: ({after}) => repo.searchUsers(query,
-        after: after, sessionCookie: account?.sessionCookie),
+    fetchPage: ({after}) => repo.searchUsers(
+      request.query,
+      after: after,
+      subreddit: request.subreddit,
+      sessionCookie: account?.sessionCookie,
+    ),
   );
 });
 
 final searchCommentsProvider = StateNotifierProvider.family<
-    PaginatedNotifier<Post>, PaginatedListState<Post>, String>((ref, query) {
+    PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
+  ref,
+  request,
+) {
   final repo = ref.watch(searchRepositoryProvider);
   final account = ref.watch(activeAccountProvider);
   return PaginatedNotifier<Post>(
-    fetchPage: ({after}) => repo.searchComments(query,
-        after: after, sessionCookie: account?.sessionCookie),
+    fetchPage: ({after}) => repo.searchComments(
+      request.query,
+      after: after,
+      subreddit: request.subreddit,
+      sessionCookie: account?.sessionCookie,
+    ),
   );
 });
