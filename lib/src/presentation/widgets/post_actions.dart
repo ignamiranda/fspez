@@ -3,18 +3,21 @@ import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
+import 'award_badge.dart';
 import 'user_flair_chip.dart';
 
 class PostHeader extends StatelessWidget {
   final Post post;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
+  final bool showAwards;
 
   const PostHeader({
     super.key,
     required this.post,
     this.onSubredditTap,
     this.onAuthorTap,
+    this.showAwards = true,
   });
 
   @override
@@ -77,6 +80,10 @@ class PostHeader extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (showAwards && post.awardCount > 0) ...[
+                const SizedBox(width: 4),
+                AwardBadge(awardCount: post.awardCount),
+              ],
             ],
           ),
         ),
@@ -147,6 +154,7 @@ class _LetterAvatar extends StatelessWidget {
 
 class PostActions extends StatelessWidget {
   final Post post;
+  final bool showAwards;
   final VoteDirection? effectiveVote;
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
@@ -159,6 +167,7 @@ class PostActions extends StatelessWidget {
   const PostActions({
     super.key,
     required this.post,
+    this.showAwards = true,
     this.effectiveVote,
     this.onVote,
     this.effectiveSaved,

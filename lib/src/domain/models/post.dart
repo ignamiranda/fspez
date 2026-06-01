@@ -22,6 +22,7 @@ class Post with EquatableMixin {
   final bool isSaved;
   final bool isStickied;
   final bool isLocked;
+  final int awardCount;
   final DateTime createdAt;
   final String permalink;
   final double? upvoteRatio;
@@ -49,6 +50,7 @@ class Post with EquatableMixin {
     this.isSaved = false,
     this.isStickied = false,
     this.isLocked = false,
+    this.awardCount = 0,
     required this.createdAt,
     required this.permalink,
     this.upvoteRatio,
@@ -76,6 +78,7 @@ class Post with EquatableMixin {
         isSaved,
         isStickied,
         isLocked,
+        awardCount,
         createdAt,
         permalink,
         upvoteRatio,

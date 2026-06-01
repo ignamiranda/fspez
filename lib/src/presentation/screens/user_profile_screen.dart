@@ -10,6 +10,7 @@ import '../../domain/models/user_profile.dart';
 import '../../domain/models/user_comment.dart';
 import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
+import '../utils/profile_formatters.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'post_detail_screen.dart';
 
@@ -275,32 +276,30 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                         style: TextStyle(
                             fontSize: 11, color: Colors.amber.shade900)),
                   ),
+                const SizedBox(height: 10),
+                Text(
+                  formatRedditAccountAge(profile.createdAt),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  formatProfileKarmaBreakdown(
+                    profile.linkKarma,
+                    profile.commentKarma,
+                  ),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          _KarmaRow(
-            label: 'Post Karma',
-            value: profile.linkKarma,
-            icon: Icons.article_outlined,
-            theme: theme,
-          ),
-          const SizedBox(height: 12),
-          _KarmaRow(
-            label: 'Comment Karma',
-            value: profile.commentKarma,
-            icon: Icons.chat_bubble_outline,
-            theme: theme,
-          ),
-          const SizedBox(height: 12),
-          _InfoRow(
-            label: 'Account Age',
-            value: _accountAge(profile.createdAt),
-            icon: Icons.calendar_today_outlined,
-            theme: theme,
-          ),
           if (profile.isMod) ...[
-            const SizedBox(height: 12),
             _InfoRow(
               label: 'Moderator',
               value: profile.subredditName != null
@@ -309,6 +308,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
               icon: Icons.shield_outlined,
               theme: theme,
             ),
+            const SizedBox(height: 12),
           ],
         ],
       ),
@@ -328,15 +328,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     );
   }
 
-  String _accountAge(DateTime createdAt) {
-    final now = DateTime.now();
-    final diff = now.difference(createdAt);
-    final years = diff.inDays ~/ 365;
-    final months = (diff.inDays % 365) ~/ 30;
-    if (years > 0) return '$years years, $months months';
-    return '$months months';
-  }
-
   Post _buildMinimalPost(UserComment comment, String postId) {
     return Post(
       id: postId,
@@ -347,35 +338,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       permalink: comment.linkPermalink,
       type: PostType.link,
       score: comment.score,
-    );
-  }
-}
-
-class _KarmaRow extends StatelessWidget {
-  final String label;
-  final int value;
-  final IconData icon;
-  final ThemeData theme;
-
-  const _KarmaRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 12),
-        Text(label, style: theme.textTheme.bodyMedium),
-        const Spacer(),
-        Text(formatCount(value),
-            style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600)),
-      ],
     );
   }
 }

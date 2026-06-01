@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
+import 'award_badge.dart';
 import 'user_flair_chip.dart';
 
 class CommentTree extends StatefulWidget {
@@ -15,6 +16,7 @@ class CommentTree extends StatefulWidget {
   final void Function(String author)? onAuthorTap;
   final void Function(String fullname)? onDelete;
   final void Function(String fullname)? onEdit;
+  final bool showAwards;
 
   const CommentTree({
     super.key,
@@ -27,6 +29,7 @@ class CommentTree extends StatefulWidget {
     this.onAuthorTap,
     this.onDelete,
     this.onEdit,
+    this.showAwards = true,
   });
 
   @override
@@ -145,6 +148,10 @@ class _CommentTreeState extends State<CommentTree> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      if (widget.showAwards && widget.comment.awardCount > 0) ...[
+                        const SizedBox(width: 8),
+                        AwardBadge(awardCount: widget.comment.awardCount),
+                      ],
                     ],
                   ),
                   AnimatedSize(
@@ -315,6 +322,7 @@ class _CommentTreeState extends State<CommentTree> {
                             onAuthorTap: widget.onAuthorTap,
                             onDelete: widget.onDelete,
                             onEdit: widget.onEdit,
+                            showAwards: widget.showAwards,
                           ))
                       .toList(),
                 ),

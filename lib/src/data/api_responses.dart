@@ -46,6 +46,7 @@ class ApiPost {
   final bool saved;
   final bool stickied;
   final bool locked;
+  final int awardCount;
   final int createdUtc;
   final String permalink;
   final double? upvoteRatio;
@@ -79,6 +80,7 @@ class ApiPost {
     required this.saved,
     required this.stickied,
     required this.locked,
+    required this.awardCount,
     required this.createdUtc,
     required this.permalink,
     this.upvoteRatio,
@@ -121,6 +123,7 @@ class ApiPost {
       saved: data['saved'] as bool? ?? false,
       stickied: data['stickied'] as bool? ?? false,
       locked: data['locked'] as bool? ?? false,
+      awardCount: _awardCount(data),
       createdUtc: (data['created_utc'] as num).toInt(),
       permalink: data['permalink'] as String? ?? '',
       upvoteRatio: (data['upvote_ratio'] as num?)?.toDouble(),
@@ -228,6 +231,7 @@ class ApiPost {
       isSaved: saved,
       isStickied: stickied,
       isLocked: locked,
+      awardCount: awardCount,
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000),
       permalink: permalink,
       upvoteRatio: upvoteRatio,
@@ -272,6 +276,27 @@ class ApiPost {
   }
 
   String _cleanUrl(String url) => url.replaceAll('&amp;', '&');
+
+  static int _awardCount(Map<String, dynamic> data) {
+    final totalAwards = data['total_awards_received'];
+    if (totalAwards is num) return totalAwards.toInt();
+
+    final allAwardings = data['all_awardings'];
+    if (allAwardings is List) return allAwardings.length;
+
+    final gildings = data['gildings'];
+    if (gildings is Map<String, dynamic>) {
+      final count = gildings.values
+          .whereType<num>()
+          .fold<int>(0, (sum, value) => sum + value.toInt());
+      if (count > 0) return count;
+    }
+
+    final gilded = data['gilded'];
+    if (gilded is num) return gilded.toInt();
+
+    return 0;
+  }
 }
 
 class ApiSearchUser {
@@ -324,6 +349,7 @@ class ApiComment {
   final bool isSubmitter;
   final String? distinguished;
   final bool stickied;
+  final int awardCount;
   final int createdUtc;
   final String linkId;
   final String? parentId;
@@ -345,6 +371,7 @@ class ApiComment {
     required this.isSubmitter,
     this.distinguished,
     required this.stickied,
+    required this.awardCount,
     required this.createdUtc,
     required this.linkId,
     this.parentId,
@@ -382,6 +409,7 @@ class ApiComment {
       isSubmitter: data['is_submitter'] as bool? ?? false,
       distinguished: data['distinguished'] as String?,
       stickied: data['stickied'] as bool? ?? false,
+      awardCount: ApiPost._awardCount(data),
       createdUtc: (data['created_utc'] as num).toInt(),
       linkId: data['link_id'] as String? ?? '',
       parentId: data['parent_id'] as String?,

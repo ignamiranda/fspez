@@ -169,6 +169,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final shouldBlur = !_sensitiveRevealed &&
         ((post.isNsfw && settings.nsfwBlur) ||
             (post.isSpoiler && settings.spoilerBlur));
+    final showAwards = settings.showAwards;
 
     return Column(
       children: [
@@ -178,6 +179,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               _PostDetailHeader(
                 post: post,
                 theme: theme,
+                showAwards: showAwards,
                 effectiveVote: postEffectiveVote,
                 onVote: (dir) => handleVote(actions, postFullname, dir),
                 effectiveSaved: postEffectiveSaved,
@@ -360,6 +362,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               else
                 ...comments.map((c) => CommentTree(
                       comment: c,
+                      showAwards: showAwards,
                       voteOverrides: voteOverrides,
                       onVote: (fullname, dir) =>
                           handleVote(actions, fullname, dir),
@@ -705,6 +708,7 @@ class _PostMediaTileState extends State<_PostMediaTile> {
 class _PostDetailHeader extends StatelessWidget {
   final Post post;
   final ThemeData theme;
+  final bool showAwards;
   final VoteDirection? effectiveVote;
   final ValueChanged<VoteDirection>? onVote;
   final bool? effectiveSaved;
@@ -715,6 +719,7 @@ class _PostDetailHeader extends StatelessWidget {
   const _PostDetailHeader({
     required this.post,
     required this.theme,
+    required this.showAwards,
     this.effectiveVote,
     this.onVote,
     this.effectiveSaved,
@@ -732,6 +737,7 @@ class _PostDetailHeader extends StatelessWidget {
         children: [
           PostHeader(
             post: post,
+            showAwards: showAwards,
             onSubredditTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => SubredditFeedScreen(
@@ -758,6 +764,7 @@ class _PostDetailHeader extends StatelessWidget {
           const SizedBox(height: 8),
           PostActions(
             post: post,
+            showAwards: showAwards,
             effectiveVote: effectiveVote,
             onVote: onVote,
             effectiveSaved: effectiveSaved,

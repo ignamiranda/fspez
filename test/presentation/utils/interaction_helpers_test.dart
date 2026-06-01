@@ -24,6 +24,7 @@ void main() {
   late _MockRedditClient mockClient;
   late VoteNotifier voteNotifier;
   late SaveNotifier saveNotifier;
+  late HideNotifier hideNotifier;
   late PostActionsService actions;
 
   setUpAll(() {
@@ -39,14 +40,17 @@ void main() {
         .thenAnswer((_) async => http.Response('{}', 200));
     when(() => mockClient.save(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
+    when(() => mockClient.hide(any(), any())).thenAnswer((_) async {});
+    when(() => mockClient.unhide(any(), any())).thenAnswer((_) async {});
     voteNotifier = VoteNotifier(RedditClient(httpClient: mockHttp), null);
     final cookie = SessionCookie(
         value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
     saveNotifier = SaveNotifier(mockClient, cookie);
+    hideNotifier = HideNotifier(mockClient, cookie);
     actions = PostActionsService(
       voteNotifier: voteNotifier,
       saveNotifier: saveNotifier,
-      hideNotifier: HideNotifier(mockClient, cookie),
+      hideNotifier: hideNotifier,
       deleteNotifier: DeleteNotifier(mockClient, cookie),
       editNotifier: EditNotifier(mockClient),
       sessionCookie: cookie,
@@ -168,6 +172,32 @@ void main() {
       // Simulate the snackbar Undo action.
       await actions.toggleSave('t3_test');
       expect(saveNotifier.effectiveSaved('t3_test', false), true);
+    });
+  });
+
+  group('handleUnhide', () {
+    testWidgets('shows undo snackbar and re-hides on undo', (tester) async {
+      late BuildContext ctx;
+      var undoCalled = false;
+      await actions.hide('t3_test');
+      await tester.pumpWidget(_app(Builder(builder: (c) {
+        ctx = c;
+        return const SizedBox.shrink();
+      })));
+
+      await handleUnhide(actions, 't3_test', ctx, onUndo: () async {
+        undoCalled = true;
+      });
+      await tester.pumpAndSettle();
+
+      expect(find.text('Post unhidden'), findsOneWidget);
+      expect(hideNotifier.state.containsKey('t3_test'), isFalse);
+
+      await tester.tap(find.text('Undo'), warnIfMissed: false);
+      await tester.pump();
+
+      expect(undoCalled, isTrue);
+      expect(hideNotifier.state['t3_test'], isTrue);
     });
   });
 }

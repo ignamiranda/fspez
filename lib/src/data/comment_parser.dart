@@ -24,6 +24,7 @@ class CommentParser {
       isSubmitter: api.isSubmitter,
       isModerator: api.distinguished == 'moderator',
       isStickied: api.stickied,
+      awardCount: api.awardCount,
       createdAt: DateTime.fromMillisecondsSinceEpoch(api.createdUtc * 1000),
       postId: api.linkId,
       parentId: api.parentId,

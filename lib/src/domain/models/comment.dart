@@ -12,6 +12,7 @@ class Comment with EquatableMixin {
   final bool isSubmitter;
   final bool isModerator;
   final bool isStickied;
+  final int awardCount;
   final DateTime createdAt;
   final String postId;
   final String? parentId;
@@ -32,6 +33,7 @@ class Comment with EquatableMixin {
     this.isSubmitter = false,
     this.isModerator = false,
     this.isStickied = false,
+    this.awardCount = 0,
     required this.createdAt,
     required this.postId,
     this.parentId,
@@ -52,6 +54,7 @@ class Comment with EquatableMixin {
         isSubmitter,
         isModerator,
         isStickied,
+        awardCount,
         createdAt,
         postId,
         parentId,

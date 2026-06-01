@@ -94,7 +94,14 @@ class FeedScreenScaffold extends ConsumerWidget {
           ? (post) async {
               final feedNotifier = ref.read(feedPageProvider(config).notifier);
               feedNotifier.removeItem((p) => p.fullname == post.fullname);
-              await actions.unhide(post.fullname);
+              await handleUnhide(
+                actions,
+                post.fullname,
+                context,
+                onUndo: () async {
+                  await feedNotifier.refresh();
+                },
+              );
             }
           : null,
       onPostTap: (post) => Navigator.of(context).push(
