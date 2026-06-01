@@ -3,7 +3,10 @@ import '../../data/post_actions_service.dart';
 import '../../domain/enums/vote_direction.dart';
 
 void handleVote(
-    PostActionsService actions, String fullname, VoteDirection direction) {
+  PostActionsService actions,
+  String fullname,
+  VoteDirection direction,
+) {
   actions.vote(fullname, direction);
 }
 

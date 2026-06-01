@@ -50,7 +50,9 @@ class FeedScreenScaffold extends ConsumerWidget {
       showStickiedIndicator: config.kind == FeedPageKind.subreddit,
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
-      onPostVote: (fullname, dir) => handleVote(actions, fullname, dir),
+      onPostVote: (fullname, dir) {
+        handleVote(actions, fullname, dir);
+      },
       onPostSave: (fullname) {
         final post = state.items.cast<Post?>().firstWhere(
               (p) => p?.fullname == fullname,

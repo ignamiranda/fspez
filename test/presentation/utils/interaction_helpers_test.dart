@@ -54,20 +54,20 @@ void main() {
   });
 
   group('handleVote', () {
-    test('toggles vote on notifier', () {
+    testWidgets('toggles vote on notifier', (tester) async {
       handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveVote('t3_test', VoteDirection.none),
           VoteDirection.upvote);
     });
 
-    test('toggles from upvote to none', () async {
+    testWidgets('toggles from upvote to none', (tester) async {
       await voteNotifier.vote('t3_test', VoteDirection.upvote);
       handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveVote('t3_test', VoteDirection.none),
           VoteDirection.none);
     });
 
-    test('toggles from downvote to upvote', () async {
+    testWidgets('toggles from downvote to upvote', (tester) async {
       await voteNotifier.vote('t3_test', VoteDirection.downvote);
       handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveVote('t3_test', VoteDirection.upvote),
