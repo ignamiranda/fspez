@@ -266,12 +266,20 @@ class _SubredditHeader extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton.outlined(
+                    visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     tooltip: 'About this community',
                     onPressed: onAbout,
                     icon: const Icon(Icons.info_outline),
                   ),
                   const SizedBox(width: 4),
                   IconButton.outlined(
+                    visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     tooltip: 'Community rules',
                     onPressed: onRules,
                     icon: const Icon(Icons.rule_outlined),
@@ -280,6 +288,10 @@ class _SubredditHeader extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               FilledButton.tonal(
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 onPressed: loading ? null : onToggle,
                 child: loading
                     ? const SizedBox(

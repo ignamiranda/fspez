@@ -113,49 +113,58 @@ Future<T?> showRadioBottomSheet<T>(
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (ctx) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _DragHandle(),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  title,
-                  style: Theme.of(ctx).textTheme.titleMedium,
+    builder: (ctx) {
+      final maxHeight = MediaQuery.sizeOf(ctx).height * 0.8;
+      return SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _DragHandle(),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      title,
+                      style: Theme.of(ctx).textTheme.titleMedium,
+                    ),
+                  ),
                 ),
-              ),
+                const Divider(height: 1),
+                Flexible(
+                  child: RadioGroup<T>(
+                    groupValue: currentValue,
+                    onChanged: (value) {
+                      if (value != null) {
+                        Navigator.of(ctx).pop(value);
+                      }
+                    },
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: values
+                          .map((v) => RadioListTile<T>(
+                                title: Text(labelFn(v)),
+                                value: v,
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const Divider(height: 1),
-            RadioGroup<T>(
-              groupValue: currentValue,
-              onChanged: (value) {
-                if (value != null) {
-                  Navigator.of(ctx).pop(value);
-                }
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: values
-                    .map((v) => RadioListTile<T>(
-                          title: Text(labelFn(v)),
-                          value: v,
-                        ))
-                    .toList(),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 
