@@ -6,7 +6,6 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 
 ## Ranked handoffs
 
-- `handoffs/2026-05-27-offline-cache-stale-while-revalidate-handoff.md` — major perceived performance/reliability upgrade; makes the app feel instant and resilient.
 - `handoffs/2026-05-27-media-prefetching-feed-handoff.md` — mobile performance polish for media-heavy browsing; valuable after/alongside cache and sensitive-content policy.
 - `handoffs/2026-05-27-pull-to-refresh-polish-handoff.md` — core mobile feed interaction polish; high frequency user action.
 - `handoffs/2026-05-27-mobile-comment-composer-handoff.md` — high-frequency mobile interaction polish: bottom-sheet composer, markdown preview, draft preservation on dismiss, keyboard-safe layout, parent context preview.
@@ -71,6 +70,7 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 - **Relative timestamps across all surfaces** — Comment timestamps now display `timeAgo()` in `CommentTree` header (author · relative time); `timeAgo` already covered feed, post detail, and inbox. (Was handoff #28)
 - **Mobile accessibility comfort audit** — Applied foundational comfort improvements: larger nav labels/height for dynamic text readability, 48×48 minimum tap targets via shared button theme, expanded list-tile vertical padding, reduced-motion behavior for feed scroll-to-top (jump instead of animate when accessibility reduce-motion is enabled), feed action tooltips, and explicit inbox badge semantics label for screen readers. Source handoff file was already absent from `handoffs/`; completed from ranked TODO scope.
 - **Optimistic action undo snackbars** — Completed remaining gaps from prior partial state for destructive/reversible actions: feed delete now uses an undo grace window (optimistically removes item, allows Undo for 4s, then finalizes delete). Existing save/hide/unhide undo behavior preserved. Vote actions intentionally remain snackbar-free to avoid interaction clutter. Source handoff file was already absent from `handoffs/`; completed from ranked TODO scope.
+- **Offline cache + stale-while-revalidate feeds** — Implemented first-page feed cache with per-account/per-config keys, stale metadata (TTL), cache-seeded initial rendering, background refresh, stale/error status banners, and preserved-content-on-refresh-failure behavior. Added explicit feed cache invalidation on account removal/logout to prevent account-data bleed. 
 
 ## Notes
 

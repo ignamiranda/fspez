@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/models/account.dart';
 import 'account_repository.dart';
 import 'account_notifier.dart';
+import 'cache_providers.dart';
 
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('SharedPreferences must be overridden in main');
@@ -27,5 +28,6 @@ final activeAccountProvider =
   return ActiveAccountNotifier(
     ref.watch(accountRepositoryProvider),
     ref.watch(accountListVersionProvider.notifier),
+    ref.watch(feedCacheProvider),
   );
 });

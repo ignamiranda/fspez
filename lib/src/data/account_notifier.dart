@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
 import 'account_repository.dart';
+import 'feed_cache.dart';
 
 class AccountListVersionNotifier extends StateNotifier<int> {
   AccountListVersionNotifier() : super(0);
@@ -12,8 +13,9 @@ class AccountListVersionNotifier extends StateNotifier<int> {
 class ActiveAccountNotifier extends StateNotifier<Account?> {
   final AccountRepository _repository;
   final AccountListVersionNotifier _listVersion;
+  final FeedCache _feedCache;
 
-  ActiveAccountNotifier(this._repository, this._listVersion)
+  ActiveAccountNotifier(this._repository, this._listVersion, this._feedCache)
       : super(_repository.loadActive()) {
     Future.microtask(_deduplicate);
   }
@@ -54,6 +56,7 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
   }
 
   Future<void> removeAccount(String accountId) async {
+    _feedCache.clearForAccount(accountId);
     await _repository.remove(accountId);
     if (state?.id == accountId) {
       state = _repository.loadActive();
