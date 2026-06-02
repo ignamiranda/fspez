@@ -6,7 +6,6 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 
 ## Ranked handoffs
 
-- `handoffs/2026-05-27-media-prefetching-feed-handoff.md` — mobile performance polish for media-heavy browsing; valuable after/alongside cache and sensitive-content policy.
 - `handoffs/2026-05-27-pull-to-refresh-polish-handoff.md` — core mobile feed interaction polish; high frequency user action.
 - `handoffs/2026-05-27-mobile-comment-composer-handoff.md` — high-frequency mobile interaction polish: bottom-sheet composer, markdown preview, draft preservation on dismiss, keyboard-safe layout, parent context preview.
 - `handoffs/2026-05-27-gesture-first-media-browsing-handoff.md` — makes existing media viewer feel native-mobile-quality.
@@ -72,6 +71,7 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 - **Subreddit sidebar/about details** — Added `_SubredditAboutSheet` with description, member count, online count, created date, NSFW/quarantine/restricted/private status, and sidebar markdown rendering. Handoff file deleted.
 - **Award visibility setting** — Added `showAwards` toggle in settings, award count parsing for posts/comments, and `AwardBadge` display on feed cards, post detail, and comments. Handoff file deleted.
 - **Inbox badge and mark-as-read** — Added unread count provider and badge on inbox nav item, and wired `markAsRead` in inbox notifier to repository call with local unread count decrement. Handoff file deleted.
+- **Feed image/media prefetching** — Created `FeedMediaPrefetcher` widget that precaches image URLs for upcoming feed cards using Flutter's built-in image cache. Prefetches N=5 posts ahead based on estimated scroll position. Respects NSFW/spoiler blur settings. Added `prefetchMedia` toggle (default on) to settings. Wired into both feed and subreddit feed via `FeedScreenScaffold`. Handoff file deleted.
 
 ## Notes
 

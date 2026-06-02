@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/app_settings.dart';
 import '../../data/auth_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../data/feed_providers.dart';
 import '../../data/write_providers.dart';
 import '../../domain/models/post.dart';
 import '../utils/interaction_helpers.dart';
+import 'feed_media_prefetcher.dart';
 import 'post_list.dart';
 import '../screens/post_detail_screen.dart';
 import '../screens/subreddit_feed_screen.dart';
@@ -217,13 +219,23 @@ class FeedScreenScaffold extends ConsumerWidget {
           : null,
     );
 
+    // Wrap with prefetcher when enabled.
+    final settings = ref.watch(appSettingsProvider);
+    final content = settings.prefetchMedia
+        ? FeedMediaPrefetcher(
+            posts: state.items,
+            scrollController: scrollController,
+            child: postList,
+          )
+        : postList;
+
     // Wrapping with status banners when cached/stale/error content is shown.
     if (state.isLoading && state.items.isNotEmpty) {
       return Column(
         children: [
           const LinearProgressIndicator(),
           if (statusBanner != null) statusBanner,
-          Expanded(child: postList),
+          Expanded(child: content),
         ],
       );
     }
@@ -232,11 +244,11 @@ class FeedScreenScaffold extends ConsumerWidget {
       return Column(
         children: [
           statusBanner,
-          Expanded(child: postList),
+          Expanded(child: content),
         ],
       );
     }
 
-    return postList;
+    return content;
   }
 }

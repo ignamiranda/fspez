@@ -12,6 +12,7 @@ class AppSettings {
   final bool nsfwBlur;
   final bool spoilerBlur;
   final FeedDensity feedDensity;
+  final bool prefetchMedia;
 
   const AppSettings({
     this.themeMode = AppThemeMode.system,
@@ -20,6 +21,7 @@ class AppSettings {
     this.nsfwBlur = true,
     this.spoilerBlur = true,
     this.feedDensity = FeedDensity.comfortable,
+    this.prefetchMedia = true,
   });
 
   AppSettings copyWith({
@@ -29,6 +31,7 @@ class AppSettings {
     bool? nsfwBlur,
     bool? spoilerBlur,
     FeedDensity? feedDensity,
+    bool? prefetchMedia,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -37,6 +40,7 @@ class AppSettings {
       nsfwBlur: nsfwBlur ?? this.nsfwBlur,
       spoilerBlur: spoilerBlur ?? this.spoilerBlur,
       feedDensity: feedDensity ?? this.feedDensity,
+      prefetchMedia: prefetchMedia ?? this.prefetchMedia,
     );
   }
 }
@@ -48,6 +52,7 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
   static const _nsfwBlurKey = 'settings.nsfwBlur';
   static const _spoilerBlurKey = 'settings.spoilerBlur';
   static const _feedDensityKey = 'settings.feedDensity';
+  static const _prefetchMediaKey = 'settings.prefetchMedia';
 
   final SharedPreferences _prefs;
 
@@ -65,6 +70,7 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
       feedDensity: FeedDensity.fromPersistKey(
         prefs.getString(_feedDensityKey),
       ),
+      prefetchMedia: prefs.getBool(_prefetchMediaKey) ?? true,
     );
   }
 
@@ -109,6 +115,11 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
   Future<void> setFeedDensity(FeedDensity density) async {
     await _prefs.setString(_feedDensityKey, density.persistKey);
     state = state.copyWith(feedDensity: density);
+  }
+
+  Future<void> setPrefetchMedia(bool value) async {
+    await _prefs.setBool(_prefetchMediaKey, value);
+    state = state.copyWith(prefetchMedia: value);
   }
 }
 

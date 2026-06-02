@@ -55,6 +55,14 @@ class SettingsScreen extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showFeedDensityPicker(context, settings, notifier),
             ),
+            SwitchListTile(
+              title: const Text('Prefetch feed images'),
+              subtitle: const Text(
+                'Preload images for upcoming posts for smoother browsing.',
+              ),
+              value: settings.prefetchMedia,
+              onChanged: (v) => notifier.setPrefetchMedia(v),
+            ),
           ]),
           const _SectionHeader(label: 'Comments'),
           _SettingsCard(children: [
