@@ -12,6 +12,7 @@ import '../../domain/enums/vote_direction.dart';
 import '../utils/interaction_helpers.dart';
 import '../utils/open_url.dart';
 import '../widgets/bottom_sheet_menu.dart';
+import '../widgets/comment_composer_sheet.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
 import '../widgets/media_viewer.dart';
@@ -30,10 +31,6 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
-  final _commentController = TextEditingController();
-  bool _isSending = false;
-  String? _replyToId;
-  String? _replyToName;
   CommentSort _commentSort = CommentSort.best;
   bool _sensitiveRevealed = false;
 
@@ -54,33 +51,19 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _sendComment() async {
-    final text = _commentController.text.trim();
-    if (text.isEmpty) return;
-    final account = ref.read(activeAccountProvider);
-    if (account == null) return;
-
-    setState(() => _isSending = true);
-    try {
-      final repo = ref.read(commentRepositoryProvider);
-      await repo.reply(
-        thingId: _replyToId ?? widget.post.fullname,
-        text: text,
-        sessionCookie: account.sessionCookie,
-      );
-      _commentController.clear();
-      setState(() {
-        _isSending = false;
-        _replyToId = null;
-        _replyToName = null;
-      });
-      if (mounted) {
+  void _openComposer({
+    String? thingId,
+    String? parentAuthor,
+    String? parentBody,
+  }) {
+    showCommentComposerSheet(
+      context,
+      thingId: thingId ?? widget.post.fullname,
+      parentAuthor: parentAuthor,
+      parentBody: parentBody,
+    ).then((posted) {
+      if (posted == true && context.mounted) {
+        ref.invalidate(postDetailProvider(_postDetailParams()));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Comment posted'),
@@ -88,22 +71,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           ),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to post: $e')),
-        );
-      }
-      setState(() => _isSending = false);
-    }
+    });
   }
 
-  void _replyToComment(String commentId, String author) {
-    setState(() {
-      _replyToId = commentId;
-      _replyToName = author;
-    });
-    _commentController.text = '';
+  void _replyToComment(String commentId, String author, String? body) {
+    _openComposer(
+      thingId: commentId,
+      parentAuthor: author,
+      parentBody: body,
+    );
   }
 
   @override
@@ -406,12 +382,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ],
           ),
         ),
-        if (loggedIn) _buildInputBar(theme),
+        if (loggedIn) _buildInputBar(theme, postFullname),
       ],
     );
   }
 
-  Widget _buildInputBar(ThemeData theme) {
+  Widget _buildInputBar(ThemeData theme, String postFullname) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -421,60 +397,26 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       ),
       padding: EdgeInsets.only(
         left: 12,
-        right: 8,
+        right: 12,
         top: 8,
         bottom: MediaQuery.of(context).padding.bottom + 8,
       ),
-      child: Row(
-        children: [
-          if (_replyToName != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: Chip(
-                label: Text('@$_replyToName',
-                    style: const TextStyle(fontSize: 12)),
-                deleteIcon: const Icon(Icons.close, size: 16),
-                onDeleted: () => setState(() {
-                  _replyToId = null;
-                  _replyToName = null;
-                }),
-                visualDensity: VisualDensity.compact,
+      child: InkWell(
+        onTap: () => _openComposer(thingId: postFullname),
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          children: [
+            Icon(Icons.edit_outlined,
+                size: 18, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text(
+              'Add a comment...',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-          Expanded(
-            child: TextField(
-              controller: _commentController,
-              decoration: InputDecoration(
-                hintText: _replyToName != null
-                    ? 'Reply to @$_replyToName...'
-                    : 'Add a comment...',
-                border: InputBorder.none,
-                isDense: true,
-              ),
-              maxLines: 4,
-              minLines: 1,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendComment(),
-            ),
-          ),
-          if (_isSending)
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: Center(
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.send),
-              onPressed: _sendComment,
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

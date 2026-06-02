@@ -13,7 +13,7 @@ class CommentTree extends StatefulWidget {
   final void Function(String fullname, VoteDirection direction)? onVote;
   final Map<String, bool> saveOverrides;
   final void Function(String fullname)? onSave;
-  final void Function(String commentId, String author)? onReply;
+  final void Function(String fullname, String author, String? body)? onReply;
   final void Function(String author)? onAuthorTap;
   final void Function(String fullname)? onDelete;
   final void Function(String fullname)? onEdit;
@@ -203,8 +203,9 @@ class _CommentTreeState extends State<CommentTree> {
                                   if (widget.onReply != null)
                                     InkWell(
                                       onTap: () => widget.onReply!(
-                                          widget.comment.id,
-                                          widget.comment.author),
+                                          widget.comment.fullname,
+                                          widget.comment.author,
+                                          widget.comment.body),
                                       child: Icon(
                                         Icons.reply_outlined,
                                         size: 16,
