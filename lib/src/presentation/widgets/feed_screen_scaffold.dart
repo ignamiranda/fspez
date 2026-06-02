@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/app_settings.dart';
 import '../../data/auth_providers.dart';
@@ -89,7 +90,92 @@ class FeedScreenScaffold extends ConsumerWidget {
     final postList = PostList(
       scrollController: scrollController,
       posts: state.items,
-      onRefresh: () async => notifier.refresh(),
+      onRefresh: () async {
+        HapticFeedback.mediumImpact();
+
+        final previousState = state;
+        final previousIds =
+            previousState.items.map((p) => p.fullname).toSet();
+
+        String? anchorId;
+        if (scrollController.hasClients &&
+            scrollController.offset > 0 &&
+            previousState.items.isNotEmpty) {
+          anchorId = previousState.items[0].fullname;
+        }
+
+        try {
+          await notifier.refresh();
+
+          final newState = ref.read(feedPageProvider(config));
+
+          if (newState.error != null) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(const SnackBar(
+                  content: Text('Could not refresh'),
+                  duration: Duration(seconds: 2),
+                ));
+            }
+            return;
+          }
+
+          final newIds =
+              newState.items.map((p) => p.fullname).toSet();
+          final addedCount = newIds.difference(previousIds).length;
+
+          if (addedCount > 0) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(
+                  content: Text(addedCount == 1
+                      ? '1 new post loaded'
+                      : '$addedCount new posts loaded'),
+                  duration: const Duration(seconds: 2),
+                ));
+            }
+          } else if (previousIds.isNotEmpty) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(const SnackBar(
+                  content: Text("You're up to date"),
+                  duration: Duration(seconds: 2),
+                ));
+            }
+          }
+
+          if (anchorId != null && scrollController.hasClients) {
+            final oldIndex = previousState.items
+                .indexWhere((p) => p.fullname == anchorId);
+            final newIndex = newState.items
+                .indexWhere((p) => p.fullname == anchorId);
+            if (oldIndex >= 0 && newIndex >= 0) {
+              final itemsShift = newIndex - oldIndex;
+              if (itemsShift > 0) {
+                final estimatedShift = itemsShift * 120.0;
+                final newOffset =
+                    (scrollController.offset + estimatedShift).clamp(
+                  0.0,
+                  scrollController.position.maxScrollExtent,
+                );
+                scrollController.jumpTo(newOffset);
+              }
+            }
+          }
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(const SnackBar(
+                content: Text('Could not refresh'),
+                duration: Duration(seconds: 2),
+              ));
+          }
+        }
+      },
       showStickiedIndicator: config.kind == FeedPageKind.subreddit,
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,

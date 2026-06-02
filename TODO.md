@@ -6,7 +6,6 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 
 ## Ranked handoffs
 
-- `handoffs/2026-05-27-pull-to-refresh-polish-handoff.md` — core mobile feed interaction polish; high frequency user action.
 - `handoffs/2026-05-27-mobile-comment-composer-handoff.md` — high-frequency mobile interaction polish: bottom-sheet composer, markdown preview, draft preservation on dismiss, keyboard-safe layout, parent context preview.
 - `handoffs/2026-05-27-gesture-first-media-browsing-handoff.md` — makes existing media viewer feel native-mobile-quality.
 - `handoffs/2026-05-27-media-post-submission-handoff.md` — major official-app parity gap: create image/gallery/video posts, not just text/link.
@@ -57,6 +56,7 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 
 ## Completed
 
+- **Pull-to-refresh polish** — Added haptic feedback on pull (`HapticFeedback.mediumImpact()`), refresh result snackbars ("N new posts loaded", "You're up to date", "Could not refresh"), and scroll-position preservation (anchor to first item after new content loads). Applied to both main feed and subreddit feed via `FeedScreenScaffold.onRefresh`. Handoff file deleted.
 - **Inbox unread badge** — Already implemented in current codebase: `/message/unread.json` fetch path, unread count provider wiring, `_MainShell` badge UI, and notifier refresh behavior for initial load/mark-as-read flows. Handoff removed as complete.
 - **Centralize Reddit thing actions** — Added `PostActionsService` and provider wiring to route post vote/save/hide/unhide/delete/edit through one use-case service while preserving existing notifier semantics. Feed/detail/edit UI now call the service instead of directly coordinating action notifiers. Added service tests for routing and optimistic save/vote/hide/delete/edit behavior. All 200 tests pass.
 - **Standardize paginated list state** — Created `PaginatedResult<T>` and `PaginatedNotifier<T>` concrete base class. Eliminated `FeedPageState` (replaced with `PaginatedListState<Post>`) and `SearchResultPage<T>` (replaced with `PaginatedResult<T>`). `FeedPageNotifier` and search providers now extend `PaginatedNotifier<T>`, removing ~80 lines of boilerplate. `InboxNotifier` remains on `CursorPaginatedNotifier` (has extra state). All 194 tests pass.
