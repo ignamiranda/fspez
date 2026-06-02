@@ -14,6 +14,8 @@ import 'package:video_player/video_player.dart';
 /// - Pinch-to-zoom via [InteractiveViewer] (images only)
 /// - Double-tap to zoom in/out (images only)
 /// - Tap to toggle chrome (close button + page indicator)
+/// - Drag down to dismiss (images only, when not zoomed)
+/// - Zoom state disables gallery swipe
 class MediaViewer extends StatefulWidget {
   final List<String> imageUrls;
   final String? videoUrl;
@@ -56,9 +58,15 @@ class MediaViewer extends StatefulWidget {
           initiallyRevealed: initiallyRevealed,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
+          return ScaleTransition(
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: const Cubic(0.2, 0.0, 0.0, 1.0),
+            ),
+            child: FadeTransition(opacity: animation, child: child),
+          );
         },
-        transitionDuration: const Duration(milliseconds: 200),
+        transitionDuration: const Duration(milliseconds: 250),
       ),
     );
   }
@@ -73,6 +81,7 @@ class _MediaViewerState extends State<MediaViewer> {
   bool _chromeVisible = true;
   bool _revealed = false;
   double _dragOffset = 0;
+  bool _anyPageZoomed = false;
   Timer? _chromeTimer;
 
   static const _chromeAutoHideDuration = Duration(seconds: 4);
@@ -149,6 +158,9 @@ class _MediaViewerState extends State<MediaViewer> {
                   ignoring: !_revealed,
                   child: PageView.builder(
                     controller: _pageController,
+                    physics: _anyPageZoomed
+                        ? const NeverScrollableScrollPhysics()
+                        : const PageScrollPhysics(),
                     itemCount: widget._pageCount,
                     onPageChanged: (i) => setState(() => _currentIndex = i),
                     itemBuilder: (context, index) {
@@ -164,6 +176,9 @@ class _MediaViewerState extends State<MediaViewer> {
                         onTap: _toggleChrome,
                         onDragUpdate: _onDismissUpdate,
                         onDragEnd: _onDismissEnd,
+                        onZoomChanged: (zoomed) {
+                          if (mounted) setState(() => _anyPageZoomed = zoomed);
+                        },
                       );
                     },
                   ),
@@ -461,12 +476,16 @@ class _ZoomableImagePage extends StatefulWidget {
   final VoidCallback onTap;
   final ValueChanged<double>? onDragUpdate;
   final VoidCallback? onDragEnd;
+  final ValueChanged<bool>? onZoomChanged;
+  final bool enableDismiss;
 
   const _ZoomableImagePage({
     required this.imageUrl,
     required this.onTap,
     this.onDragUpdate,
     this.onDragEnd,
+    this.onZoomChanged,
+    this.enableDismiss = true,
   });
 
   @override
@@ -548,11 +567,19 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
     return size.width / size.height < _longImageAspectRatioThreshold;
   }
 
+  void _updateZoomState() {
+    final zoomed = _transformationController.value.getMaxScaleOnAxis() > 1.1;
+    if (zoomed != _isZoomed) {
+      setState(() => _isZoomed = zoomed);
+      widget.onZoomChanged?.call(zoomed);
+    }
+  }
+
   void _onDoubleTap() {
     final scale = _transformationController.value.getMaxScaleOnAxis();
     if (scale > 1.1) {
       _transformationController.value = Matrix4.identity();
-      _isZoomed = false;
+      _updateZoomState();
     } else {
       final tapPos = _doubleTapDownPosition ??
           Offset(
@@ -565,19 +592,21 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
         ..scale(3.0)
         ..translate(-tapPos.dx, -tapPos.dy);
       _transformationController.value = newMatrix;
-      _isZoomed = true;
+      _updateZoomState();
     }
   }
 
   void _onInteractionStart(ScaleStartDetails details) {
-    _isZoomed = _transformationController.value.getMaxScaleOnAxis() > 1.1;
+    _updateZoomState();
   }
 
   void _onInteractionUpdate(ScaleUpdateDetails details) {
-    final scale = _transformationController.value.getMaxScaleOnAxis();
-    _isZoomed = scale > 1.1;
+    _updateZoomState();
 
-    if (details.pointerCount == 1 && !_isZoomed) {
+    if (widget.enableDismiss &&
+        !_isLongImage &&
+        details.pointerCount == 1 &&
+        !_isZoomed) {
       final dy = details.focalPointDelta.dy;
       if (dy > 0) {
         widget.onDragUpdate?.call(dy);
@@ -606,7 +635,7 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
     return GestureDetector(
       onTap: widget.onTap,
       onDoubleTapDown: (d) => _doubleTapDownPosition = d.localPosition,
-      onDoubleTap: _isLongImage ? null : _onDoubleTap,
+      onDoubleTap: _onDoubleTap,
       child: _isLongImage ? _buildLongImage(context) : _buildZoomableImage(),
     );
   }
@@ -658,42 +687,47 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
   Widget _buildLongImage(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+        return InteractiveViewer(
+          transformationController: _transformationController,
+          minScale: 1.0,
+          maxScale: 5.0,
+          boundaryMargin: _isZoomed
+              ? const EdgeInsets.all(double.infinity)
+              : EdgeInsets.zero,
+          onInteractionStart: _onInteractionStart,
+          onInteractionUpdate: _onInteractionUpdate,
+          onInteractionEnd: _onInteractionEnd,
           child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: constraints.maxWidth),
-              child: _errored
-                  ? const Icon(Icons.broken_image_outlined,
-                      color: Colors.white38, size: 48)
-                  : Image.network(
-                      widget.imageUrl,
-                      width: constraints.maxWidth,
-                      fit: BoxFit.fitWidth,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        final total =
-                            loadingProgress.expectedTotalBytes?.toDouble();
-                        final progress = total != null
-                            ? loadingProgress.cumulativeBytesLoaded / total
-                            : null;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white54,
-                            value: progress,
-                            strokeWidth: 2,
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) setState(() => _errored = true);
-                        });
-                        return const Icon(Icons.broken_image_outlined,
-                            color: Colors.white38, size: 48);
-                      },
-                    ),
-            ),
+            child: _errored
+                ? const Icon(Icons.broken_image_outlined,
+                    color: Colors.white38, size: 48)
+                : Image.network(
+                    widget.imageUrl,
+                    width: constraints.maxWidth,
+                    fit: BoxFit.fitWidth,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      final total =
+                          loadingProgress.expectedTotalBytes?.toDouble();
+                      final progress = total != null
+                          ? loadingProgress.cumulativeBytesLoaded / total
+                          : null;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white54,
+                          value: progress,
+                          strokeWidth: 2,
+                        ),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) setState(() => _errored = true);
+                      });
+                      return const Icon(Icons.broken_image_outlined,
+                          color: Colors.white38, size: 48);
+                    },
+                  ),
           ),
         );
       },
