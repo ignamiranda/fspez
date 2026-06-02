@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -71,6 +72,11 @@ class _MediaViewerState extends State<MediaViewer> {
   late int _currentIndex;
   bool _chromeVisible = true;
   bool _revealed = false;
+  double _dragOffset = 0;
+  Timer? _chromeTimer;
+
+  static const _chromeAutoHideDuration = Duration(seconds: 4);
+  static const _dismissThreshold = 150.0;
 
   @override
   void initState() {
@@ -78,19 +84,44 @@ class _MediaViewerState extends State<MediaViewer> {
     _currentIndex = widget.initialIndex.clamp(0, widget._pageCount - 1);
     _pageController = PageController(initialPage: _currentIndex);
     _revealed = widget.initiallyRevealed || !widget.isNsfw && !widget.isSpoiler;
+    _startChromeTimer();
   }
 
   @override
   void dispose() {
+    _chromeTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
-  void _toggleChrome() => setState(() => _chromeVisible = !_chromeVisible);
+  void _startChromeTimer() {
+    _chromeTimer?.cancel();
+    _chromeTimer = Timer(_chromeAutoHideDuration, () {
+      if (mounted && _chromeVisible) setState(() => _chromeVisible = false);
+    });
+  }
+
+  void _toggleChrome() {
+    setState(() => _chromeVisible = !_chromeVisible);
+    if (_chromeVisible) _startChromeTimer();
+  }
 
   void _reveal() => setState(() => _revealed = true);
 
   void _close() => Navigator.of(context).pop();
+
+  void _onDismissUpdate(double delta) {
+    if (_hasVideo && _currentIndex == 0) return;
+    setState(() => _dragOffset = (_dragOffset + delta).clamp(0.0, 400.0));
+  }
+
+  void _onDismissEnd() {
+    if (_dragOffset > _dismissThreshold) {
+      _close();
+    } else {
+      setState(() => _dragOffset = 0);
+    }
+  }
 
   bool get _hasVideo => widget.videoUrl != null;
 
@@ -99,101 +130,111 @@ class _MediaViewerState extends State<MediaViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final dismissProgress = (_dragOffset / _dismissThreshold).clamp(0.0, 1.0);
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Main media page view
-          ImageFiltered(
-            imageFilter: !_revealed
-                ? ImageFilter.blur(sigmaX: 18, sigmaY: 18)
-                : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-            child: IgnorePointer(
-              ignoring: !_revealed,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: widget._pageCount,
-                onPageChanged: (i) => setState(() => _currentIndex = i),
-                itemBuilder: (context, index) {
-                  if (_hasVideo && index == 0) {
-                    return _VideoPage(
-                      videoUrl: widget.videoUrl!,
-                      onTap: _toggleChrome,
-                    );
-                  }
-                  final imageIndex = _imagePageIndex(index);
-                  return _ZoomableImagePage(
-                    imageUrl: widget.imageUrls[imageIndex],
-                    onTap: _toggleChrome,
-                  );
-                },
-              ),
-            ),
-          ),
-
-          if (!_revealed)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _reveal,
-                child: Container(
-                  color: Colors.black54,
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (widget.isNsfw)
-                            _SensitivePill(
-                              label: 'NSFW',
-                              color: Colors.redAccent,
-                            ),
-                          if (widget.isNsfw && widget.isSpoiler)
-                            const SizedBox(width: 6),
-                          if (widget.isSpoiler)
-                            _SensitivePill(
-                              label: 'Spoiler',
-                              color: Colors.amber,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Tap to reveal',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ],
+      body: Transform.translate(
+        offset: Offset(0, _dragOffset),
+        child: Opacity(
+          opacity: 1.0 - dismissProgress * 0.4,
+          child: Stack(
+            children: [
+              // Main media page view
+              ImageFiltered(
+                imageFilter: !_revealed
+                    ? ImageFilter.blur(sigmaX: 18, sigmaY: 18)
+                    : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                child: IgnorePointer(
+                  ignoring: !_revealed,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget._pageCount,
+                    onPageChanged: (i) => setState(() => _currentIndex = i),
+                    itemBuilder: (context, index) {
+                      if (_hasVideo && index == 0) {
+                        return _VideoPage(
+                          videoUrl: widget.videoUrl!,
+                          onTap: _toggleChrome,
+                        );
+                      }
+                      final imageIndex = _imagePageIndex(index);
+                      return _ZoomableImagePage(
+                        imageUrl: widget.imageUrls[imageIndex],
+                        onTap: _toggleChrome,
+                        onDragUpdate: _onDismissUpdate,
+                        onDragEnd: _onDismissEnd,
+                      );
+                    },
                   ),
                 ),
               ),
-            ),
 
-          // Chrome overlay
-          if (_chromeVisible) ...[
-            // Top close button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 8,
-              child: _ChromeButton(
-                icon: Icons.close,
-                onTap: _close,
-              ),
-            ),
-
-            // Bottom page indicator
-            if (widget._pageCount > 1)
-              Positioned(
-                bottom: MediaQuery.of(context).padding.bottom + 16,
-                left: 0,
-                right: 0,
-                child: _PageIndicator(
-                  currentIndex: _currentIndex,
-                  count: widget._pageCount,
+              if (!_revealed)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _reveal,
+                    child: Container(
+                      color: Colors.black54,
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (widget.isNsfw)
+                                _SensitivePill(
+                                  label: 'NSFW',
+                                  color: Colors.redAccent,
+                                ),
+                              if (widget.isNsfw && widget.isSpoiler)
+                                const SizedBox(width: 6),
+                              if (widget.isSpoiler)
+                                _SensitivePill(
+                                  label: 'Spoiler',
+                                  color: Colors.amber,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Tap to reveal',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-          ],
-        ],
+
+              // Chrome overlay
+              if (_chromeVisible) ...[
+                // Top close button
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  left: 8,
+                  child: _ChromeButton(
+                    icon: Icons.close,
+                    onTap: _close,
+                  ),
+                ),
+
+                // Bottom page indicator
+                if (widget._pageCount > 1)
+                  Positioned(
+                    bottom: MediaQuery.of(context).padding.bottom + 16,
+                    left: 0,
+                    right: 0,
+                    child: _PageIndicator(
+                      currentIndex: _currentIndex,
+                      count: widget._pageCount,
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -418,10 +459,14 @@ class _VideoSeekBar extends StatelessWidget {
 class _ZoomableImagePage extends StatefulWidget {
   final String imageUrl;
   final VoidCallback onTap;
+  final ValueChanged<double>? onDragUpdate;
+  final VoidCallback? onDragEnd;
 
   const _ZoomableImagePage({
     required this.imageUrl,
     required this.onTap,
+    this.onDragUpdate,
+    this.onDragEnd,
   });
 
   @override
@@ -430,6 +475,8 @@ class _ZoomableImagePage extends StatefulWidget {
 
 class _ZoomableImagePageState extends State<_ZoomableImagePage> {
   final _transformationController = TransformationController();
+  Offset? _doubleTapDownPosition;
+  bool _isZoomed = false;
   ImageStream? _imageStream;
   ImageStreamListener? _imageStreamListener;
   Size? _imageSize;
@@ -505,15 +552,43 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
     final scale = _transformationController.value.getMaxScaleOnAxis();
     if (scale > 1.1) {
       _transformationController.value = Matrix4.identity();
+      _isZoomed = false;
     } else {
-      final size = MediaQuery.of(context).size;
-      final center = Offset(size.width / 2, size.height / 2);
+      final tapPos = _doubleTapDownPosition ??
+          Offset(
+            MediaQuery.of(context).size.width / 2,
+            MediaQuery.of(context).size.height / 2,
+          );
       // ignore: deprecated_member_use
       final newMatrix = Matrix4.identity()
-        ..translate(center.dx, center.dy) // ignore: deprecated_member_use
-        ..scale(3.0) // ignore: deprecated_member_use
-        ..translate(-center.dx, -center.dy);
+        ..translate(tapPos.dx, tapPos.dy)
+        ..scale(3.0)
+        ..translate(-tapPos.dx, -tapPos.dy);
       _transformationController.value = newMatrix;
+      _isZoomed = true;
+    }
+  }
+
+  void _onInteractionStart(ScaleStartDetails details) {
+    _isZoomed = _transformationController.value.getMaxScaleOnAxis() > 1.1;
+  }
+
+  void _onInteractionUpdate(ScaleUpdateDetails details) {
+    final scale = _transformationController.value.getMaxScaleOnAxis();
+    _isZoomed = scale > 1.1;
+
+    if (details.pointerCount == 1 && !_isZoomed) {
+      final dy = details.focalPointDelta.dy;
+      if (dy > 0) {
+        widget.onDragUpdate?.call(dy);
+      }
+    }
+  }
+
+  void _onInteractionEnd(ScaleEndDetails details) {
+    widget.onDragEnd?.call();
+    if (!_isZoomed) {
+      _transformationController.value = Matrix4.identity();
     }
   }
 
@@ -530,6 +605,7 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
 
     return GestureDetector(
       onTap: widget.onTap,
+      onDoubleTapDown: (d) => _doubleTapDownPosition = d.localPosition,
       onDoubleTap: _isLongImage ? null : _onDoubleTap,
       child: _isLongImage ? _buildLongImage(context) : _buildZoomableImage(),
     );
@@ -540,7 +616,12 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
       transformationController: _transformationController,
       minScale: 1.0,
       maxScale: 5.0,
-      boundaryMargin: const EdgeInsets.all(double.infinity),
+      boundaryMargin: _isZoomed
+          ? const EdgeInsets.all(double.infinity)
+          : EdgeInsets.zero,
+      onInteractionStart: _onInteractionStart,
+      onInteractionUpdate: _onInteractionUpdate,
+      onInteractionEnd: _onInteractionEnd,
       child: Center(
         child: _errored
             ? const Icon(Icons.broken_image_outlined,

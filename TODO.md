@@ -7,7 +7,7 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 ## Ranked handoffs
 
 - ~~`handoffs/2026-05-27-mobile-comment-composer-handoff.md`~~ — done: bottom-sheet composer, markdown toolbar, preview toggle, parent-context preview, draft preservation, keyboard-safe layout, inline error handling.
-- `handoffs/2026-05-27-gesture-first-media-browsing-handoff.md` — makes existing media viewer feel native-mobile-quality.
+- ~~`handoffs/2026-05-27-gesture-first-media-browsing-handoff.md`~~ — done: drag-down-to-dismiss, double-tap zoom to tapped region, chrome auto-hide timer.
 - `handoffs/2026-05-27-media-post-submission-handoff.md` — major official-app parity gap: create image/gallery/video posts, not just text/link.
 - `handoffs/2026-05-27-scroll-to-top-tab-double-tap-handoff.md` — high-frequency mobile UX polish; very cheap to implement; makes navigation feel native.
 - `handoffs/2026-05-27-post-flair-selection-handoff.md` — important for successful submissions in flair-required communities.
@@ -56,6 +56,7 @@ Ranking criteria: mobile Reddit parity, user-visible value, dependency-unblockin
 
 ## Completed
 
+- **Gesture-first media browsing** — Added drag-down-to-dismiss (Transform + Opacity, threshold 150px, clamped to 400px, disabled on video pages), double-tap zoom into tapped region (captures `onDoubleTapDown` position, zooms 3x into that point), chrome auto-hide timer (4s inactivity hides close button + page indicator, resets on tap). Integrated via `InteractiveViewer.onInteractionUpdate` for conflict-free gesture handling with boundary margin control.
 - **Mobile comment composer** — Created `CommentComposerSheet` reusable bottom-sheet with markdown toolbar (B/I/S/~link/quote/code/bullet), preview toggle, parent-context preview, send flow with loading/inline error, keyboard-safe layout, draft preservation on dismiss. Integrated into `PostDetailScreen` replacing inline input bar. Handoff file deleted.
 - **Pull-to-refresh polish** — Added haptic feedback on pull (`HapticFeedback.mediumImpact()`), refresh result snackbars ("N new posts loaded", "You're up to date", "Could not refresh"), and scroll-position preservation (anchor to first item after new content loads). Applied to both main feed and subreddit feed via `FeedScreenScaffold.onRefresh`. Handoff file deleted.
 - **Inbox unread badge** — Already implemented in current codebase: `/message/unread.json` fetch path, unread count provider wiring, `_MainShell` badge UI, and notifier refresh behavior for initial load/mark-as-read flows. Handoff removed as complete.
