@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/session_store.dart';
+import 'package:fspez/src/data/session_acquirer.dart';
 
 class _FakeCookieProvider implements CookieProvider {
   final String? _value;
@@ -36,10 +36,10 @@ class _DelayedCookieProvider implements CookieProvider {
 }
 
 void main() {
-  group('SessionStore.acquire', () {
+  group('SessionAcquirer.acquire', () {
     test('returns SessionCookie when provider returns a value', () async {
       final provider = _FakeCookieProvider('abc123');
-      final store = SessionStore(cookieProvider: provider);
+      final store = SessionAcquirer(cookieProvider: provider);
 
       final cookie = await store.acquire(maxAttempts: 5);
 
@@ -50,7 +50,7 @@ void main() {
 
     test('returns null when provider never returns a value', () async {
       final provider = _FakeCookieProvider(null);
-      final store = SessionStore(cookieProvider: provider);
+      final store = SessionAcquirer(cookieProvider: provider);
 
       final cookie = await store.acquire(maxAttempts: 3);
 
@@ -60,7 +60,7 @@ void main() {
 
     test('returns value after several attempts', () async {
       final provider = _DelayedCookieProvider('abc123', 3);
-      final store = SessionStore(cookieProvider: provider);
+      final store = SessionAcquirer(cookieProvider: provider);
 
       final cookie = await store.acquire(maxAttempts: 5);
 

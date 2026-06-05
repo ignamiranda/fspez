@@ -29,7 +29,7 @@ class AccountRepository {
           rawCookie: cookieRaw,
           modhash: cookieModhash,
         ),
-        isDefault: map['isDefault'] as bool? ?? false,
+
       );
     }).toList();
   }
@@ -90,7 +90,6 @@ class AccountRepository {
               'username': a.username,
               'cookieValue': a.sessionCookie.value,
               'cookieExpires': a.sessionCookie.expiresAt.toIso8601String(),
-              'isDefault': a.isDefault,
               if (a.sessionCookie.rawCookie != null)
                 'cookieRaw': a.sessionCookie.rawCookie,
               if (a.sessionCookie.modhash != null)

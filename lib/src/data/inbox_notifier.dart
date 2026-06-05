@@ -1,13 +1,13 @@
 import 'package:equatable/equatable.dart';
-import '../domain/models/message.dart';
-import '../domain/models/message_feed.dart';
+import '../domain/models/inbox_item.dart';
+import '../domain/models/inbox_feed.dart';
 import '../domain/models/account.dart';
 import 'inbox_repository.dart';
 import 'cursor_paginated_notifier.dart';
 
 class InboxState with EquatableMixin {
   final InboxTab tab;
-  final List<Message> messages;
+  final List<InboxItem> messages;
   final bool isLoading;
   final bool isLoadingMore;
   final String? error;
@@ -15,7 +15,7 @@ class InboxState with EquatableMixin {
   final int unreadCount;
 
   const InboxState({
-    this.tab = InboxTab.inbox,
+    this.tab = InboxTab.all,
     this.messages = const [],
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -26,7 +26,7 @@ class InboxState with EquatableMixin {
 
   InboxState copyWith({
     InboxTab? tab,
-    List<Message>? messages,
+    List<InboxItem>? messages,
     bool? isLoading,
     bool? isLoadingMore,
     String? error,
@@ -50,7 +50,7 @@ class InboxState with EquatableMixin {
       [tab, messages, isLoading, isLoadingMore, error, hasMore, unreadCount];
 }
 
-class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
+class InboxNotifier extends CursorPaginatedNotifier<InboxState, InboxFeed> {
   final InboxRepository _repository;
   final Account? _account;
 
@@ -58,7 +58,7 @@ class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
       : super(const InboxState(isLoading: true), autoLoad: false) {
     if (autoLoad) {
       Future.microtask(() async {
-        await loadTab(InboxTab.inbox);
+        await loadTab(InboxTab.all);
         await refreshUnreadCount();
       });
     }
@@ -71,10 +71,10 @@ class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
       final feed = await _fetch(tab, after: null);
       after = feed.after;
       state = state.copyWith(
-        messages: feed.messages,
+        messages: feed.items,
         isLoading: false,
         hasMore: feed.hasMorePages,
-        unreadCount: tab == InboxTab.unread ? feed.messages.length : null,
+        unreadCount: tab == InboxTab.unread ? feed.items.length : null,
       );
     } catch (e) {
       state = state.copyWith(
@@ -84,10 +84,10 @@ class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
     }
   }
 
-  Future<MessageFeed> _fetch(InboxTab tab, {String? after}) {
+  Future<InboxFeed> _fetch(InboxTab tab, {String? after}) {
     final cookie = _account?.sessionCookie;
     return switch (tab) {
-      InboxTab.inbox =>
+      InboxTab.all =>
         _repository.fetchInbox(after: after, sessionCookie: cookie),
       InboxTab.unread =>
         _repository.fetchUnread(after: after, sessionCookie: cookie),
@@ -105,13 +105,13 @@ class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
 
     try {
       final feed = await _repository.fetchUnread(sessionCookie: cookie);
-      state = state.copyWith(unreadCount: feed.messages.length);
+      state = state.copyWith(unreadCount: feed.items.length);
     } catch (_) {
       // Keep the last known badge count; inbox loading errors are shown in-tab.
     }
   }
 
-  Future<void> markAsRead(Message message) async {
+  Future<void> markAsRead(InboxItem message) async {
     final cookie = _account?.sessionCookie;
     if (cookie == null || !message.isNew) return;
 
@@ -137,11 +137,11 @@ class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
   }
 
   @override
-  Future<MessageFeed> fetchPage({String? after}) =>
+  Future<InboxFeed> fetchPage({String? after}) =>
       _fetch(state.tab, after: after);
 
   @override
-  String? extractAfter(MessageFeed page) => page.after;
+  String? extractAfter(InboxFeed page) => page.after;
 
   @override
   InboxState buildLoadingState(InboxState current) => InboxState(
@@ -151,13 +151,13 @@ class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
       );
 
   @override
-  InboxState buildSuccessState(MessageFeed page) => InboxState(
+  InboxState buildSuccessState(InboxFeed page) => InboxState(
         tab: page.tab,
-        messages: page.messages,
+        messages: page.items,
         isLoading: false,
         hasMore: page.hasMorePages,
         unreadCount: page.tab == InboxTab.unread
-            ? page.messages.length
+            ? page.items.length
             : state.unreadCount,
       );
 
@@ -166,9 +166,9 @@ class InboxNotifier extends CursorPaginatedNotifier<InboxState, MessageFeed> {
       current.copyWith(isLoadingMore: true);
 
   @override
-  InboxState buildAppendedState(InboxState current, MessageFeed page) =>
+  InboxState buildAppendedState(InboxState current, InboxFeed page) =>
       current.copyWith(
-        messages: [...current.messages, ...page.messages],
+        messages: [...current.messages, ...page.items],
         isLoadingMore: false,
         hasMore: page.hasMorePages,
       );

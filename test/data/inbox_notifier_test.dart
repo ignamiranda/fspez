@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/inbox_notifier.dart';
 import 'package:fspez/src/data/inbox_repository.dart';
 import 'package:fspez/src/domain/models/account.dart';
-import 'package:fspez/src/domain/models/message.dart';
-import 'package:fspez/src/domain/models/message_feed.dart';
+import 'package:fspez/src/domain/models/inbox_item.dart';
+import 'package:fspez/src/domain/models/inbox_feed.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -27,7 +27,7 @@ class _TestInboxNotifier extends InboxNotifier {
   }
 }
 
-Message _message({required bool isNew}) => Message(
+DirectMessage _message({required bool isNew}) => DirectMessage(
       id: 'm1',
       subject: 'Subject',
       body: 'Body',
@@ -63,11 +63,19 @@ void main() {
   group('refreshUnreadCount', () {
     test('fetches unread count and stores badge value', () async {
       when(() => repository.fetchUnread(sessionCookie: cookie)).thenAnswer(
-        (_) async => MessageFeed(
+        (_) async => InboxFeed(
           tab: InboxTab.unread,
-          messages: [
+          items: [
             _message(isNew: true),
-            _message(isNew: true).copyWith(id: 'm2'),
+            DirectMessage(
+              id: 'm2',
+              subject: 'Subject',
+              body: 'Body',
+              author: 'alice',
+              dest: 'bob',
+              createdAt: DateTime.utc(2024, 1, 1),
+              isNew: true,
+            ),
           ],
         ),
       );
@@ -98,7 +106,7 @@ void main() {
       final message = _message(isNew: true);
       final notifier = _TestInboxNotifier(repository, account)
         ..state = InboxState(
-          tab: InboxTab.inbox,
+          tab: InboxTab.all,
           messages: [message],
           unreadCount: 3,
         );
@@ -117,7 +125,7 @@ void main() {
       final message = _message(isNew: true);
       final notifier = _TestInboxNotifier(repository, account)
         ..state = InboxState(
-          tab: InboxTab.inbox,
+          tab: InboxTab.all,
           messages: [message],
           unreadCount: 3,
         );
@@ -125,9 +133,9 @@ void main() {
       when(() => repository.markAsRead(message.fullname, cookie))
           .thenThrow(Exception('boom'));
       when(() => repository.fetchUnread(sessionCookie: cookie)).thenAnswer(
-        (_) async => MessageFeed(
+        (_) async => InboxFeed(
           tab: InboxTab.unread,
-          messages: [_message(isNew: true)],
+          items: [_message(isNew: true)],
         ),
       );
 

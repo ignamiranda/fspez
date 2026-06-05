@@ -250,6 +250,9 @@ class ApiComment {
   final List<dynamic>? authorFlairRichtext;
   final String? authorFlairBackgroundColor;
   final String? authorFlairTextColor;
+  final String? linkTitle;
+  final String? linkPermalink;
+  final String? commentSubreddit;
 
   ApiComment({
     required this.id,
@@ -272,6 +275,9 @@ class ApiComment {
     this.authorFlairRichtext,
     this.authorFlairBackgroundColor,
     this.authorFlairTextColor,
+    this.linkTitle,
+    this.linkPermalink,
+    this.commentSubreddit,
   });
 
   factory ApiComment.fromJson(Map<String, dynamic> data) {
@@ -311,6 +317,9 @@ class ApiComment {
       authorFlairBackgroundColor:
           data['author_flair_background_color'] as String?,
       authorFlairTextColor: data['author_flair_text_color'] as String?,
+      linkTitle: data['link_title'] as String?,
+      linkPermalink: data['link_permalink'] as String?,
+      commentSubreddit: data['subreddit'] as String?,
     );
   }
 }

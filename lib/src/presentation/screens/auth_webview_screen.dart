@@ -38,7 +38,6 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         username: username,
         sessionCookie: cookie,
-        isDefault: true,
       );
 
       await ref.read(activeAccountProvider.notifier).addAccount(account);

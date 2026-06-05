@@ -71,7 +71,6 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
       id: current.id,
       username: current.username,
       sessionCookie: newCookie,
-      isDefault: current.isDefault,
     );
     await _repository.save(updated);
     state = updated;

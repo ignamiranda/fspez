@@ -20,14 +20,6 @@ _Avoid_: Message (when referring to the union), Thing
 The inbox listing surface in the app. Groups InboxItems into tabs (All, Unread, Sent). Supports pagination and mark-as-read.
 _Avoid_: Messages, MessageFeed
 
-**DirectMessage**:
-A private message between two Accounts. Has subject, body, author, and destination. Can be composed as a Draft. Appears in the Inbox as an InboxItem.
-_Avoid_: Message, PM
-
-**CommentNotification**:
-A comment reply or username mention that arrived in the Inbox. Carries the underlying comment plus inbox-specific metadata (read state, context link). Appears in the Inbox as an InboxItem. Replying to a CommentNotification produces a Comment.
-_Avoid_: Message, inbox comment
-
 **OverviewItem**:
 A single item in a user's overview or saved listing. Reddit's overview mixes posts and comments authored by the same Account. An OverviewItem is either a Post or a Comment — never both.
 _Avoid_: Thing, UserContent

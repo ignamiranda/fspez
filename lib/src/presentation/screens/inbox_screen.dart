@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/inbox_providers.dart';
 import '../../data/inbox_notifier.dart';
-import '../../domain/models/message.dart';
-import '../../domain/models/message_feed.dart';
+import '../../domain/models/inbox_item.dart';
+import '../../domain/models/inbox_feed.dart';
 import '../tab_scroll_signal.dart';
 import '../utils/format_utils.dart';
 import '../utils/infinite_scroll.dart';
@@ -84,7 +84,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SegmentedButton<InboxTab>(
               segments: const [
-                ButtonSegment(value: InboxTab.inbox, label: Text('All')),
+                ButtonSegment(value: InboxTab.all, label: Text('All')),
                 ButtonSegment(value: InboxTab.unread, label: Text('Unread')),
                 ButtonSegment(value: InboxTab.sent, label: Text('Sent')),
               ],
@@ -167,7 +167,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           }
           final msg = state.messages[index];
           return _MessageTile(
-            message: msg,
+            item: msg,
             isExpanded: _expandedIds.contains(msg.id),
             onToggle: () {
               final id = msg.id;
@@ -183,9 +183,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 notifier.markAsRead(msg);
               }
             },
-            onReply: msg.isComment
-                ? null
-                : () {
+            onReply: msg is DirectMessage
+                ? () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => ComposeScreen(
@@ -196,7 +195,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                         ),
                       ),
                     );
-                  },
+                  }
+                : null,
           );
         },
       ),
@@ -205,13 +205,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
 }
 
 class _MessageTile extends StatelessWidget {
-  final Message message;
+  final InboxItem item;
   final bool isExpanded;
   final VoidCallback onToggle;
   final VoidCallback? onReply;
 
   const _MessageTile({
-    required this.message,
+    required this.item,
     required this.isExpanded,
     required this.onToggle,
     this.onReply,
@@ -231,7 +231,7 @@ class _MessageTile extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (message.isNew)
+                if (item.isNew)
                   Padding(
                     padding: const EdgeInsets.only(top: 6, right: 8),
                     child: CircleAvatar(
@@ -249,15 +249,15 @@ class _MessageTile extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              message.author,
+                              item.author,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: message.isNew
+                                fontWeight: item.isNew
                                     ? FontWeight.w600
                                     : FontWeight.normal,
                               ),
                             ),
                           ),
-                          if (message.isComment)
+                          if (item is CommentNotification)
                             Padding(
                               padding: const EdgeInsets.only(right: 4),
                               child: Icon(Icons.reply_outlined,
@@ -265,7 +265,7 @@ class _MessageTile extends StatelessWidget {
                                   color: theme.colorScheme.onSurfaceVariant),
                             ),
                           Text(
-                            timeAgo(message.createdAt),
+                            timeAgo(item.createdAt),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -274,19 +274,19 @@ class _MessageTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        message.subject,
+                        item.subject,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: message.isNew
+                          fontWeight: item.isNew
                               ? FontWeight.w600
                               : FontWeight.normal,
                         ),
                         maxLines: isExpanded ? null : 2,
                         overflow: isExpanded ? null : TextOverflow.ellipsis,
                       ),
-                      if (!isExpanded && message.body.isNotEmpty) ...[
+                      if (!isExpanded && item.body.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
-                          message.body,
+                          item.body,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -306,7 +306,7 @@ class _MessageTile extends StatelessWidget {
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
           child: isExpanded
-              ? _MessageBody(message: message, onReply: onReply)
+              ? _MessageBody(item: item, onReply: onReply)
               : const SizedBox.shrink(),
         ),
         const Divider(height: 1, indent: 16),
@@ -316,30 +316,25 @@ class _MessageTile extends StatelessWidget {
 }
 
 class _MessageBody extends StatelessWidget {
-  final Message message;
+  final InboxItem item;
   final VoidCallback? onReply;
 
-  const _MessageBody({required this.message, this.onReply});
+  const _MessageBody({required this.item, this.onReply});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final cn = item is CommentNotification ? item : null;
     return Padding(
       padding: const EdgeInsets.only(left: 34, right: 16, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (message.subreddit != null) ...[
+          if (cn != null && cn.subreddit != null) ...[
             Text(
-              'r/${message.subreddit}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 4),
-          ],
-          RedditBody(message.body),
+              'r/${cn.subreddit}',
+          RedditBody(item.body),
           if (onReply != null) ...[
             const SizedBox(height: 8),
             SizedBox(
@@ -355,7 +350,7 @@ class _MessageBody extends StatelessWidget {
               ),
             ),
           ],
-          if (message.replies.isNotEmpty) ...[
+          if (item.replies.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               'Replies',
@@ -364,7 +359,7 @@ class _MessageBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            ...message.replies.map(
+            ...item.replies.map(
               (reply) => Padding(
                 padding: const EdgeInsets.only(left: 12, top: 6),
                 child: Column(

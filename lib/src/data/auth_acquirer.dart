@@ -2,7 +2,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
 import 'cdp_cookie_provider.dart';
-import 'session_store.dart';
+import 'session_acquirer.dart';
 import 'modhash_fetcher.dart';
 import 'username_extractor.dart';
 
@@ -20,7 +20,7 @@ class AuthAcquirer {
     Duration interval = const Duration(milliseconds: 500),
   }) async {
     final provider = CdpCookieProvider(controller);
-    final store = SessionStore(cookieProvider: provider);
+    final store = SessionAcquirer(cookieProvider: provider);
     final cookie = await store.acquire(maxAttempts: maxAttempts, interval: interval);
     if (cookie == null) return null;
 

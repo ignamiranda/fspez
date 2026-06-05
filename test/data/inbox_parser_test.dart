@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/inbox_parser.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
+import 'package:fspez/src/domain/models/inbox_item.dart';
 
 void main() {
   late InboxParser parser;
@@ -43,13 +44,14 @@ void main() {
 
       expect(result.length, 2);
       expect(result[0].id, 'msg1');
+      expect(result[0], isA<DirectMessage>());
       expect(result[1].id, 'onfi1lw');
       expect(result[1].subject, 'comment reply');
-      expect(result[1].isComment, true);
-      expect(result[1].subreddit, 'cooladam');
+      expect(result[1], isA<CommentNotification>());
+      expect((result[1] as CommentNotification).subreddit, 'cooladam');
     });
 
-    test('parses all message fields from JSON', () {
+    test('parses all CommentNotification fields from JSON', () {
       final children = [
         {'kind': 't4', 'data': {
           'id': 'msg1',
@@ -73,14 +75,12 @@ void main() {
       final result = parser.parseMessages(children);
 
       expect(result.length, 1);
-      final msg = result[0];
+      final msg = result[0] as CommentNotification;
       expect(msg.id, 'msg1');
       expect(msg.subject, 'Test Subject');
       expect(msg.body, 'Message body content');
       expect(msg.author, 'testuser');
-      expect(msg.dest, 'me');
       expect(msg.isNew, true);
-      expect(msg.isComment, true);
       expect(msg.subreddit, 'flutter');
       expect(msg.distinguished, 'moderator');
       expect(msg.vote, VoteDirection.upvote);
@@ -170,16 +170,13 @@ void main() {
       final result = parser.parseMessages(children);
 
       expect(result.length, 1);
-      final msg = result[0];
+      final msg = result[0] as DirectMessage;
       expect(msg.id, 'minimal');
       expect(msg.subject, '(no subject)');
       expect(msg.body, '');
       expect(msg.author, '[deleted]');
       expect(msg.dest, '');
       expect(msg.isNew, false);
-      expect(msg.isComment, false);
-      expect(msg.vote, VoteDirection.none);
-      expect(msg.score, 0);
     });
 
     test('removes non-matching entries (t3, more, etc.)', () {

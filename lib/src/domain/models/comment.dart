@@ -20,6 +20,9 @@ class Comment with EquatableMixin {
   final List<Comment> replies;
   final bool isCollapsed;
   final UserFlair? authorFlair;
+  final String? subreddit;
+  final String? linkTitle;
+  final String? linkPermalink;
 
   String get fullname => 't1_$id';
 
@@ -41,6 +44,9 @@ class Comment with EquatableMixin {
     this.replies = const [],
     this.isCollapsed = false,
     this.authorFlair,
+    this.subreddit,
+    this.linkTitle,
+    this.linkPermalink,
   });
 
   Comment copyWith({
@@ -61,6 +67,9 @@ class Comment with EquatableMixin {
     List<Comment>? replies,
     bool? isCollapsed,
     UserFlair? authorFlair,
+    String? subreddit,
+    String? linkTitle,
+    String? linkPermalink,
   }) {
     return Comment(
       id: id ?? this.id,
@@ -80,6 +89,9 @@ class Comment with EquatableMixin {
       replies: replies ?? this.replies,
       isCollapsed: isCollapsed ?? this.isCollapsed,
       authorFlair: authorFlair ?? this.authorFlair,
+      subreddit: subreddit ?? this.subreddit,
+      linkTitle: linkTitle ?? this.linkTitle,
+      linkPermalink: linkPermalink ?? this.linkPermalink,
     );
   }
 
@@ -102,5 +114,8 @@ class Comment with EquatableMixin {
         replies,
         isCollapsed,
         authorFlair,
+        subreddit,
+        linkTitle,
+        linkPermalink,
       ];
 }

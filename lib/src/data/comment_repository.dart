@@ -147,6 +147,9 @@ class CommentRepository {
         backgroundColor: api.authorFlairBackgroundColor,
         textColor: api.authorFlairTextColor,
       ),
+      subreddit: api.commentSubreddit,
+      linkTitle: api.linkTitle,
+      linkPermalink: api.linkPermalink,
     );
   }
 

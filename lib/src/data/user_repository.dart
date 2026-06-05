@@ -1,6 +1,6 @@
 import '../domain/models/session_cookie.dart';
 import '../domain/models/user_profile.dart';
-import '../domain/models/user_comment.dart';
+import '../domain/models/comment.dart';
 import '../domain/enums/comment_sort.dart';
 import 'reddit_client.dart';
 import 'parsers/shared_parsers.dart';
@@ -33,7 +33,7 @@ class UserRepository {
     );
   }
 
-  Future<List<UserComment>> fetchComments(
+  Future<List<Comment>> fetchComments(
     String username, {
     String? after,
     CommentSort sort = CommentSort.new_,
@@ -63,8 +63,8 @@ class UserRepository {
     return null;
   }
 
-  UserComment _parseComment(Map<String, dynamic> data) {
-    return UserComment(
+  Comment _parseComment(Map<String, dynamic> data) {
+    return Comment(
       id: data['id'] as String? ?? '',
       body: data['body'] as String? ?? '',
       author: data['author'] as String? ?? '[deleted]',

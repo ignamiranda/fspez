@@ -5,10 +5,10 @@ abstract class CookieProvider {
   Future<String?> getCookieString();
 }
 
-class SessionStore {
+class SessionAcquirer {
   final CookieProvider _cookieProvider;
 
-  SessionStore({
+  SessionAcquirer({
     required CookieProvider cookieProvider,
   }) : _cookieProvider = cookieProvider;
 

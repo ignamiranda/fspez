@@ -9,7 +9,7 @@ import '../../domain/enums/feed_sort.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/user_profile.dart';
-import '../../domain/models/user_comment.dart';
+import '../../domain/models/comment.dart';
 import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
 import '../utils/profile_formatters.dart';
@@ -31,7 +31,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   late TabController _tabController;
   FeedSort _postsSort = FeedSort.new_;
   CommentSort _commentsSort = CommentSort.new_;
-  List<UserComment> _comments = [];
+  List<Comment> _comments = [];
   bool _commentsLoading = true;
   String? _commentsError;
   ScrollController? _scrollController;
@@ -263,7 +263,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    comment.linkTitle,
+                    comment.linkTitle ?? '',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -397,14 +397,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     );
   }
 
-  Post _buildMinimalPost(UserComment comment, String postId) {
+  Post _buildMinimalPost(Comment comment, String postId) {
     return Post(
       id: postId,
-      title: comment.linkTitle,
+      title: comment.linkTitle ?? '',
       author: comment.author,
-      subreddit: Subreddit(id: '', name: comment.subreddit),
+      subreddit: Subreddit(id: '', name: comment.subreddit ?? ''),
       createdAt: comment.createdAt,
-      permalink: comment.linkPermalink,
+      permalink: comment.linkPermalink ?? '',
       type: PostType.link,
       score: comment.score,
     );

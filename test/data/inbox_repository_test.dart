@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/inbox_repository.dart';
 import 'package:fspez/src/data/reddit_client.dart';
-import 'package:fspez/src/domain/models/message_feed.dart';
+import 'package:fspez/src/domain/models/inbox_feed.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
@@ -51,9 +51,9 @@ void main() {
 
       final feed = await repository.fetchInbox();
 
-      expect(feed.tab, InboxTab.inbox);
-      expect(feed.messages.length, 1);
-      expect(feed.messages[0].id, 'm1');
+      expect(feed.tab, InboxTab.all);
+      expect(feed.items.length, 1);
+      expect(feed.items[0].id, 'm1');
       expect(feed.after, 't4_cursor');
       expect(feed.hasMorePages, true);
 
@@ -111,8 +111,8 @@ void main() {
       final feed = await repository.fetchUnread();
 
       expect(feed.tab, InboxTab.unread);
-      expect(feed.messages.length, 1);
-      expect(feed.messages[0].isNew, true);
+      expect(feed.items.length, 1);
+      expect(feed.items[0].isNew, true);
 
       verify(() => mockHttp.get(
             Uri.parse('https://old.reddit.com/message/unread.json'

@@ -1,4 +1,4 @@
-import '../domain/models/message_feed.dart';
+import '../domain/models/inbox_feed.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
 import 'inbox_parser.dart';
@@ -10,15 +10,15 @@ class InboxRepository {
   InboxRepository(this._client, {InboxParser? parser})
       : _parser = parser ?? InboxParser();
 
-  Future<MessageFeed> fetchInbox({
+  Future<InboxFeed> fetchInbox({
     String? after,
     SessionCookie? sessionCookie,
   }) {
-    return _fetch('/message/inbox', InboxTab.inbox, after,
+    return _fetch('/message/inbox', InboxTab.all, after,
         sessionCookie: sessionCookie);
   }
 
-  Future<MessageFeed> fetchUnread({
+  Future<InboxFeed> fetchUnread({
     String? after,
     SessionCookie? sessionCookie,
   }) {
@@ -26,7 +26,7 @@ class InboxRepository {
         sessionCookie: sessionCookie);
   }
 
-  Future<MessageFeed> fetchSent({
+  Future<InboxFeed> fetchSent({
     String? after,
     SessionCookie? sessionCookie,
   }) {
@@ -34,7 +34,7 @@ class InboxRepository {
         sessionCookie: sessionCookie);
   }
 
-  Future<MessageFeed> _fetch(
+  Future<InboxFeed> _fetch(
     String path,
     InboxTab tab,
     String? after, {
@@ -52,9 +52,9 @@ class InboxRepository {
     final children = listing['children'] as List<dynamic>;
     final messages = _parser.parseMessages(children);
 
-    return MessageFeed(
+    return InboxFeed(
       tab: tab,
-      messages: messages,
+      items: messages,
       after: listing['after'] as String?,
       before: listing['before'] as String?,
     );
