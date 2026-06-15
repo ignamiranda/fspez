@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/inbox_item.dart';
 import '../domain/models/inbox_feed.dart';
@@ -128,7 +129,8 @@ class InboxNotifier extends StateNotifier<InboxState> {
     try {
       final feed = await _repository.fetchUnread(sessionCookie: cookie);
       state = state.copyWith(unreadCount: feed.items.length);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('InboxNotifier.refreshUnreadCount failed: $e');
       // Keep the last known badge count; inbox loading errors are shown in-tab.
     }
   }

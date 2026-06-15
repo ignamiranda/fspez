@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../domain/enums/vote_direction.dart';
 import 'write_operation_notifier.dart';
 
@@ -16,7 +17,9 @@ class VoteNotifier extends WriteOperationNotifier<VoteDirection> {
             sessionCookie: sessionCookie),
         onError: WriteErrorPolicy.keepOptimistic,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('VoteNotifier.vote failed: $e');
+    }
   }
 
   void toggle(String fullname, VoteDirection tappedDirection) {

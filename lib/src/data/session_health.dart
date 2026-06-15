@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/account.dart';
 import 'auth_providers.dart';
@@ -109,7 +110,8 @@ Future<SessionHealth> checkSessionHealth(
       return SessionHealth.expired;
     }
     return SessionHealth.unknown;
-  } catch (_) {
+  } catch (e) {
+    debugPrint('SessionHealth check failed: $e');
     return SessionHealth.unknown;
   }
 }
