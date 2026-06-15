@@ -1,6 +1,6 @@
 import '../domain/models/comment.dart';
 import '../domain/models/user_flair.dart';
-import 'api_responses.dart';
+import 'api_responses/api_responses.dart';
 import 'parsers/shared_parsers.dart';
 
 class CommentParser {

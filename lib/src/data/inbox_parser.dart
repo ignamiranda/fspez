@@ -1,5 +1,5 @@
 import '../domain/models/inbox_item.dart';
-import 'api_responses.dart';
+import 'api_responses/api_responses.dart';
 import 'parsers/shared_parsers.dart';
 
 class InboxParser {

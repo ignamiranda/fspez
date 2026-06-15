@@ -2,7 +2,7 @@ import '../domain/models/subreddit.dart';
 import '../domain/models/subreddit_rule.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
-import 'api_responses.dart';
+import 'api_responses/api_responses.dart';
 
 class SubredditRepository {
   final RedditClient _client;

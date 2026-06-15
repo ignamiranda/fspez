@@ -6,7 +6,7 @@ import '../domain/models/session_cookie.dart';
 import '../domain/enums/comment_sort.dart';
 import '../domain/enums/vote_direction.dart';
 import 'reddit_client.dart';
-import 'api_responses.dart';
+import 'api_responses/api_responses.dart';
 import 'reddit_award_html_parser.dart';
 
 class PostDetail {

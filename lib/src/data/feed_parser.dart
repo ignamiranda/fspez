@@ -2,7 +2,7 @@ import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
 import '../domain/enums/feed_sort.dart';
 import '../domain/enums/vote_direction.dart';
-import 'api_responses.dart';
+import 'api_responses/api_responses.dart';
 import 'parsers/shared_parsers.dart';
 
 class FeedParser {
