@@ -107,26 +107,9 @@ void main() {
     verify(() => client.deleteContent('t3_post', cookie)).called(1);
   });
 
-  test('delete throws a domain exception when session is missing', () async {
-    final noSession = PostActionsService(
-      voteNotifier: voteNotifier,
-      saveNotifier: SaveNotifier(client, null),
-      hideNotifier: HideNotifier(client, null),
-      deleteNotifier: DeleteNotifier(client, null),
-      editNotifier: editNotifier,
-      sessionCookie: null,
-    );
-
-    await expectLater(
-      () => noSession.delete('t3_post'),
-      throwsA(isA<PostActionException>()),
-    );
-  });
-
   test('routes edits through EditNotifier', () async {
-    final success = await service.edit('t3_post', 'updated text');
+    await service.edit('t3_post', 'updated text');
 
-    expect(success, true);
     verify(() => client.editContent(
           thingId: 't3_post',
           text: 'updated text',

@@ -141,7 +141,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postFullname = post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
-    final actions = ref.read(postActionsServiceProvider);
+    final actions = ref.read(postActionsServiceProvider)!;
     final username = ref.read(activeAccountProvider)?.username;
     final settings = ref.watch(appSettingsProvider);
     final shouldBlur = !_sensitiveRevealed &&

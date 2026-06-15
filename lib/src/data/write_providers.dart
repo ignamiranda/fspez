@@ -53,13 +53,15 @@ final editProvider = StateNotifierProvider<EditNotifier, EditState>((ref) {
   return EditNotifier(ref.watch(redditClientProvider));
 });
 
-final postActionsServiceProvider = Provider<PostActionsService>((ref) {
+final postActionsServiceProvider = Provider<PostActionsService?>((ref) {
+  final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  if (cookie == null) return null;
   return PostActionsService(
     voteNotifier: ref.watch(voteProvider.notifier),
     saveNotifier: ref.watch(saveProvider.notifier),
     hideNotifier: ref.watch(hideProvider.notifier),
     deleteNotifier: ref.watch(deleteProvider.notifier),
     editNotifier: ref.watch(editProvider.notifier),
-    sessionCookie: ref.watch(activeAccountProvider)?.sessionCookie,
+    sessionCookie: cookie,
   );
 });

@@ -58,18 +58,18 @@ class _EditSheetContentState extends ConsumerState<_EditSheetContent> {
     if (account == null) return;
 
     setState(() => _isSaving = true);
-    final actions = ref.read(postActionsServiceProvider);
-    final success = await actions.edit(widget.thingId, text);
-    if (!mounted) return;
-
-    if (success) {
+    final actions = ref.read(postActionsServiceProvider)!;
+    try {
+      await actions.edit(widget.thingId, text);
+      if (!mounted) return;
       Navigator.of(context).pop(true);
-    } else {
+    } catch (e) {
+      if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content:
-                Text('Edit failed: ${actions.editError ?? 'Unknown error'}')),
+          content: Text('Edit failed: ${e.toString()}'),
+        ),
       );
     }
   }

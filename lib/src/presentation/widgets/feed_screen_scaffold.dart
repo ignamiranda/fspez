@@ -37,7 +37,7 @@ class FeedScreenScaffold extends ConsumerWidget {
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
     final hiddenMap = ref.watch(hideProvider);
-    final actions = ref.read(postActionsServiceProvider);
+    final actions = ref.read(postActionsServiceProvider)!;
     final hidden =
         hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
     final account = ref.watch(activeAccountProvider);

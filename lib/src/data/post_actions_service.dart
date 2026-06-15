@@ -12,7 +12,7 @@ class PostActionsService {
   final HideNotifier _hideNotifier;
   final DeleteNotifier _deleteNotifier;
   final EditNotifier _editNotifier;
-  final SessionCookie? _sessionCookie;
+  final SessionCookie _sessionCookie;
 
   const PostActionsService({
     required VoteNotifier voteNotifier,
@@ -20,15 +20,13 @@ class PostActionsService {
     required HideNotifier hideNotifier,
     required DeleteNotifier deleteNotifier,
     required EditNotifier editNotifier,
-    required SessionCookie? sessionCookie,
+    required SessionCookie sessionCookie,
   })  : _voteNotifier = voteNotifier,
         _saveNotifier = saveNotifier,
         _hideNotifier = hideNotifier,
         _deleteNotifier = deleteNotifier,
         _editNotifier = editNotifier,
         _sessionCookie = sessionCookie;
-
-  String? get editError => _editNotifier.error;
 
   void vote(String fullname, VoteDirection direction) {
     _voteNotifier.toggle(fullname, direction);
@@ -47,25 +45,13 @@ class PostActionsService {
   }
 
   Future<void> delete(String fullname) {
-    final cookie = _sessionCookie;
-    if (cookie == null) {
-      throw const PostActionException('No session');
+    return _deleteNotifier.delete(fullname, _sessionCookie);
+  }
+
+  Future<void> edit(String thingId, String text) async {
+    final success = await _editNotifier.edit(thingId, text, _sessionCookie);
+    if (!success) {
+      throw Exception(_editNotifier.error ?? 'Edit failed');
     }
-    return _deleteNotifier.delete(fullname, cookie);
   }
-
-  Future<bool> edit(String thingId, String text) {
-    final cookie = _sessionCookie;
-    if (cookie == null) return Future.value(false);
-    return _editNotifier.edit(thingId, text, cookie);
-  }
-}
-
-class PostActionException implements Exception {
-  final String message;
-
-  const PostActionException(this.message);
-
-  @override
-  String toString() => 'PostActionException: $message';
 }
