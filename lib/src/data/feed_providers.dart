@@ -36,6 +36,10 @@ final feedPageProvider = StateNotifierProvider.family<FeedPageNotifier,
     }
   }
 
+  // If we have cached data, seed the notifier with it and trigger a background
+  // refresh. This avoids showing a loading spinner on repeat visits. The
+  // notifier's autoLoad is set to false so it doesn't double-fetch — cached
+  // content renders immediately; refresh() handles the network update.
   final notifier = FeedPageNotifier(
     fetchPage: ({after}) async {
       final feed = await fetchForConfig(
