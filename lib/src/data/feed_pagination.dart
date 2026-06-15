@@ -83,31 +83,26 @@ class FeedPageNotifier extends PaginatedNotifier<Post> {
   }
 
   @override
-  PaginatedListState<Post> buildErrorState(String error) {
-    // Preserve existing items (from cache or previous load) when a refresh
-    // fails, rather than returning an empty error state.
-    if (state.items.isNotEmpty) {
-      return state.copyWith(isLoading: false, error: error);
-    }
-    return PaginatedListState<Post>(isLoading: false, error: error);
-  }
-
-  @override
   Future<void> loadInitial() async {
     final previousState = state;
     final previousAfter = after;
-    state = buildLoadingState(state);
+    state = previousState.copyWith(isLoading: true, clearError: true);
     after = null;
     try {
       final page = await fetchPage(after: null);
-      after = extractAfter(page);
-      state = buildSuccessState(page);
+      after = page.after;
+      state = PaginatedListState<Post>(
+        items: page.items,
+        isLoading: false,
+        hasMore: page.hasMore,
+        isStale: false,
+      );
     } catch (e) {
       after = previousAfter;
       if (previousState.items.isNotEmpty) {
         state = previousState.copyWith(isLoading: false, error: e.toString());
       } else {
-        state = buildErrorState(e.toString());
+        state = PaginatedListState<Post>(isLoading: false, error: e.toString());
       }
     }
   }

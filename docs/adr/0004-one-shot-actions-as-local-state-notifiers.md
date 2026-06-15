@@ -1,0 +1,5 @@
+# One-shot write actions use local StateNotifiers, not Riverpod providers
+
+One-shot write operations (compose message, submit post, edit content) use a single generic `ActionNotifier` instantiated locally inside the screen that owns the operation, rather than singleton Riverpod providers. These operations live and die with a single modal screen — there is no cross-widget consumer for their state. Riverpod providers are singletons for the lifetime of their scope and are designed for shared state; a one-shot operation that belongs to one screen has no need for that lifetime or shareability. The notifier is constructed in `ConsumerStatefulWidget.initState` with a `RedditClient` reference watched once from the provider scope. Calling `execute(action)` always resets state to loading, making explicit `reset()` calls unnecessary.
+
+**Considered Options**: singleton `StateNotifierProvider` per operation type (compose, submit, edit) — rejected because it requires manual `reset()` on dispose, leaks state between screen visits, and gives no benefit over local instantiation when there is exactly one consumer.
