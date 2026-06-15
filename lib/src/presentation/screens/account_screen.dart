@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/session_health.dart';
+import '../../domain/models/account.dart';
 import '../tab_scroll_signal.dart';
 import 'auth_webview_screen.dart';
 import 'saved_screen.dart';
@@ -42,7 +43,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     });
 
     final activeAccount = ref.watch(activeAccountProvider);
-    final accounts = ref.watch(accountsProvider);
+    final accountsAsync = ref.watch(accountsProvider);
+    final accounts = accountsAsync.valueOrNull ?? <Account>[];
     final sessionHealth = ref.watch(sessionHealthProvider).valueOrNull;
 
     return Scaffold(

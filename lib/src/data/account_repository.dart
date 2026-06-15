@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
 
@@ -7,35 +7,32 @@ class AccountRepository {
   static const _accountsKey = 'fspez_accounts';
   static const _activeAccountIdKey = 'fspez_active_account_id';
 
-  final SharedPreferences _prefs;
+  final FlutterSecureStorage _storage;
 
-  AccountRepository(this._prefs);
+  AccountRepository(this._storage);
 
-  List<Account> loadAll() {
-    final json = _prefs.getString(_accountsKey);
+  Future<List<Account>> loadAll() async {
+    final json = await _storage.read(key: _accountsKey);
     if (json == null) return [];
 
     final list = jsonDecode(json) as List<dynamic>;
     return list.map((item) {
       final map = item as Map<String, dynamic>;
-      final cookieRaw = map['cookieRaw'] as String?;
-      final cookieModhash = map['cookieModhash'] as String?;
       return Account(
         id: map['id'] as String,
         username: map['username'] as String,
         sessionCookie: SessionCookie(
           value: map['cookieValue'] as String,
           expiresAt: DateTime.parse(map['cookieExpires'] as String),
-          rawCookie: cookieRaw,
-          modhash: cookieModhash,
+          rawCookie: map['cookieRaw'] as String?,
+          modhash: map['cookieModhash'] as String?,
         ),
-
       );
     }).toList();
   }
 
   Future<void> save(Account account) async {
-    final accounts = loadAll();
+    final accounts = await loadAll();
     final idIndex = accounts.indexWhere((a) => a.id == account.id);
     if (idIndex >= 0) {
       accounts[idIndex] = account;
@@ -54,7 +51,7 @@ class AccountRepository {
   }
 
   Future<void> clearAllExcept(String accountId) async {
-    final accounts = loadAll();
+    final accounts = await loadAll();
     final active = accounts.where((a) => a.id == accountId).toList();
     await _persistAll(active);
   }
@@ -64,23 +61,25 @@ class AccountRepository {
   }
 
   Future<void> remove(String accountId) async {
-    final accounts = loadAll().where((a) => a.id != accountId).toList();
-    await _persistAll(accounts);
+    final accounts = await loadAll();
+    final remaining = accounts.where((a) => a.id != accountId).toList();
+    await _persistAll(remaining);
 
-    if (_prefs.getString(_activeAccountIdKey) == accountId) {
-      await _prefs.remove(_activeAccountIdKey);
+    final activeId = await _storage.read(key: _activeAccountIdKey);
+    if (activeId == accountId) {
+      await _storage.delete(key: _activeAccountIdKey);
     }
   }
 
   Future<void> setActive(String accountId) async {
-    await _prefs.setString(_activeAccountIdKey, accountId);
+    await _storage.write(key: _activeAccountIdKey, value: accountId);
   }
 
-  Account? loadActive() {
-    final activeId = _prefs.getString(_activeAccountIdKey);
+  Future<Account?> loadActive() async {
+    final activeId = await _storage.read(key: _activeAccountIdKey);
     if (activeId == null) return null;
-
-    return loadAll().where((a) => a.id == activeId).firstOrNull;
+    final all = await loadAll();
+    return all.where((a) => a.id == activeId).firstOrNull;
   }
 
   Future<void> _persistAll(List<Account> accounts) async {
@@ -96,6 +95,6 @@ class AccountRepository {
                 'cookieModhash': a.sessionCookie.modhash,
             })
         .toList();
-    await _prefs.setString(_accountsKey, jsonEncode(json));
+    await _storage.write(key: _accountsKey, value: jsonEncode(json));
   }
 }

@@ -16,12 +16,17 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
   final FeedCache _feedCache;
 
   ActiveAccountNotifier(this._repository, this._listVersion, this._feedCache)
-      : super(_repository.loadActive()) {
-    Future.microtask(_deduplicate);
+      : super(null) {
+    Future.microtask(_init);
+  }
+
+  Future<void> _init() async {
+    state = await _repository.loadActive();
+    await _deduplicate();
   }
 
   Future<void> _deduplicate() async {
-    final accounts = _repository.loadAll();
+    final accounts = await _repository.loadAll();
     final seen = <String>{};
     final keep = <Account>[];
     Account? replacement;
@@ -59,7 +64,7 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
     _feedCache.clearForAccount(accountId);
     await _repository.remove(accountId);
     if (state?.id == accountId) {
-      state = _repository.loadActive();
+      state = await _repository.loadActive();
     }
     _listVersion.bump();
   }
