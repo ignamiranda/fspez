@@ -51,7 +51,14 @@ class PostActionsService {
   Future<void> edit(String thingId, String text) async {
     final success = await _editNotifier.edit(thingId, text, _sessionCookie);
     if (!success) {
-      throw Exception(_editNotifier.error ?? 'Edit failed');
+      throw PostActionException(_editNotifier.error ?? 'Edit failed');
     }
   }
+}
+
+class PostActionException implements Exception {
+  final String message;
+  const PostActionException(this.message);
+  @override
+  String toString() => 'PostActionException: $message';
 }

@@ -37,7 +37,7 @@ class FeedScreenScaffold extends ConsumerWidget {
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
     final hiddenMap = ref.watch(hideProvider);
-    final actions = ref.read(postActionsServiceProvider)!;
+    final actions = ref.read(postActionsServiceProvider);
     final hidden =
         hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
     final account = ref.watch(activeAccountProvider);
@@ -179,20 +179,22 @@ class FeedScreenScaffold extends ConsumerWidget {
       showStickiedIndicator: config.kind == FeedPageKind.subreddit,
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
-      onPostVote: (fullname, dir) {
-        handleVote(actions, fullname, dir);
-      },
-      onPostSave: (fullname) {
-        final post = state.items.cast<Post?>().firstWhere(
-              (p) => p?.fullname == fullname,
-              orElse: () => null,
-            );
-        final wasSaved = post != null
-            ? (saveOverrides[fullname] ?? post.isSaved)
-            : saveOverrides[fullname] ?? false;
-        handleSave(actions, fullname, context, wasSaved: wasSaved);
-      },
-      onPostDelete: account != null
+      onPostVote: actions != null
+          ? (fullname, dir) => handleVote(actions, fullname, dir)
+          : null,
+      onPostSave: actions != null
+          ? (fullname) {
+              final post = state.items.cast<Post?>().firstWhere(
+                    (p) => p?.fullname == fullname,
+                    orElse: () => null,
+                  );
+              final wasSaved = post != null
+                  ? (saveOverrides[fullname] ?? post.isSaved)
+                  : saveOverrides[fullname] ?? false;
+              handleSave(actions, fullname, context, wasSaved: wasSaved);
+            }
+          : null,
+      onPostDelete: actions != null && account != null
           ? (post) async {
               final confirmed = await showDialog<bool>(
                 context: context,
@@ -240,7 +242,7 @@ class FeedScreenScaffold extends ConsumerWidget {
           : null,
       currentUsername: account?.username,
       hiddenFullnames: filterHidden ? hidden : const {},
-      onPostHide: filterHidden
+      onPostHide: actions != null && filterHidden
           ? (post) async {
               try {
                 await actions.hide(post.fullname);
@@ -260,7 +262,7 @@ class FeedScreenScaffold extends ConsumerWidget {
                 ));
             }
           : null,
-      onPostUnhide: !filterHidden
+      onPostUnhide: actions != null && !filterHidden
           ? (post) async {
               final feedNotifier = ref.read(feedPageProvider(config).notifier);
               feedNotifier.removeItem((p) => p.fullname == post.fullname);

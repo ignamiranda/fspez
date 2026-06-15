@@ -141,7 +141,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postFullname = post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
-    final actions = ref.read(postActionsServiceProvider)!;
+    final actions = ref.read(postActionsServiceProvider);
     final username = ref.read(activeAccountProvider)?.username;
     final settings = ref.watch(appSettingsProvider);
     final shouldBlur = !_sensitiveRevealed &&
@@ -159,13 +159,18 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 theme: theme,
                 showAwards: showAwards,
                 effectiveVote: postEffectiveVote,
-                onVote: (dir) => handleVote(actions, postFullname, dir),
+                onVote: actions != null
+                    ? (dir) => handleVote(actions, postFullname, dir)
+                    : null,
                 effectiveSaved: postEffectiveSaved,
-                onSave: () {
-                  final wasSaved = saveOverrides[postFullname] ?? post.isSaved;
-                  handleSave(actions, postFullname, context,
-                      wasSaved: wasSaved);
-                },
+                onSave: actions != null
+                    ? () {
+                        final wasSaved =
+                            saveOverrides[postFullname] ?? post.isSaved;
+                        handleSave(actions, postFullname, context,
+                            wasSaved: wasSaved);
+                      }
+                    : null,
                 onEdit: username != null && post.author == username
                     ? () {
                         showEditSheet(context,
@@ -180,7 +185,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         });
                       }
                     : null,
-                onDelete: username != null && post.author == username
+                onDelete: actions != null && username != null && post.author == username
                     ? () => handleDelete(context, actions, postFullname)
                     : null,
               ),
@@ -339,11 +344,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       comment: c,
                       showAwards: showAwards,
                       voteOverrides: voteOverrides,
-                      onVote: (fullname, dir) =>
-                          handleVote(actions, fullname, dir),
+                      onVote: actions != null
+                          ? (fullname, dir) =>
+                              handleVote(actions, fullname, dir)
+                          : null,
                       saveOverrides: saveOverrides,
-                      onSave: (fullname) =>
-                          handleSave(actions, fullname, context),
+                      onSave: actions != null
+                          ? (fullname) =>
+                              handleSave(actions, fullname, context)
+                          : null,
                       onReply: loggedIn ? _replyToComment : null,
                       onAuthorTap: (author) {
                         if (author != '[deleted]') {
@@ -367,7 +376,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               });
                             }
                           : null,
-                      onDelete: username != null && c.author == username
+                      onDelete: actions != null && username != null && c.author == username
                           ? (fullname) {
                               handleDelete(context, actions, fullname)
                                   .then((deleted) {
