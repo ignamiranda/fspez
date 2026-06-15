@@ -94,42 +94,24 @@ class HttpTransport {
           if (cookie != null) 'Cookie': 'reddit_session=${cookie.value}',
         };
       case ApiEndpoint.oldReddit:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': _browserUA,
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Accept': '*/*',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
-      case ApiEndpoint.comment:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
       case ApiEndpoint.submit:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': _browserUA,
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Accept': '*/*',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
+        return _formHeaders(cookie, useBrowserUA: true);
+      case ApiEndpoint.comment:
       case ApiEndpoint.compose:
-        final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
-        return {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': c,
-          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
-        };
+        return _formHeaders(cookie, useBrowserUA: false);
     }
+  }
+
+  Map<String, String> _formHeaders(SessionCookie? cookie, {bool useBrowserUA = false}) {
+    final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+    return {
+      'User-Agent': useBrowserUA ? _browserUA : 'fspez/0.1.0',
+      'Content-Type': 'application/x-www-form-urlencoded${useBrowserUA ? '; charset=UTF-8' : ''}',
+      'Cookie': c,
+      if (useBrowserUA) 'Accept': '*/*',
+      if (useBrowserUA) 'X-Requested-With': 'XMLHttpRequest',
+      if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
+    };
   }
 
   Map<String, String> _headersForHtml(SessionCookie? cookie) {
