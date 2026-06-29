@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/delete_notifier.dart';
 import 'package:fspez/src/data/edit_notifier.dart';
 import 'package:fspez/src/data/hide_notifier.dart';
+import 'package:fspez/src/data/http_transport.dart';
+import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/post_actions_service.dart';
 import 'package:fspez/src/data/save_notifier.dart';
 import 'package:fspez/src/data/reddit_client.dart';
@@ -15,13 +17,13 @@ import 'package:http/http.dart' as http;
 
 class _MockHttpClient extends Mock implements http.Client {}
 
-class _MockRedditClient extends Mock implements RedditClient {}
+class _MockInteractionClient extends Mock implements InteractionClient {}
 
 Widget _app(Widget body) => MaterialApp(home: Scaffold(body: body));
 
 void main() {
   late _MockHttpClient mockHttp;
-  late _MockRedditClient mockClient;
+  late _MockInteractionClient mockClient;
   late VoteNotifier voteNotifier;
   late SaveNotifier saveNotifier;
   late HideNotifier hideNotifier;
@@ -34,7 +36,7 @@ void main() {
 
   setUp(() {
     mockHttp = _MockHttpClient();
-    mockClient = _MockRedditClient();
+    mockClient = _MockInteractionClient();
     when(() => mockHttp.post(any(),
             headers: any(named: 'headers'), body: any(named: 'body')))
         .thenAnswer((_) async => http.Response('{}', 200));
@@ -42,9 +44,10 @@ void main() {
     when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.hide(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.unhide(any(), any())).thenAnswer((_) async {});
-    voteNotifier = VoteNotifier(RedditClient(httpClient: mockHttp), null);
     final cookie = SessionCookie(
         value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
+    voteNotifier = VoteNotifier(
+        InteractionClient(HttpTransport(httpClient: mockHttp)), cookie);
     saveNotifier = SaveNotifier(mockClient, cookie);
     hideNotifier = HideNotifier(mockClient, cookie);
     actions = PostActionsService(

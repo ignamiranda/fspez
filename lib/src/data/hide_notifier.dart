@@ -1,15 +1,18 @@
+import 'interaction_client.dart';
 import 'write_operation_notifier.dart';
 
 class HideNotifier extends WriteOperationNotifier<bool> {
-  HideNotifier(super.redditClient, super.sessionCookie);
+  final InteractionClient _client;
+
+  HideNotifier(this._client, super.sessionCookie);
 
   Future<void> toggle(String fullname) async {
     final previous = state[fullname];
     if (previous == true) return;
+    final sc = sessionCookie;
+    if (sc == null) return;
     await write(fullname, true, previous, () async {
-      final sc = sessionCookie;
-      if (sc == null) return;
-      await redditClient.hide(fullname, sc);
+      await _client.hide(fullname, sc);
     });
   }
 
@@ -22,6 +25,6 @@ class HideNotifier extends WriteOperationNotifier<bool> {
     final sc = sessionCookie;
     if (sc == null) return;
     dismiss(fullname);
-    await redditClient.unhide(fullname, sc);
+    await _client.unhide(fullname, sc);
   }
 }

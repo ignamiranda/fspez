@@ -1,14 +1,18 @@
 import 'dart:io';
 
 import '../domain/models/session_cookie.dart';
+import 'http_transport.dart';
+import 'message_client.dart';
 import 'reddit_client.dart';
 
 class ComposeTestRunner {
   final RedditClient _client;
+  final MessageClient _messageClient;
   final File _logFile = File('${Directory.systemTemp.path}\\fspez-compose.log');
 
-  ComposeTestRunner({RedditClient? redditClient})
-      : _client = redditClient ?? RedditClient();
+  ComposeTestRunner({RedditClient? redditClient, MessageClient? messageClient})
+      : _client = redditClient ?? RedditClient(),
+        _messageClient = messageClient ?? MessageClient(HttpTransport());
 
   Future<void> _log(String message) async {
     try {
@@ -33,7 +37,7 @@ class ComposeTestRunner {
       await _log(
           'cookie raw=${cookie.rawCookie != null} modhash=${cookie.modhash != null}');
 
-      await _client.compose(
+      await _messageClient.compose(
         fields: {
           'to': 'codenameawesome',
           'subject': 'test',

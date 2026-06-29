@@ -1,27 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/vote_notifier.dart';
-import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
+import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:http/http.dart' as http;
 
-class _MockHttpClient extends Mock implements http.Client {}
+class _MockInteractionClient extends Mock implements InteractionClient {}
+
+SessionCookie _cookie() {
+  return SessionCookie(
+    value: 'abc',
+    expiresAt: DateTime.now().add(const Duration(days: 1)),
+  );
+}
 
 void main() {
-  late _MockHttpClient mockHttp;
-  late RedditClient client;
+  late _MockInteractionClient mockClient;
+  late SessionCookie cookie;
   late VoteNotifier notifier;
 
   setUpAll(() {
-    registerFallbackValue(Uri());
+    registerFallbackValue(_cookie());
   });
 
   setUp(() {
-    mockHttp = _MockHttpClient();
-    when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
-        .thenAnswer((_) async => http.Response('{}', 200));
-    client = RedditClient(httpClient: mockHttp);
-    notifier = VoteNotifier(client, null);
+    mockClient = _MockInteractionClient();
+    cookie = _cookie();
+    when(() => mockClient.vote(
+          fullname: any(named: 'fullname'),
+          direction: any(named: 'direction'),
+          sessionCookie: any(named: 'sessionCookie'),
+        )).thenAnswer((_) async {});
+    notifier = VoteNotifier(mockClient, cookie);
   });
 
   group('vote', () {
@@ -36,35 +46,32 @@ void main() {
       expect(notifier.state['t3_post1'], VoteDirection.downvote);
     });
 
-    test('calls api/vote with correct parameters', () async {
+    test('calls vote with correct parameters', () async {
       await notifier.vote('t3_post1', VoteDirection.upvote);
 
-      verify(() => mockHttp.post(
-        Uri.parse('https://www.reddit.com/api/vote'),
-        headers: {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'id=t3_post1&dir=1',
-      )).called(1);
+      verify(() => mockClient.vote(
+            fullname: 't3_post1',
+            direction: 1,
+            sessionCookie: cookie,
+          )).called(1);
     });
 
-    test('calls api/vote with downvote direction', () async {
+    test('calls vote with downvote direction', () async {
       await notifier.vote('t3_post1', VoteDirection.downvote);
 
-      verify(() => mockHttp.post(
-        Uri.parse('https://www.reddit.com/api/vote'),
-        headers: {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'id=t3_post1&dir=-1',
-      )).called(1);
+      verify(() => mockClient.vote(
+            fullname: 't3_post1',
+            direction: -1,
+            sessionCookie: cookie,
+          )).called(1);
     });
 
     test('keeps optimistic state even if api throws', () async {
-      when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
-          .thenThrow(Exception('API error'));
+      when(() => mockClient.vote(
+            fullname: any(named: 'fullname'),
+            direction: any(named: 'direction'),
+            sessionCookie: any(named: 'sessionCookie'),
+          )).thenThrow(Exception('API error'));
 
       await notifier.vote('t3_post1', VoteDirection.upvote);
 

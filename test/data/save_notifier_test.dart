@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/save_notifier.dart';
+import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/reddit_client.dart';
+import 'package:fspez/src/data/save_notifier.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockRedditClient extends Mock implements RedditClient {}
+class _MockInteractionClient extends Mock implements InteractionClient {}
 
 SessionCookie _makeCookie() {
   return SessionCookie(
@@ -14,7 +15,7 @@ SessionCookie _makeCookie() {
 }
 
 void main() {
-  late _MockRedditClient mockClient;
+  late _MockInteractionClient mockClient;
   late SaveNotifier notifier;
   final cookie = _makeCookie();
 
@@ -23,7 +24,7 @@ void main() {
   });
 
   setUp(() {
-    mockClient = _MockRedditClient();
+    mockClient = _MockInteractionClient();
     when(() => mockClient.save(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
     notifier = SaveNotifier(mockClient, cookie);
@@ -69,7 +70,7 @@ void main() {
       expect(notifier.state['t3_post1'], isNull);
       await expectLater(
         () => notifier.toggle('t3_post1'),
-        throwsA(isA<SaveException>()),
+        throwsA(isA<RedditApiException>()),
       );
       expect(notifier.state['t3_post1'], false);
     });

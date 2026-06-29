@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/comment_repository.dart';
+import 'package:fspez/src/data/message_client.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/enums/comment_sort.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
@@ -9,9 +10,12 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockHttpClient extends Mock implements http.Client {}
 
+class _MockMessageClient extends Mock implements MessageClient {}
+
 void main() {
   late _MockHttpClient mockHttp;
   late RedditClient client;
+  late _MockMessageClient mockMessageClient;
   late CommentRepository repository;
 
   setUpAll(() {
@@ -20,8 +24,9 @@ void main() {
 
   setUp(() {
     mockHttp = _MockHttpClient();
+    mockMessageClient = _MockMessageClient();
     client = RedditClient(httpClient: mockHttp);
-    repository = CommentRepository(client);
+    repository = CommentRepository(client, mockMessageClient);
   });
 
   group('fetchComments', () {

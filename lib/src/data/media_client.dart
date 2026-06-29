@@ -4,16 +4,16 @@ import 'package:http/http.dart' as http;
 
 import '../domain/models/media_upload_result.dart';
 import '../domain/models/session_cookie.dart';
-import 'reddit_client.dart';
+import 'submit_client.dart';
 
 /// Orchestrates the two-step media upload to Reddit:
-/// 1. Request upload lease via RedditClient (POST /api/media/asset.json)
+/// 1. Request upload lease via SubmitClient (POST /api/media/asset.json)
 /// 2. Upload raw file bytes to the returned S3 presigned URL
 class MediaUploadClient {
-  final RedditClient _redditClient;
+  final SubmitClient _submitClient;
   final http.Client _httpClient;
 
-  MediaUploadClient(this._redditClient, {http.Client? httpClient})
+  MediaUploadClient(this._submitClient, {http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
 
   /// Upload a single image file. Returns the Reddit asset ID and CDN URL.
@@ -38,7 +38,7 @@ class MediaUploadClient {
     String mime,
     SessionCookie sessionCookie,
   ) async {
-    final lease = await _redditClient.requestUploadAsset(
+    final lease = await _submitClient.requestUploadAsset(
       filepath: filename,
       mimetype: mime,
       sessionCookie: sessionCookie,

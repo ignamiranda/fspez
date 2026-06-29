@@ -1,4 +1,4 @@
-import 'reddit_client.dart';
+import 'interaction_client.dart';
 import 'write_operation_notifier.dart';
 
 class SaveException implements Exception {
@@ -11,7 +11,9 @@ class SaveException implements Exception {
 }
 
 class SaveNotifier extends WriteOperationNotifier<bool> {
-  SaveNotifier(super.redditClient, super.sessionCookie);
+  final InteractionClient _client;
+
+  SaveNotifier(this._client, super.sessionCookie);
 
   Future<void> toggle(String fullname) async {
     final current = state[fullname] ?? false;
@@ -24,13 +26,13 @@ class SaveNotifier extends WriteOperationNotifier<bool> {
     try {
       await write(fullname, next, current, () async {
         if (next) {
-          await redditClient.save(fullname, sc);
+          await _client.save(fullname, sc);
         } else {
-          await redditClient.unsave(fullname, sc);
+          await _client.unsave(fullname, sc);
         }
       });
-    } on RedditApiException catch (e) {
-      throw SaveException(statusCode: e.statusCode, body: e.message);
+    } on Object catch (_) {
+      rethrow;
     }
   }
 

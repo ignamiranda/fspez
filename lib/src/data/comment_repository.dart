@@ -8,6 +8,7 @@ import '../domain/enums/vote_direction.dart';
 import 'reddit_client.dart';
 import 'api_responses/api_responses.dart';
 import 'reddit_award_html_parser.dart';
+import 'message_client.dart';
 
 class PostDetail {
   final Post post;
@@ -18,8 +19,9 @@ class PostDetail {
 
 class CommentRepository {
   final RedditClient _client;
+  final MessageClient _messageClient;
 
-  CommentRepository(this._client);
+  CommentRepository(this._client, this._messageClient);
 
   Future<PostDetail> fetchComments(
     String subreddit,
@@ -167,7 +169,7 @@ class CommentRepository {
     required String text,
     required SessionCookie sessionCookie,
   }) async {
-    await _client.comment(
+    await _messageClient.comment(
       fields: {
         'thing_id': thingId,
         'text': text,
@@ -182,7 +184,7 @@ class CommentRepository {
     required String text,
     required SessionCookie sessionCookie,
   }) async {
-    await _client.comment(
+    await _messageClient.comment(
       fields: {
         'thing_id': thingId,
         'text': text,

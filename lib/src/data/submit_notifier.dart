@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/flair_option.dart';
 import '../domain/models/session_cookie.dart';
 import 'media_client.dart';
-import 'reddit_client.dart';
+import 'submit_client.dart';
 
 class SubmitState {
   final bool isSubmitting;
@@ -58,7 +58,7 @@ class SubmitState {
 }
 
 class SubmitNotifier extends StateNotifier<SubmitState> {
-  final RedditClient _client;
+  final SubmitClient _client;
   final MediaUploadClient _mediaClient;
 
   /// In-memory cache of flair options keyed by subreddit name.
@@ -144,7 +144,6 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
 
   void reset() => state = const SubmitState();
 
-  /// Upload an image and submit as a link post with the image URL.
   Future<bool> submitImage({
     required String title,
     required String subreddit,
@@ -174,7 +173,6 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
     }
   }
 
-  /// Upload a video and submit as a link post with the video URL.
   Future<bool> submitVideo({
     required String title,
     required String subreddit,
@@ -204,7 +202,6 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
     }
   }
 
-  /// Upload multiple images and submit as a gallery post via submit_gallery_post.json.
   Future<bool> submitGallery({
     required String title,
     required String subreddit,

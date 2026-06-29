@@ -14,7 +14,7 @@ class PostActionsService {
   final EditNotifier _editNotifier;
   final SessionCookie _sessionCookie;
 
-  const PostActionsService({
+  PostActionsService({
     required VoteNotifier voteNotifier,
     required SaveNotifier saveNotifier,
     required HideNotifier hideNotifier,

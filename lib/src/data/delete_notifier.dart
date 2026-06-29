@@ -1,11 +1,14 @@
 import '../domain/models/session_cookie.dart';
+import 'interaction_client.dart';
 import 'write_operation_notifier.dart';
 
 class DeleteNotifier extends WriteOperationNotifier<void> {
-  DeleteNotifier(super.redditClient, super.sessionCookie);
+  final InteractionClient _client;
+
+  DeleteNotifier(this._client, super.sessionCookie);
 
   Future<void> delete(String fullname, SessionCookie cookie) async {
     await write(fullname, null, null,
-        () => redditClient.deleteContent(fullname, cookie));
+        () => _client.deleteContent(fullname, cookie));
   }
 }
