@@ -3,7 +3,6 @@ import '../domain/enums/vote_direction.dart';
 import 'account_client.dart';
 import 'action_notifier.dart';
 import 'interaction_client.dart';
-import 'reddit_client_provider.dart';
 import 'media_client.dart';
 import 'message_client.dart';
 import 'submit_client.dart';

@@ -1,3 +1,6 @@
+import '../../domain/models/inbox_item.dart';
+import '../parsers/shared_parsers.dart';
+
 class ApiMessage {
   final String id;
   final String subject;
@@ -67,6 +70,45 @@ class ApiMessage {
       context: data['context'] as String?,
       firstMessageName: data['first_message_name'] as String?,
       replies: replies,
+    );
+  }
+
+  InboxItem toDomain() {
+    final createdAt =
+        DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000);
+    final replyList = replies.isEmpty
+        ? <InboxItem>[]
+        : replies.map((r) => r.toDomain()).toList();
+
+    if (wasComment) {
+      return CommentNotification(
+        id: id,
+        subject: subject,
+        body: body,
+        author: author,
+        createdAt: createdAt,
+        isNew: isNew,
+        parentId: parentId,
+        subreddit: subreddit,
+        distinguished: distinguished,
+        vote: parseVoteDirection(likes),
+        score: score,
+        context: context,
+        firstMessageName: firstMessageName,
+        replies: replyList,
+      );
+    }
+
+    return DirectMessage(
+      id: id,
+      subject: subject,
+      body: body,
+      author: author,
+      dest: dest,
+      createdAt: createdAt,
+      isNew: isNew,
+      parentId: parentId,
+      replies: replyList,
     );
   }
 }
