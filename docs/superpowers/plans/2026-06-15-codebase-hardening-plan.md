@@ -35,7 +35,7 @@ In `pubspec.yaml`, add under `dependencies`:
 - [ ] **Step 2: Verify it compiles**
 
 ```bash
-cd F:\OpenCode\fspez && flutter pub get
+cd . && flutter pub get
 ```
 
 Expected: no errors. Note: on Windows `flutter_secure_storage` works via a stub — full encryption works on Android/iOS.
@@ -226,7 +226,7 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
 - [ ] **Step 8: Run tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test
+cd . && flutter test
 ```
 
 Expected: all tests pass. Fix any compilation issues from async API changes.
@@ -319,7 +319,7 @@ class InboxNotifier extends StateNotifier<InboxState> {
 - [ ] **Step 2: Run inbox notifier tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test test/data/inbox_notifier_test.dart
+cd . && flutter test test/data/inbox_notifier_test.dart
 ```
 
 Expected: all pass. If any reference `CursorPaginatedNotifier` methods, update accordingly.
@@ -403,7 +403,7 @@ class PaginatedNotifier<T> extends StateNotifier<PaginatedListState<T>> {
 - [ ] **Step 4: Delete cursor_paginated_notifier.dart**
 
 ```bash
-Remove-Item F:\OpenCode\fspez\lib\src\data\cursor_paginated_notifier.dart
+Remove-Item .\lib\src\data\cursor_paginated_notifier.dart
 ```
 
 - [ ] **Step 5: Update all imports**
@@ -411,7 +411,7 @@ Remove-Item F:\OpenCode\fspez\lib\src\data\cursor_paginated_notifier.dart
 Run grep to find any remaining imports of `cursor_paginated_notifier.dart` and update them to `paginated_notifier.dart`:
 
 ```bash
-cd F:\OpenCode\fspez && Select-String -Pattern "cursor_paginated_notifier" -Recurse -Path "lib/**/*.dart"
+cd . && Select-String -Pattern "cursor_paginated_notifier" -Recurse -Path "lib/**/*.dart"
 ```
 
 If any found, update those imports.
@@ -419,7 +419,7 @@ If any found, update those imports.
 - [ ] **Step 6: Run all tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test
+cd . && flutter test
 ```
 
 Expected: all pass.
@@ -491,7 +491,7 @@ Map<String, String> _headersFor(ApiEndpoint kind, SessionCookie? cookie) {
 - [ ] **Step 3: Run tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test
+cd . && flutter test
 ```
 
 Expected: all pass (no behavior change).
@@ -525,13 +525,13 @@ git add -A && git commit -m "refactor: deduplicate HTTP transport headers"
 - [ ] **Step 1: Create the directory**
 
 ```bash
-New-Item -ItemType Directory -Path F:\OpenCode\fspez\lib\src\data\api_responses -Force
+New-Item -ItemType Directory -Path .\lib\src\data\api_responses -Force
 ```
 
 - [ ] **Step 2: Find all files importing api_responses.dart**
 
 ```bash
-cd F:\OpenCode\fspez && Select-String -Pattern "import.*api_responses" -Recurse -Path "lib/**/*.dart"
+cd . && Select-String -Pattern "import.*api_responses" -Recurse -Path "lib/**/*.dart"
 ```
 
 Expected results: `feed_parser.dart`, `comment_parser.dart`, `inbox_parser.dart`, `comment_providers.dart`, etc.
@@ -608,13 +608,13 @@ Update existing importers: change `import 'api_responses.dart'` → `import 'api
 - [ ] **Step 10: Delete the old api_responses.dart**
 
 ```bash
-Remove-Item F:\OpenCode\fspez\lib\src\data\api_responses.dart
+Remove-Item .\lib\src\data\api_responses.dart
 ```
 
 - [ ] **Step 11: Run tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test
+cd . && flutter test
 ```
 
 Expected: all pass (pure mechanical refactor, no behavior change).
@@ -640,7 +640,7 @@ git add -A && git commit -m "refactor: split api_responses.dart into per-entity 
 - [ ] **Step 1: Check for other references to _PostMediaTile**
 
 ```bash
-cd F:\OpenCode\fspez && Select-String -Pattern "_PostMediaTile" -Recurse -Path "lib/**/*.dart" -SimpleMatch
+cd . && Select-String -Pattern "_PostMediaTile" -Recurse -Path "lib/**/*.dart" -SimpleMatch
 ```
 
 Expected: only `post_detail_screen.dart`. If so, the widget is a private class used only in that file. Extract with `@visibleForTesting` if needed, or keep package-private.
@@ -680,7 +680,7 @@ Replace all `_PostMediaTile(` with `PostMediaTile(` in the file. Add the import.
 - [ ] **Step 4: Run tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test
+cd . && flutter test
 ```
 
 Expected: all pass.
@@ -716,7 +716,7 @@ Under `dev_dependencies:`, remove:
 - [ ] **Step 2: Verify no imports reference removed packages**
 
 ```bash
-cd F:\OpenCode\fspez && Select-String -Pattern "^import.*(freezed|json_annotation|json_serializable|build_runner)" -Recurse -Path "lib/**/*.dart" "test/**/*.dart"
+cd . && Select-String -Pattern "^import.*(freezed|json_annotation|json_serializable|build_runner)" -Recurse -Path "lib/**/*.dart" "test/**/*.dart"
 ```
 
 Expected: no matches.
@@ -724,7 +724,7 @@ Expected: no matches.
 - [ ] **Step 3: Run flutter pub get and tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter pub get && flutter test
+cd . && flutter pub get && flutter test
 ```
 
 Expected: all pass.
@@ -803,7 +803,7 @@ With:
 - [ ] **Step 4: Run tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test
+cd . && flutter test
 ```
 
 Expected: all pass.
@@ -899,7 +899,7 @@ Or add a dummy/null-object pattern if callers prefer.
 - [ ] **Step 6: Run tests**
 
 ```bash
-cd F:\OpenCode\fspez && flutter test
+cd . && flutter test
 ```
 
 Expected: all pass.

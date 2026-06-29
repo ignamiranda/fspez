@@ -1,11 +1,72 @@
-# Rules
+# fspez — agent guide
 
 ## 🔴 Non-negotiable
 
-**No API key use ever.** The app must never embed, ship, or require an API key from any service (Reddit API, third-party services, etc.). This includes:
-- Hardcoded keys in source
-- Keys fetched at build time or runtime
-- Keys required for the app to function
+**No API key use ever.** The app must never embed, ship, or require an API key from any service. This includes hardcoded keys, build-time injection, or runtime requirements.
 
-Exception: Local dev/debugging may use temporary session tokens (e.g., `REDDIT_SESSION` in `.env`) that never ship in builds or reach users.
+Exception: local dev/debugging may use a `REDDIT_SESSION` env var (session cookie token, never committed). Session cookies stored via `flutter_secure_storage`, not `SharedPreferences`.
 
+## Architecture
+
+Cookie-based Reddit client — no OAuth, no app registration. WebView login flow captures a session cookie.
+
+```
+lib/
+├── main.dart                  ← entrypoint (ProviderScope, SharedPrefs + SecureStorage overrides)
+├── src/
+│   ├── data/                  ← HTTP transport, RedditClient, notifiers, repositories, providers
+│   ├── domain/                ← models (EquatableMixin hand-written), enums
+│   └── presentation/          ← screens, widgets, theme (Material 3), utils
+```
+
+**Auth gate**: `_AppGate` → `LoginScreen` or `_MainShell`. Shell: `IndexedStack` with 3 tabs (Feed, Inbox, Account), bottom `NavigationBar`.
+
+**HTTP layer**: `HttpTransport` wraps `http.Client`. Uses three base URLs:
+- `old.reddit.com` (read: `*.json` suffix, write: `/api/del`, `/api/save`)
+- `www.reddit.com` (write: `/api/comment`, `/api/submit`, `/api/media/asset.json`, etc.)
+
+6+ `ApiEndpoint` variants — each sets headers differently (User-Agent, Content-Type, Cookie, X-Modhash). `mediaUpload` includes X-Modhash header.
+
+**Media upload (image/video/gallery)**: two-step via `MediaUploadClient`:
+1. `POST /api/media/asset.json` → `UploadLease` (asset\_id, upload\_url = S3 presigned)
+2. `PUT` raw bytes to `upload_url` with `Content-Type: image/*` or `video/*`
+
+**Flair**: `SubmitNotifier` caches options per subreddit, 300ms debounce on subreddit field input.
+
+**State**: Riverpod. Optimistic UI via `OptimisticStateNotifier` for vote/save/hide. Feed cache with stale-while-revalidate via `FeedCache`.
+
+## Commands
+
+```sh
+flutter pub get                         # handles pubspec + flutter_inappwebview_windows dep override
+flutter analyze --no-pub                # CI uses --no-pub
+flutter test                            # 270 tests, all pass
+flutter run -d windows                  # Windows dev
+```
+
+No codegen, no build\_runner, no freezed. All models hand-written.
+
+## Testing quirks
+
+- **mocktail** for mocks (not mockito)
+- `AccountRepository` tests use `FakeSecureStorage` (custom in-memory fake)
+- `SessionAcquirer` tests exercise polling pattern (cookie acquisition from WebView)
+- No integration tests — WebView login can't be automated
+- Autotest: `FSPEZ_AUTOTEST_COMPOSE=1` env var + `REDDIT_SESSION` env var → launches `ComposeAutotestScreen` directly (bypasses normal app flow)
+- UI widget tests use standard `MaterialApp` wrappers with Riverpod `ProviderScope`
+
+## Config quirks
+
+- `dependency_overrides` in `pubspec.yaml`: `flutter_inappwebview_windows` → local `third_party/` path (vendored Windows WebView plugin fork)
+- `analysis_options.yaml`: excludes `third_party/**`, silences `invalid_annotation_target` (legacy from removed freezed)
+- `analysis_options.yaml` linter rules: `prefer_const_constructors`, `prefer_const_declarations`, `avoid_print`, `prefer_single_quotes`, `sort_child_properties_last`
+
+## CI/CD (`.github/workflows/build.yml`)
+
+On push/PR to `master`: `pub get → analyze --no-pub → test → build apk --release → github release`
+
+Conditional keystore signing step (requires `KEYSTORE_BASE64` secret). Release tag: `v{version}+{run_number}`.
+
+## Domain vocabulary
+
+Use terms from `CONTEXT.md`: **User** (physical human), **Account** (Reddit identity with cookie), **InboxItem** (DM or CommentNotification union), **Feed** (any paginated post card list), **Subreddit** (code) / community (UI text), **Draft** (local unsubmitted content). Avoid: Person, Message (for inbox items), Thing, Community (in code), Listing.

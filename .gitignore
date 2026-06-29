@@ -16,5 +16,10 @@ android/local.properties
 ios/Pods/
 ios/.symlinks/
 .env
+.env.local
+*.log
+.omo/
+.serena/
+.scratch/
 android/app/*.jks
 android/key.properties
