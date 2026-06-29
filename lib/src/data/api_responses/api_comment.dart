@@ -1,4 +1,7 @@
 import '../post_mapping.dart' as post_mapping;
+import '../../domain/models/comment.dart';
+import '../../domain/models/user_flair.dart';
+import '../parsers/shared_parsers.dart';
 
 class ApiComment {
   final String id;
@@ -91,6 +94,36 @@ class ApiComment {
       linkTitle: data['link_title'] as String?,
       linkPermalink: data['link_permalink'] as String?,
       commentSubreddit: data['subreddit'] as String?,
+    );
+  }
+
+  Comment toDomain() {
+    return Comment(
+      id: id,
+      body: body,
+      author: author,
+      score: score,
+      vote: parseVoteDirection(likes),
+      isSaved: saved,
+      isSubmitter: isSubmitter,
+      isModerator: distinguished == 'moderator',
+      isStickied: stickied,
+      awardCount: awardCount,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000),
+      postId: linkId,
+      parentId: parentId,
+      depth: depth,
+      replies: replies.map((r) => r.toDomain()).toList(),
+      isCollapsed: collapsed,
+      authorFlair: UserFlair.fromApi(
+        text: authorFlairText,
+        richtext: authorFlairRichtext,
+        backgroundColor: authorFlairBackgroundColor,
+        textColor: authorFlairTextColor,
+      ),
+      subreddit: commentSubreddit,
+      linkTitle: linkTitle,
+      linkPermalink: linkPermalink,
     );
   }
 }

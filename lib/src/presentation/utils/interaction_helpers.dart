@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../data/post_actions_service.dart';
+import '../../data/post_actions_notifier.dart';
 import '../../domain/enums/vote_direction.dart';
 
 void handleVote(
-  PostActionsService actions,
+  PostActionsNotifier actions,
   String fullname,
   VoteDirection direction,
 ) {
@@ -11,7 +11,7 @@ void handleVote(
 }
 
 Future<void> handleUnhide(
-  PostActionsService actions,
+  PostActionsNotifier actions,
   String fullname,
   BuildContext context, {
   Future<void> Function()? onUndo,
@@ -51,7 +51,7 @@ Future<void> handleUnhide(
 }
 
 Future<void> handleSave(
-  PostActionsService actions,
+  PostActionsNotifier actions,
   String fullname,
   BuildContext context, {
   bool wasSaved = false,
@@ -97,7 +97,7 @@ Future<void> handleSave(
 /// invalidate a provider so the deleted item disappears immediately).
 Future<bool> handleDelete(
   BuildContext context,
-  PostActionsService actions,
+  PostActionsNotifier actions,
   String fullname,
 ) async {
   final confirmed = await showDialog<bool>(

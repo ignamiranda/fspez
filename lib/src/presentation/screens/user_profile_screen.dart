@@ -524,7 +524,7 @@ class _BlockButton extends ConsumerWidget {
           child: OutlinedButton.icon(
             onPressed: () => handleUnblockUser(
               context: context,
-              notifier: ref.read(blockActionProvider.notifier),
+              notifier: ref.read(postActionsProvider.notifier),
               username: profile.username,
               accountId: profile.accountId,
             ),
@@ -542,7 +542,7 @@ class _BlockButton extends ConsumerWidget {
         child: OutlinedButton.icon(
           onPressed: () => handleBlockUser(
             context: context,
-            notifier: ref.read(blockActionProvider.notifier),
+            notifier: ref.read(postActionsProvider.notifier),
             username: profile.username,
             accountId: profile.accountId,
           ),

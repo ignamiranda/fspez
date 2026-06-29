@@ -10,15 +10,9 @@ import 'package:mocktail/mocktail.dart';
 class _MockInboxRepository extends Mock implements InboxRepository {}
 
 class _TestInboxNotifier extends InboxNotifier {
-  int refreshCalls = 0;
   int refreshUnreadCountCalls = 0;
 
   _TestInboxNotifier(super.repository, super.account) : super(autoLoad: false);
-
-  @override
-  Future<void> refresh() async {
-    refreshCalls++;
-  }
 
   @override
   Future<void> refreshUnreadCount() async {
@@ -132,6 +126,15 @@ void main() {
 
       when(() => repository.markAsRead(message.fullname, cookie))
           .thenThrow(Exception('boom'));
+      when(() => repository.fetchInbox(
+            after: any(named: 'after'),
+            sessionCookie: cookie,
+          )).thenAnswer(
+        (_) async => InboxFeed(
+          tab: InboxTab.all,
+          items: [_message(isNew: true)],
+        ),
+      );
       when(() => repository.fetchUnread(sessionCookie: cookie)).thenAnswer(
         (_) async => InboxFeed(
           tab: InboxTab.unread,
@@ -146,8 +149,10 @@ void main() {
 
       expect(notifier.state.unreadCount, 1);
       expect(notifier.state.messages.single.isNew, true);
-      expect(notifier.refreshCalls, 1);
-      expect(notifier.refreshUnreadCountCalls, 1);
+      verify(() => repository.fetchInbox(
+            after: any(named: 'after'),
+            sessionCookie: cookie,
+          )).called(1);
     });
   });
 }

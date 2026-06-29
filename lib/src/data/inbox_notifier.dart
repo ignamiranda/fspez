@@ -5,6 +5,7 @@ import '../domain/models/inbox_item.dart';
 import '../domain/models/inbox_feed.dart';
 import '../domain/models/account.dart';
 import 'inbox_repository.dart';
+import 'paginated_notifier.dart';
 
 class InboxState with EquatableMixin {
   final InboxTab tab;
@@ -54,8 +55,7 @@ class InboxState with EquatableMixin {
 class InboxNotifier extends StateNotifier<InboxState> {
   final InboxRepository _repository;
   final Account? _account;
-  String? after;
-  bool _hasMore = false;
+  PaginatedNotifier<InboxItem>? _paginated;
 
   InboxNotifier(this._repository, this._account, {bool autoLoad = true})
       : super(const InboxState(isLoading: true)) {
@@ -67,49 +67,11 @@ class InboxNotifier extends StateNotifier<InboxState> {
     }
   }
 
-  Future<void> loadTab(InboxTab tab) async {
-    state = state.copyWith(tab: tab, isLoading: true, clearError: true);
-    after = null;
-    _hasMore = false;
-    try {
-      final feed = await _fetch(tab, after: null);
-      after = feed.after;
-      state = state.copyWith(
-        messages: feed.items,
-        isLoading: false,
-        hasMore: feed.hasMorePages,
-        unreadCount: tab == InboxTab.unread ? feed.items.length : null,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  Future<void> loadMore() async {
-    if (state.isLoadingMore || !_hasMore) return;
-    state = state.copyWith(isLoadingMore: true);
-    try {
-      final feed = await _fetch(state.tab, after: after);
-      after = feed.after;
-      _hasMore = feed.hasMorePages;
-      state = state.copyWith(
-        messages: [...state.messages, ...feed.items],
-        isLoadingMore: false,
-        hasMore: feed.hasMorePages,
-      );
-    } catch (e) {
-      state = state.copyWith(isLoadingMore: false, error: e.toString());
-    }
-  }
-
-  Future<void> refresh() => loadTab(state.tab);
-
-  Future<InboxFeed> _fetch(InboxTab tab, {String? after}) {
+  /// Fetches a page from the appropriate inbox tab endpoint.
+  Future<PaginatedResult<InboxItem>> _fetchPage(InboxTab tab,
+      {String? after}) async {
     final cookie = _account?.sessionCookie;
-    return switch (tab) {
+    final feed = await switch (tab) {
       InboxTab.all =>
         _repository.fetchInbox(after: after, sessionCookie: cookie),
       InboxTab.unread =>
@@ -117,7 +79,52 @@ class InboxNotifier extends StateNotifier<InboxState> {
       InboxTab.sent =>
         _repository.fetchSent(after: after, sessionCookie: cookie),
     };
+    return PaginatedResult<InboxItem>(
+      items: feed.items,
+      after: feed.after,
+      hasMore: feed.hasMorePages,
+    );
   }
+
+  /// Syncs InboxState from the internal PaginatedNotifier's state.
+  void _syncFromPaginated({int? unreadCount}) {
+    if (_paginated == null) return;
+    final ps = _paginated!.state;
+    state = InboxState(
+      tab: state.tab,
+      messages: ps.items,
+      isLoading: ps.isLoading,
+      isLoadingMore: ps.isLoadingMore,
+      error: ps.error,
+      hasMore: ps.hasMore,
+      unreadCount: unreadCount ?? state.unreadCount,
+    );
+  }
+
+  Future<void> loadTab(InboxTab tab) async {
+    state = state.copyWith(tab: tab, isLoading: true, clearError: true);
+    _paginated = PaginatedNotifier<InboxItem>(
+      fetchPage: ({after}) => _fetchPage(tab, after: after),
+      autoLoad: false,
+    );
+    try {
+      await _paginated!.loadInitial();
+      _syncFromPaginated(
+        unreadCount:
+            tab == InboxTab.unread ? _paginated!.state.items.length : null,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (_paginated == null) return;
+    await _paginated!.loadMore();
+    _syncFromPaginated();
+  }
+
+  Future<void> refresh() => loadTab(state.tab);
 
   Future<void> refreshUnreadCount() async {
     final cookie = _account?.sessionCookie;

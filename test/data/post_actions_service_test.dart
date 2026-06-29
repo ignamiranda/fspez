@@ -1,11 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/delete_notifier.dart';
-import 'package:fspez/src/data/edit_notifier.dart';
-import 'package:fspez/src/data/hide_notifier.dart';
-import 'package:fspez/src/data/post_actions_service.dart';
+import 'package:fspez/src/data/post_actions_notifier.dart';
 import 'package:fspez/src/data/reddit_client.dart';
-import 'package:fspez/src/data/save_notifier.dart';
-import 'package:fspez/src/data/vote_notifier.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,12 +17,7 @@ SessionCookie _cookie() {
 void main() {
   late _MockRedditClient client;
   late SessionCookie cookie;
-  late VoteNotifier voteNotifier;
-  late SaveNotifier saveNotifier;
-  late HideNotifier hideNotifier;
-  late DeleteNotifier deleteNotifier;
-  late EditNotifier editNotifier;
-  late PostActionsService service;
+  late PostActionsNotifier notifier;
 
   setUpAll(() {
     registerFallbackValue(_cookie());
@@ -51,65 +41,49 @@ void main() {
           sessionCookie: any(named: 'sessionCookie'),
         )).thenAnswer((_) async {});
 
-    voteNotifier = VoteNotifier(client, cookie);
-    saveNotifier = SaveNotifier(client, cookie);
-    hideNotifier = HideNotifier(client, cookie);
-    deleteNotifier = DeleteNotifier(client, cookie);
-    editNotifier = EditNotifier(client);
-    service = PostActionsService(
-      voteNotifier: voteNotifier,
-      saveNotifier: saveNotifier,
-      hideNotifier: hideNotifier,
-      deleteNotifier: deleteNotifier,
-      editNotifier: editNotifier,
-      sessionCookie: cookie,
-    );
+    notifier = PostActionsNotifier(client, cookie);
   });
 
-  test('routes votes through VoteNotifier and keeps optimistic failures',
-      () async {
+  test('keeps optimistic vote on failure', () async {
     when(() => client.postForm(any(),
             fields: any(named: 'fields'),
             sessionCookie: any(named: 'sessionCookie')))
         .thenThrow(Exception('vote failed'));
 
-    service.vote('t3_post', VoteDirection.upvote);
+    await notifier.vote('t3_post', VoteDirection.upvote);
     await Future<void>.delayed(Duration.zero);
 
-    expect(voteNotifier.effectiveVote('t3_post', VoteDirection.none),
+    expect(notifier.effectiveVote('t3_post', VoteDirection.none),
         VoteDirection.upvote);
   });
 
-  test('routes saves through SaveNotifier and rethrows after reverting',
-      () async {
+  test('reverts save on failure', () async {
     when(() => client.save(any(), any())).thenThrow(
         const RedditApiException(statusCode: 403, message: 'Forbidden'));
 
     await expectLater(
-      () => service.toggleSave('t3_post'),
+      () => notifier.toggleSave('t3_post'),
       throwsA(isA<SaveException>()),
     );
-    expect(saveNotifier.effectiveSaved('t3_post', false), false);
+    expect(notifier.effectiveSaved('t3_post', false), false);
   });
 
-  test('routes hide and unhide through HideNotifier', () async {
-    await service.hide('t3_post');
-    expect(hideNotifier.state['t3_post'], true);
+  test('hide and unhide work correctly', () async {
+    await notifier.hide('t3_post');
+    expect(notifier.state.hides['t3_post'], true);
 
-    await service.unhide('t3_post');
-    expect(hideNotifier.state['t3_post'], isNull);
+    await notifier.unhide('t3_post');
+    expect(notifier.state.hides['t3_post'], isNull);
     verify(() => client.unhide('t3_post', cookie)).called(1);
   });
 
-  test('routes delete through DeleteNotifier with active session', () async {
-    await service.delete('t3_post');
-
+  test('delete routes to client', () async {
+    await notifier.delete('t3_post');
     verify(() => client.deleteContent('t3_post', cookie)).called(1);
   });
 
-  test('routes edits through EditNotifier', () async {
-    await service.edit('t3_post', 'updated text');
-
+  test('edit routes to client', () async {
+    await notifier.edit('t3_post', 'updated text');
     verify(() => client.editContent(
           thingId: 't3_post',
           text: 'updated text',

@@ -254,7 +254,7 @@ class _PostsTab extends ConsumerWidget {
                     post.author != '[deleted]'
                 ? () => handleBlockUser(
                     context: context,
-                    notifier: ref.read(blockActionProvider.notifier),
+                    notifier: ref.read(postActionsProvider.notifier),
                     username: post.author,
                   )
                 : null,
@@ -544,7 +544,7 @@ class _MediaTab extends ConsumerWidget {
                     post.author != '[deleted]'
                 ? () => handleBlockUser(
                     context: context,
-                    notifier: ref.read(blockActionProvider.notifier),
+                    notifier: ref.read(postActionsProvider.notifier),
                     username: post.author,
                   )
                 : null,

@@ -217,7 +217,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
             onBlock: account != null && msg.author != '[deleted]'
                 ? () => handleBlockUser(
                     context: context,
-                    notifier: ref.read(blockActionProvider.notifier),
+                    notifier: ref.read(postActionsProvider.notifier),
                     username: msg.author,
                   )
                 : null,

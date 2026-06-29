@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../data/block_action_notifier.dart';
+import '../../data/post_actions_notifier.dart';
 
 /// Shows a confirmation dialog and blocks [username] on confirm.
 Future<void> handleBlockUser({
   required BuildContext context,
-  required BlockActionNotifier notifier,
+  required PostActionsNotifier notifier,
   required String username,
   String? accountId,
 }) async {
@@ -37,7 +37,7 @@ Future<void> handleBlockUser({
     if (accountId != null) {
       await notifier.blockKnown(username, accountId);
     } else {
-      await notifier.block(username);
+      await notifier.blockUser(username);
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -51,7 +51,7 @@ Future<void> handleBlockUser({
                 if (accountId != null) {
                   await notifier.unblockKnown(username, accountId);
                 } else {
-                  await notifier.unblock(username);
+                  await notifier.unblockUser(username);
                 }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -88,7 +88,7 @@ Future<void> handleBlockUser({
 /// Shows a confirmation dialog and unblocks [username] on confirm.
 Future<void> handleUnblockUser({
   required BuildContext context,
-  required BlockActionNotifier notifier,
+  required PostActionsNotifier notifier,
   required String username,
   String? accountId,
 }) async {
@@ -96,7 +96,7 @@ Future<void> handleUnblockUser({
     if (accountId != null) {
       await notifier.unblockKnown(username, accountId);
     } else {
-      await notifier.unblock(username);
+      await notifier.unblockUser(username);
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -110,7 +110,7 @@ Future<void> handleUnblockUser({
                 if (accountId != null) {
                   await notifier.blockKnown(username, accountId);
                 } else {
-                  await notifier.block(username);
+                  await notifier.blockUser(username);
                 }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -122,9 +122,9 @@ Future<void> handleUnblockUser({
                 }
               } catch (_) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Block failed')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Block failed')),
+                  );
                 }
               }
             },
