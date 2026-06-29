@@ -4,6 +4,7 @@ import 'account_client.dart';
 import 'action_notifier.dart';
 import 'interaction_client.dart';
 import 'media_client.dart';
+import 'reddit_client_provider.dart';
 import 'message_client.dart';
 import 'submit_client.dart';
 import 'auth_providers.dart';
