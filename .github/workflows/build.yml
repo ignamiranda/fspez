@@ -21,7 +21,33 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Restore pub cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      - name: Test
+        run: flutter test
+
+      - name: Decode keystore
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "storeFile=upload-keystore.jks" > android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD || secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
 
       - name: Build APK
         run: flutter build apk --release
@@ -32,10 +58,16 @@ jobs:
           name: fspez-apk
           path: build/app/outputs/flutter-apk/*.apk
 
+      - name: Get version
+        if: github.ref == 'refs/heads/master'
+        id: version
+        run: |
+          grep '^version: ' pubspec.yaml | sed 's/version: //' | sed 's/^/VERSION=/' >> $GITHUB_OUTPUT
+
       - name: Create Release
         if: github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0+${{ github.run_number }}
+          tag_name: v${{ steps.version.outputs.VERSION }}+${{ github.run_number }}
           files: build/app/outputs/flutter-apk/*.apk
           generate_release_notes: true
