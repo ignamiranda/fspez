@@ -16,6 +16,7 @@ import '../utils/profile_formatters.dart';
 import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'post_detail_screen.dart';
+import '../widgets/report_sheet.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   final String username;
@@ -142,17 +143,37 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text('u/${widget.username}'),
-        actions: _tabController.index == 2
-            ? null
-            : [
-                IconButton(
-                  icon: const Icon(Icons.sort),
-                  tooltip: _tabController.index == 0
-                      ? 'Sort posts'
-                      : 'Sort comments',
-                  onPressed: _showSortMenu,
+        actions: [
+          if (_tabController.index != 2)
+            IconButton(
+              icon: const Icon(Icons.sort),
+              tooltip: _tabController.index == 0
+                  ? 'Sort posts'
+                  : 'Sort comments',
+              onPressed: _showSortMenu,
+            ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => showPostActionSheet(
+              context,
+              primaryActions: [
+                BottomSheetAction(
+                  icon: Icons.flag_outlined,
+                  label: 'Report u/${widget.username}',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    showReportSheet(
+                      context,
+                      thingId: 't2_${widget.username}',
+                      subreddit: null,
+                    );
+                  },
                 ),
               ],
+              authorActions: [],
+            ),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -208,11 +229,16 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_bubble_outline,
-                size: 48, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No comments yet.',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              'No comments yet.',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
@@ -282,8 +308,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.arrow_upward,
-                          size: 14, color: theme.colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.arrow_upward,
+                        size: 14,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         '${comment.score}',
@@ -336,15 +365,21 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 const SizedBox(height: 4),
                 if (profile.isGold)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade100,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text('Gold',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.amber.shade900)),
+                    child: Text(
+                      'Gold',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
                   ),
                 const SizedBox(height: 10),
                 Text(
@@ -387,8 +422,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.person_off_outlined,
-                size: 48, color: theme.colorScheme.error),
+            Icon(
+              Icons.person_off_outlined,
+              size: 48,
+              color: theme.colorScheme.error,
+            ),
             const SizedBox(height: 8),
             Text('Could not load profile.', style: theme.textTheme.bodySmall),
           ],
@@ -432,9 +470,12 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 12),
         Text(label, style: theme.textTheme.bodyMedium),
         const Spacer(),
-        Text(value,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

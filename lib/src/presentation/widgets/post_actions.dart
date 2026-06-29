@@ -94,9 +94,10 @@ class PostHeader extends StatelessWidget {
               border: Border.all(color: theme.colorScheme.tertiary),
               borderRadius: BorderRadius.circular(3),
             ),
-            child: Text('PINNED',
-                style:
-                    TextStyle(fontSize: 9, color: theme.colorScheme.tertiary)),
+            child: Text(
+              'PINNED',
+              style: TextStyle(fontSize: 9, color: theme.colorScheme.tertiary),
+            ),
           ),
         if (post.isNsfw)
           Container(
@@ -105,8 +106,10 @@ class PostHeader extends StatelessWidget {
               border: Border.all(color: theme.colorScheme.error),
               borderRadius: BorderRadius.circular(3),
             ),
-            child: Text('NSFW',
-                style: TextStyle(fontSize: 9, color: theme.colorScheme.error)),
+            child: Text(
+              'NSFW',
+              style: TextStyle(fontSize: 9, color: theme.colorScheme.error),
+            ),
           ),
         if (post.crosspostParent != null)
           Container(
@@ -119,10 +122,7 @@ class PostHeader extends StatelessWidget {
               post.crosspostParent!.subreddit.name.isNotEmpty
                   ? 'Crosspost'
                   : 'Crosspost',
-              style: TextStyle(
-                fontSize: 9,
-                color: theme.colorScheme.tertiary,
-              ),
+              style: TextStyle(fontSize: 9, color: theme.colorScheme.tertiary),
             ),
           ),
       ],
@@ -161,6 +161,7 @@ class PostActions extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onHide;
+  final VoidCallback? onReport;
   final VoidCallback? onTap;
 
   const PostActions({
@@ -173,6 +174,7 @@ class PostActions extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onHide,
+    this.onReport,
     this.onTap,
   });
 
@@ -190,8 +192,9 @@ class PostActions extends StatelessWidget {
                 ? Icons.arrow_upward
                 : Icons.arrow_upward_outlined,
             label: formatCount(post.score),
-            color:
-                vote == VoteDirection.upvote ? theme.colorScheme.primary : null,
+            color: vote == VoteDirection.upvote
+                ? theme.colorScheme.primary
+                : null,
             onTap: () => onVote?.call(VoteDirection.upvote),
           ),
           if (post.upvoteRatio != null) ...[
@@ -238,24 +241,19 @@ class PostActions extends StatelessWidget {
           ],
           if (onEdit != null) ...[
             const SizedBox(width: 12),
-            _ActionButton(
-              icon: Icons.edit_outlined,
-              onTap: onEdit,
-            ),
+            _ActionButton(icon: Icons.edit_outlined, onTap: onEdit),
           ],
           if (onDelete != null) ...[
             const SizedBox(width: 12),
-            _ActionButton(
-              icon: Icons.delete_outline,
-              onTap: onDelete,
-            ),
+            _ActionButton(icon: Icons.delete_outline, onTap: onDelete),
           ],
           if (onHide != null) ...[
             const SizedBox(width: 12),
-            _ActionButton(
-              icon: Icons.visibility_off_outlined,
-              onTap: onHide,
-            ),
+            _ActionButton(icon: Icons.visibility_off_outlined, onTap: onHide),
+          ],
+          if (onReport != null) ...[
+            const SizedBox(width: 12),
+            _ActionButton(icon: Icons.flag_outlined, onTap: onReport),
           ],
         ],
       ),
@@ -269,12 +267,7 @@ class _ActionButton extends StatelessWidget {
   final Color? color;
   final VoidCallback? onTap;
 
-  const _ActionButton({
-    required this.icon,
-    this.label,
-    this.color,
-    this.onTap,
-  });
+  const _ActionButton({required this.icon, this.label, this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {

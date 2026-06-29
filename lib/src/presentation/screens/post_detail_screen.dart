@@ -21,6 +21,7 @@ import '../widgets/post_media_tile.dart';
 import '../widgets/reddit_body.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
+import '../widgets/report_sheet.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final Post post;
@@ -42,8 +43,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ref.read(appSettingsProvider).defaultCommentSort ?? CommentSort.best;
   }
 
-  ({String subreddit, String postId, CommentSort sort}) _postDetailParams(
-      [Post? post]) {
+  ({String subreddit, String postId, CommentSort sort}) _postDetailParams([
+    Post? post,
+  ]) {
     final target = post ?? widget.post;
     return (
       subreddit: target.subreddit.name,
@@ -76,11 +78,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   void _replyToComment(String commentId, String author, String? body) {
-    _openComposer(
-      thingId: commentId,
-      parentAuthor: author,
-      parentBody: body,
-    );
+    _openComposer(thingId: commentId, parentAuthor: author, parentBody: body);
   }
 
   @override
@@ -105,10 +103,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           saveOverrides: saveOverrides,
           loggedIn: account != null,
         ),
-        loading: () => _buildBody(context, null,
-            voteOverrides: voteOverrides,
-            saveOverrides: saveOverrides,
-            commentsLoading: true),
+        loading: () => _buildBody(
+          context,
+          null,
+          voteOverrides: voteOverrides,
+          saveOverrides: saveOverrides,
+          commentsLoading: true,
+        ),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -117,8 +118,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               children: [
                 const Icon(Icons.error_outline, size: 40),
                 const SizedBox(height: 8),
-                Text('Failed to load comments',
-                    style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  'Failed to load comments',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -144,10 +147,20 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final actions = ref.read(postActionsServiceProvider);
     final username = ref.read(activeAccountProvider)?.username;
     final settings = ref.watch(appSettingsProvider);
-    final shouldBlur = !_sensitiveRevealed &&
+    final shouldBlur =
+        !_sensitiveRevealed &&
         ((post.isNsfw && settings.nsfwBlur) ||
             (post.isSpoiler && settings.spoilerBlur));
     final showAwards = settings.showAwards;
+
+    void onReportPost() => showReportSheet(
+      context,
+      thingId: post.fullname,
+      subreddit: post.subreddit.name,
+    );
+
+    void onReportComment(String fullname, String? subreddit) =>
+        showReportSheet(context, thingId: fullname, subreddit: subreddit);
 
     return Column(
       children: [
@@ -167,27 +180,37 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     ? () {
                         final wasSaved =
                             saveOverrides[postFullname] ?? post.isSaved;
-                        handleSave(actions, postFullname, context,
-                            wasSaved: wasSaved);
+                        handleSave(
+                          actions,
+                          postFullname,
+                          context,
+                          wasSaved: wasSaved,
+                        );
                       }
                     : null,
                 onEdit: username != null && post.author == username
                     ? () {
-                        showEditSheet(context,
-                                currentText: post.selftext ?? '',
-                                readOnlyTitle: post.title,
-                                thingId: postFullname)
-                            .then((saved) {
+                        showEditSheet(
+                          context,
+                          currentText: post.selftext ?? '',
+                          readOnlyTitle: post.title,
+                          thingId: postFullname,
+                        ).then((saved) {
                           if (saved == true && context.mounted) {
                             ref.invalidate(
-                                postDetailProvider(_postDetailParams(post)));
+                              postDetailProvider(_postDetailParams(post)),
+                            );
                           }
                         });
                       }
                     : null,
-                onDelete: actions != null && username != null && post.author == username
+                onDelete:
+                    actions != null &&
+                        username != null &&
+                        post.author == username
                     ? () => handleDelete(context, actions, postFullname)
                     : null,
+                onReport: onReportPost,
               ),
               if (post.selftext != null && post.selftext!.isNotEmpty)
                 Padding(
@@ -201,7 +224,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   isSpoiler: post.isSpoiler,
                   onReveal: () => setState(() => _sensitiveRevealed = true),
                   child: PostMediaTile(
-                    imageUrl: post.thumbnailUrl ??
+                    imageUrl:
+                        post.thumbnailUrl ??
                         (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
                     isVideo: true,
                     onTap: () => MediaViewer.show(
@@ -268,8 +292,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 )
               else if (post.type == PostType.link && post.url != null)
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   child: InkWell(
                     onTap: () => openUrl(post.url!),
                     child: Text(
@@ -340,54 +366,62 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   child: Center(child: Text('No comments yet')),
                 )
               else
-                ...comments.map((c) => CommentTree(
-                      comment: c,
-                      showAwards: showAwards,
-                      voteOverrides: voteOverrides,
-                      onVote: actions != null
-                          ? (fullname, dir) =>
-                              handleVote(actions, fullname, dir)
-                          : null,
-                      saveOverrides: saveOverrides,
-                      onSave: actions != null
-                          ? (fullname) =>
-                              handleSave(actions, fullname, context)
-                          : null,
-                      onReply: loggedIn ? _replyToComment : null,
-                      onAuthorTap: (author) {
-                        if (author != '[deleted]') {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  UserProfileScreen(username: author),
-                            ),
-                          );
-                        }
-                      },
-                      onEdit: username != null && c.author == username
-                          ? (fullname) {
-                              showEditSheet(context,
-                                      currentText: c.body, thingId: fullname)
-                                  .then((saved) {
-                                if (saved == true && context.mounted) {
-                                  ref.invalidate(postDetailProvider(
-                                      _postDetailParams(post)));
-                                }
-                              });
-                            }
-                          : null,
-                      onDelete: actions != null && username != null && c.author == username
-                          ? (fullname) {
-                              handleDelete(context, actions, fullname)
-                                  .then((deleted) {
-                                if (deleted && context.mounted) {
-                                  ref.invalidate(postDetailProvider(
-                                      _postDetailParams(post)));
-                                }
-                              });
-                            }
-                          : null,
-                    )),
+                ...comments.map(
+                  (c) => CommentTree(
+                    comment: c,
+                    showAwards: showAwards,
+                    voteOverrides: voteOverrides,
+                    onVote: actions != null
+                        ? (fullname, dir) => handleVote(actions, fullname, dir)
+                        : null,
+                    saveOverrides: saveOverrides,
+                    onSave: actions != null
+                        ? (fullname) => handleSave(actions, fullname, context)
+                        : null,
+                    onReply: loggedIn ? _replyToComment : null,
+                    onReport: onReportComment,
+                    onAuthorTap: (author) {
+                      if (author != '[deleted]') {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => UserProfileScreen(username: author),
+                          ),
+                        );
+                      }
+                    },
+                    onEdit: username != null && c.author == username
+                        ? (fullname) {
+                            showEditSheet(
+                              context,
+                              currentText: c.body,
+                              thingId: fullname,
+                            ).then((saved) {
+                              if (saved == true && context.mounted) {
+                                ref.invalidate(
+                                  postDetailProvider(_postDetailParams(post)),
+                                );
+                              }
+                            });
+                          }
+                        : null,
+                    onDelete:
+                        actions != null &&
+                            username != null &&
+                            c.author == username
+                        ? (fullname) {
+                            handleDelete(context, actions, fullname).then((
+                              deleted,
+                            ) {
+                              if (deleted && context.mounted) {
+                                ref.invalidate(
+                                  postDetailProvider(_postDetailParams(post)),
+                                );
+                              }
+                            });
+                          }
+                        : null,
+                  ),
+                ),
               const SizedBox(height: 8),
             ],
           ),
@@ -401,9 +435,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: theme.dividerColor),
-        ),
+        border: Border(top: BorderSide(color: theme.dividerColor)),
       ),
       padding: EdgeInsets.only(
         left: 12,
@@ -416,8 +448,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         borderRadius: BorderRadius.circular(8),
         child: Row(
           children: [
-            Icon(Icons.edit_outlined,
-                size: 18, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 8),
             Text(
               'Add a comment...',
@@ -442,6 +477,7 @@ class _PostDetailHeader extends StatelessWidget {
   final VoidCallback? onSave;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onReport;
 
   const _PostDetailHeader({
     required this.post,
@@ -453,6 +489,7 @@ class _PostDetailHeader extends StatelessWidget {
     this.onSave,
     this.onEdit,
     this.onDelete,
+    this.onReport,
   });
 
   @override
@@ -467,18 +504,16 @@ class _PostDetailHeader extends StatelessWidget {
             showAwards: showAwards,
             onSubredditTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => SubredditFeedScreen(
-                  subredditName: post.subreddit.name,
-                ),
+                builder: (_) =>
+                    SubredditFeedScreen(subredditName: post.subreddit.name),
               ),
             ),
             onAuthorTap: post.author != '[deleted]'
                 ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            UserProfileScreen(username: post.author),
-                      ),
-                    )
+                    MaterialPageRoute(
+                      builder: (_) => UserProfileScreen(username: post.author),
+                    ),
+                  )
                 : null,
           ),
           const SizedBox(height: 8),
@@ -497,6 +532,7 @@ class _PostDetailHeader extends StatelessWidget {
             onSave: onSave,
             onEdit: onEdit,
             onDelete: onDelete,
+            onReport: onReport,
           ),
         ],
       ),
