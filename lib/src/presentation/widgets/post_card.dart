@@ -31,6 +31,7 @@ class PostCard extends ConsumerStatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onSubredditTap;
   final VoidCallback? onAuthorTap;
+  final VoidCallback? onBlock;
   final VideoPlaybackCoordinator? videoPlaybackCoordinator;
 
   const PostCard({
@@ -48,6 +49,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.onTap,
     this.onSubredditTap,
     this.onAuthorTap,
+    this.onBlock,
     this.videoPlaybackCoordinator,
   });
 
@@ -92,7 +94,8 @@ class _PostCardState extends ConsumerState<PostCard> {
     final density = settings.feedDensity;
     final showAwards = settings.showAwards;
     final compact = density == FeedDensity.compact;
-    final hasFeedMedia = widget.post.videoUrl != null ||
+    final hasFeedMedia =
+        widget.post.videoUrl != null ||
         widget.post.mediaUrls.isNotEmpty ||
         (widget.post.type == PostType.image && widget.post.url != null);
     final titleMaxLines = compact ? 1 : 2;
@@ -107,11 +110,16 @@ class _PostCardState extends ConsumerState<PostCard> {
             bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
           ),
         ),
-        padding:
-            EdgeInsets.symmetric(vertical: compact ? 4 : 10, horizontal: 0),
+        padding: EdgeInsets.symmetric(
+          vertical: compact ? 4 : 10,
+          horizontal: 0,
+        ),
         child: Padding(
           padding: EdgeInsets.only(
-              left: 12, top: compact ? 4 : 10, bottom: compact ? 4 : 10),
+            left: 12,
+            top: compact ? 4 : 10,
+            bottom: compact ? 4 : 10,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -129,6 +137,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   onDelete: widget.onDelete,
                   onHide: widget.onHide,
                   onUnhide: widget.onUnhide,
+                  onBlock: widget.onBlock,
                 ),
                 const SizedBox(height: 2),
                 _TitleWithThumbnail(
@@ -151,6 +160,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   onDelete: widget.onDelete,
                   onHide: widget.onHide,
                   onUnhide: widget.onUnhide,
+                  onBlock: widget.onBlock,
                 ),
                 const SizedBox(height: 6),
                 _buildMediaSection(theme, cs, density: density),
@@ -190,6 +200,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   onDelete: widget.onDelete,
                   onHide: widget.onHide,
                   onUnhide: widget.onUnhide,
+                  onBlock: widget.onBlock,
                 ),
                 const SizedBox(height: 2),
                 _TitleWithThumbnail(
@@ -252,7 +263,8 @@ class _PostCardState extends ConsumerState<PostCard> {
         postKey: post.fullname,
         videoUrl: post.videoUrl!,
         thumbnailUrl: post.thumbnailUrl,
-        videoPlaybackCoordinator: widget.videoPlaybackCoordinator ??
+        videoPlaybackCoordinator:
+            widget.videoPlaybackCoordinator ??
             GlobalVideoPlaybackCoordinator.instance,
         onTap: () => MediaViewer.show(
           context,
@@ -335,10 +347,7 @@ class _SensitiveOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final labels = <String>[
-      if (isNsfw) 'NSFW',
-      if (isSpoiler) 'Spoiler',
-    ];
+    final labels = <String>[if (isNsfw) 'NSFW', if (isSpoiler) 'Spoiler'];
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -356,9 +365,7 @@ class _SensitiveOverlay extends StatelessWidget {
                 child: child,
               ),
               // Dark scrim
-              Container(
-                color: Colors.black54,
-              ),
+              Container(color: Colors.black54),
               // Label + reveal button
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -416,6 +423,7 @@ class _OverflowMenu extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onHide;
   final VoidCallback? onUnhide;
+  final VoidCallback? onBlock;
 
   const _OverflowMenu({
     required this.post,
@@ -424,6 +432,7 @@ class _OverflowMenu extends StatelessWidget {
     this.onDelete,
     this.onHide,
     this.onUnhide,
+    this.onBlock,
   });
 
   @override
@@ -432,75 +441,99 @@ class _OverflowMenu extends StatelessWidget {
     final authorActions = <BottomSheetAction>[];
 
     // Copy actions
-    primaryActions.add(BottomSheetAction(
-      icon: Icons.link,
-      label: 'Copy Reddit link',
-      onTap: () {
-        final link = 'https://www.reddit.com${post.permalink}';
-        Clipboard.setData(ClipboardData(text: link));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Copied')),
-        );
-      },
-    ));
+    primaryActions.add(
+      BottomSheetAction(
+        icon: Icons.link,
+        label: 'Copy Reddit link',
+        onTap: () {
+          final link = 'https://www.reddit.com${post.permalink}';
+          Clipboard.setData(ClipboardData(text: link));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Copied')));
+        },
+      ),
+    );
 
     if (post.url != null &&
         !post.url!.startsWith('https://www.reddit.com') &&
         post.type != PostType.self_) {
-      primaryActions.add(BottomSheetAction(
-        icon: Icons.open_in_new,
-        label: 'Copy external link',
-        onTap: () {
-          Clipboard.setData(ClipboardData(text: post.url!));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Copied')),
-          );
-        },
-      ));
+      primaryActions.add(
+        BottomSheetAction(
+          icon: Icons.open_in_new,
+          label: 'Copy external link',
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: post.url!));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Copied')));
+          },
+        ),
+      );
     }
 
     final textToCopy = post.selftext != null && post.selftext!.isNotEmpty
         ? '${post.title}\n\n${post.selftext}'
         : post.title;
-    primaryActions.add(BottomSheetAction(
-      icon: Icons.content_copy,
-      label: 'Copy text',
-      onTap: () {
-        Clipboard.setData(ClipboardData(text: textToCopy));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Copied')),
-        );
-      },
-    ));
+    primaryActions.add(
+      BottomSheetAction(
+        icon: Icons.content_copy,
+        label: 'Copy text',
+        onTap: () {
+          Clipboard.setData(ClipboardData(text: textToCopy));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Copied')));
+        },
+      ),
+    );
 
     if (onHide != null) {
-      primaryActions.add(BottomSheetAction(
-        icon: Icons.visibility_off_outlined,
-        label: 'Hide',
-        onTap: () => onHide!(),
-      ));
+      primaryActions.add(
+        BottomSheetAction(
+          icon: Icons.visibility_off_outlined,
+          label: 'Hide',
+          onTap: () => onHide!(),
+        ),
+      );
     }
     if (onUnhide != null) {
-      primaryActions.add(BottomSheetAction(
-        icon: Icons.visibility_outlined,
-        label: 'Unhide',
-        onTap: () => onUnhide!(),
-      ));
+      primaryActions.add(
+        BottomSheetAction(
+          icon: Icons.visibility_outlined,
+          label: 'Unhide',
+          onTap: () => onUnhide!(),
+        ),
+      );
     }
     if (onEdit != null) {
-      authorActions.add(BottomSheetAction(
-        icon: Icons.edit_outlined,
-        label: 'Edit',
-        onTap: () => onEdit!(),
-      ));
+      authorActions.add(
+        BottomSheetAction(
+          icon: Icons.edit_outlined,
+          label: 'Edit',
+          onTap: () => onEdit!(),
+        ),
+      );
     }
     if (onDelete != null) {
-      authorActions.add(BottomSheetAction(
-        icon: Icons.delete_outline,
-        label: 'Delete',
-        onTap: () => onDelete!(),
-        isDestructive: true,
-      ));
+      authorActions.add(
+        BottomSheetAction(
+          icon: Icons.delete_outline,
+          label: 'Delete',
+          onTap: () => onDelete!(),
+          isDestructive: true,
+        ),
+      );
+    }
+
+    if (onBlock != null) {
+      primaryActions.add(
+        BottomSheetAction(
+          icon: Icons.block,
+          label: 'Block u/${post.author}',
+          onTap: () => onBlock!(),
+        ),
+      );
     }
 
     if (primaryActions.isEmpty && authorActions.isEmpty) {
@@ -566,9 +599,7 @@ class _VoteButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(4),
-            child: Center(
-              child: Icon(icon, size: 20, color: color),
-            ),
+            child: Center(child: Icon(icon, size: 20, color: color)),
           ),
         ),
       ),
@@ -712,6 +743,7 @@ class _MetadataRow extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onHide;
   final VoidCallback? onUnhide;
+  final VoidCallback? onBlock;
 
   const _MetadataRow({
     required this.post,
@@ -726,6 +758,7 @@ class _MetadataRow extends StatelessWidget {
     this.onDelete,
     this.onHide,
     this.onUnhide,
+    this.onBlock,
   });
 
   @override
@@ -765,6 +798,7 @@ class _MetadataRow extends StatelessWidget {
             onDelete: onDelete,
             onHide: onHide,
             onUnhide: onUnhide,
+            onBlock: onBlock,
           ),
         ),
       ],
@@ -857,11 +891,14 @@ class _ComfortableMetadataContent extends StatelessWidget {
               border: Border.all(color: cs.tertiary),
               borderRadius: BorderRadius.circular(2),
             ),
-            child: Text('PINNED',
-                style: TextStyle(
-                    fontSize: 9,
-                    color: cs.tertiary,
-                    fontWeight: FontWeight.w700)),
+            child: Text(
+              'PINNED',
+              style: TextStyle(
+                fontSize: 9,
+                color: cs.tertiary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
         if (post.isNsfw) ...[
@@ -872,9 +909,14 @@ class _ComfortableMetadataContent extends StatelessWidget {
               border: Border.all(color: cs.error),
               borderRadius: BorderRadius.circular(2),
             ),
-            child: Text('NSFW',
-                style: TextStyle(
-                    fontSize: 9, color: cs.error, fontWeight: FontWeight.w700)),
+            child: Text(
+              'NSFW',
+              style: TextStyle(
+                fontSize: 9,
+                color: cs.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
         if (post.isSpoiler) ...[
@@ -885,11 +927,14 @@ class _ComfortableMetadataContent extends StatelessWidget {
               border: Border.all(color: cs.tertiary),
               borderRadius: BorderRadius.circular(2),
             ),
-            child: Text('SPOILER',
-                style: TextStyle(
-                    fontSize: 9,
-                    color: cs.tertiary,
-                    fontWeight: FontWeight.w700)),
+            child: Text(
+              'SPOILER',
+              style: TextStyle(
+                fontSize: 9,
+                color: cs.tertiary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
         if (post.crosspostParent != null) ...[
@@ -1083,14 +1128,15 @@ class _PostActionBar extends StatelessWidget {
               color: upActive
                   ? cs.primary
                   : downActive
-                      ? cs.secondary
-                      : cs.onSurfaceVariant,
+                  ? cs.secondary
+                  : cs.onSurfaceVariant,
             ),
           ),
         ),
         _VoteButton(
-          icon:
-              downActive ? Icons.arrow_downward : Icons.arrow_downward_outlined,
+          icon: downActive
+              ? Icons.arrow_downward
+              : Icons.arrow_downward_outlined,
           active: downActive,
           color: downActive ? cs.secondary : cs.onSurfaceVariant,
           activeColor: cs.secondary,
@@ -1290,9 +1336,7 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
             )
           : const AspectRatio(
               aspectRatio: 16 / 9,
-              child: Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             );
     } else {
       child = Stack(
@@ -1372,10 +1416,7 @@ class _ControlCircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _ControlCircleButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _ControlCircleButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1432,8 +1473,10 @@ class _MediaTile extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(6),
@@ -1465,10 +1508,7 @@ class _MediaTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: GestureDetector(
-        onTap: onTap,
-        child: child,
-      ),
+      child: GestureDetector(onTap: onTap, child: child),
     );
   }
 }

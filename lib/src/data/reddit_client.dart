@@ -9,17 +9,23 @@ class RedditClient {
   final HttpTransport _transport;
 
   RedditClient({http.Client? httpClient, HttpTransport? transport})
-      : _transport = transport ?? HttpTransport(httpClient: httpClient);
+    : _transport = transport ?? HttpTransport(httpClient: httpClient);
 
-  Future<Map<String, dynamic>> get(String path,
-      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, String>? queryParams,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.readJsonUri(path, queryParams: queryParams);
     final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
     return _transport.handleJsonResponse(response);
   }
 
-  Future<String> getHtml(String path,
-      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+  Future<String> getHtml(
+    String path, {
+    Map<String, String>? queryParams,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.webUri(path, queryParams: queryParams);
     final response = await _transport.getHtml(uri, sessionCookie);
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -31,8 +37,11 @@ class RedditClient {
     );
   }
 
-  Future<Map<String, dynamic>> post(String path,
-      {Map<String, dynamic>? body, SessionCookie? sessionCookie}) async {
+  Future<Map<String, dynamic>> post(
+    String path, {
+    Map<String, dynamic>? body,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.webUri(path);
     final response = await _transport.post(
       uri,
@@ -43,15 +52,21 @@ class RedditClient {
     return _transport.handleJsonResponse(response);
   }
 
-  Future<dynamic> getRaw(String path,
-      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+  Future<dynamic> getRaw(
+    String path, {
+    Map<String, String>? queryParams,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.readJsonUri(path, queryParams: queryParams);
     final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
     return _transport.handleRawJsonResponse(response);
   }
 
-  Future<Map<String, dynamic>> postForm(String path,
-      {Map<String, String>? fields, SessionCookie? sessionCookie}) async {
+  Future<Map<String, dynamic>> postForm(
+    String path, {
+    Map<String, String>? fields,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.webUri(path);
     final response = await _transport.post(
       uri,
@@ -94,7 +109,10 @@ class RedditClient {
   }
 
   Future<void> _oldRedditPost(
-      String path, String fullname, SessionCookie sessionCookie) async {
+    String path,
+    String fullname,
+    SessionCookie sessionCookie,
+  ) async {
     final uri = _transport.oldRedditUri(path);
     final response = await _transport.post(
       uri,
@@ -152,12 +170,16 @@ class RedditClient {
             final errors = jsonField['errors'];
             if (errors is List && errors.isNotEmpty) {
               throw RedditApiException(
-                  statusCode: response.statusCode, message: response.body);
+                statusCode: response.statusCode,
+                message: response.body,
+              );
             }
           }
           if (decoded['error'] != null) {
             throw RedditApiException(
-                statusCode: response.statusCode, message: response.body);
+              statusCode: response.statusCode,
+              message: response.body,
+            );
           }
         }
       } catch (_) {}
@@ -200,18 +222,58 @@ class RedditClient {
   }
 
   Future<void> deleteContent(
-      String fullname, SessionCookie sessionCookie) async {
+    String fullname,
+    SessionCookie sessionCookie,
+  ) async {
     await _oldRedditPost('/api/del', fullname, sessionCookie);
   }
 
   Future<void> hide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/hide',
-        fields: {'id': fullname}, sessionCookie: sessionCookie);
+    await postForm(
+      '/api/hide',
+      fields: {'id': fullname},
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<void> unhide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/unhide',
-        fields: {'id': fullname}, sessionCookie: sessionCookie);
+    await postForm(
+      '/api/unhide',
+      fields: {'id': fullname},
+      sessionCookie: sessionCookie,
+    );
+  }
+
+  Future<void> blockUser(String accountId, SessionCookie sessionCookie) async {
+    await postForm(
+      '/api/block',
+      fields: {'account_id': accountId},
+      sessionCookie: sessionCookie,
+    );
+  }
+
+  Future<void> unblockUser(
+    String accountId,
+    SessionCookie sessionCookie,
+  ) async {
+    await postForm(
+      '/api/unblock',
+      fields: {'account_id': accountId},
+      sessionCookie: sessionCookie,
+    );
+  }
+
+  Future<String> fetchAccountId(
+    String username, {
+    SessionCookie? sessionCookie,
+  }) async {
+    final data = await get(
+      '/user/$username/about',
+      sessionCookie: sessionCookie,
+    );
+    final about = data['data'] as Map<String, dynamic>;
+    final id = about['id'] as String? ?? '';
+    return 't2_$id';
   }
 }
 

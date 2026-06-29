@@ -13,6 +13,7 @@ class PostList extends StatelessWidget {
   final void Function(Post post)? onPostDelete;
   final void Function(Post post)? onPostHide;
   final void Function(Post post)? onPostUnhide;
+  final void Function(Post post)? onPostBlock;
   final Set<String> hiddenFullnames;
   final String? currentUsername;
   final void Function(Post post)? onPostTap;
@@ -35,6 +36,7 @@ class PostList extends StatelessWidget {
     this.onPostDelete,
     this.onPostHide,
     this.onPostUnhide,
+    this.onPostBlock,
     this.hiddenFullnames = const {},
     this.currentUsername,
     this.onPostTap,
@@ -74,8 +76,9 @@ class PostList extends StatelessWidget {
         return PostCard(
           post: post,
           effectiveVote: voteOverrides[fullname],
-          onVote:
-              onPostVote != null ? (dir) => onPostVote!(fullname, dir) : null,
+          onVote: onPostVote != null
+              ? (dir) => onPostVote!(fullname, dir)
+              : null,
           effectiveSaved: saveOverrides[fullname],
           onSave: onPostSave != null ? () => onPostSave!(fullname) : null,
           onEdit: onPostEdit != null && post.author == currentUsername
@@ -88,10 +91,14 @@ class PostList extends StatelessWidget {
               ? () => onPostHide!(post)
               : null,
           onUnhide: onPostUnhide != null ? () => onPostUnhide!(post) : null,
+          onBlock: onPostBlock != null && post.author != '[deleted]'
+              ? () => onPostBlock!(post)
+              : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
           showStickiedIndicator: showStickiedIndicator,
-          onSubredditTap:
-              onSubredditTap != null ? () => onSubredditTap!(post) : null,
+          onSubredditTap: onSubredditTap != null
+              ? () => onSubredditTap!(post)
+              : null,
           onAuthorTap: onAuthorTap != null ? () => onAuthorTap!(post) : null,
         );
       },
@@ -99,9 +106,6 @@ class PostList extends StatelessWidget {
 
     if (onRefresh == null) return listView;
 
-    return RefreshIndicator(
-      onRefresh: onRefresh!,
-      child: listView,
-    );
+    return RefreshIndicator(onRefresh: onRefresh!, child: listView);
   }
 }

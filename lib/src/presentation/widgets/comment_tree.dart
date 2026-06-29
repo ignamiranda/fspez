@@ -17,6 +17,7 @@ class CommentTree extends StatefulWidget {
   final void Function(String author)? onAuthorTap;
   final void Function(String fullname)? onDelete;
   final void Function(String fullname)? onEdit;
+  final void Function(String author)? onBlock;
   final bool showAwards;
 
   const CommentTree({
@@ -30,6 +31,7 @@ class CommentTree extends StatefulWidget {
     this.onAuthorTap,
     this.onDelete,
     this.onEdit,
+    this.onBlock,
     this.showAwards = true,
   });
 
@@ -76,10 +78,7 @@ class _CommentTreeState extends State<CommentTree> {
                       ),
                     )
                   : null,
-              padding: const EdgeInsets.symmetric(
-                vertical: 8,
-                horizontal: 12,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -100,14 +99,18 @@ class _CommentTreeState extends State<CommentTree> {
                       if (widget.comment.authorFlair != null) ...[
                         const SizedBox(width: 4),
                         Flexible(
-                            child: UserFlairChip(
-                                flair: widget.comment.authorFlair!)),
+                          child: UserFlairChip(
+                            flair: widget.comment.authorFlair!,
+                          ),
+                        ),
                       ],
                       if (widget.comment.isSubmitter) ...[
                         const SizedBox(width: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 1),
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary,
                             borderRadius: BorderRadius.circular(3),
@@ -123,14 +126,20 @@ class _CommentTreeState extends State<CommentTree> {
                       ],
                       if (widget.comment.isModerator) ...[
                         const SizedBox(width: 4),
-                        Icon(Icons.shield,
-                            size: 14, color: theme.colorScheme.tertiary),
+                        Icon(
+                          Icons.shield,
+                          size: 14,
+                          color: theme.colorScheme.tertiary,
+                        ),
                       ],
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text('·',
-                            style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant)),
+                        child: Text(
+                          '·',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                       Text(
                         timeAgo(widget.comment.createdAt),
@@ -140,9 +149,11 @@ class _CommentTreeState extends State<CommentTree> {
                       ),
                       const Spacer(),
                       if (_isCollapsed)
-                        Icon(Icons.unfold_more,
-                            size: 14,
-                            color: theme.colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.unfold_more,
+                          size: 14,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       Text(
                         '${widget.comment.score} pts',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -171,15 +182,17 @@ class _CommentTreeState extends State<CommentTree> {
                               Row(
                                 children: [
                                   InkWell(
-                                    onTap: () => widget.onVote
-                                        ?.call(fullname, VoteDirection.upvote),
+                                    onTap: () => widget.onVote?.call(
+                                      fullname,
+                                      VoteDirection.upvote,
+                                    ),
                                     child: Icon(
                                       effectiveVote == VoteDirection.upvote
                                           ? Icons.arrow_upward
                                           : Icons.arrow_upward_outlined,
                                       size: 16,
-                                      color: effectiveVote ==
-                                              VoteDirection.upvote
+                                      color:
+                                          effectiveVote == VoteDirection.upvote
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurfaceVariant,
                                     ),
@@ -187,13 +200,16 @@ class _CommentTreeState extends State<CommentTree> {
                                   const SizedBox(width: 12),
                                   InkWell(
                                     onTap: () => widget.onVote?.call(
-                                        fullname, VoteDirection.downvote),
+                                      fullname,
+                                      VoteDirection.downvote,
+                                    ),
                                     child: Icon(
                                       effectiveVote == VoteDirection.downvote
                                           ? Icons.arrow_downward
                                           : Icons.arrow_downward_outlined,
                                       size: 16,
-                                      color: effectiveVote ==
+                                      color:
+                                          effectiveVote ==
                                               VoteDirection.downvote
                                           ? theme.colorScheme.secondary
                                           : theme.colorScheme.onSurfaceVariant,
@@ -203,9 +219,10 @@ class _CommentTreeState extends State<CommentTree> {
                                   if (widget.onReply != null)
                                     InkWell(
                                       onTap: () => widget.onReply!(
-                                          widget.comment.fullname,
-                                          widget.comment.author,
-                                          widget.comment.body),
+                                        widget.comment.fullname,
+                                        widget.comment.author,
+                                        widget.comment.body,
+                                      ),
                                       child: Icon(
                                         Icons.reply_outlined,
                                         size: 16,
@@ -238,9 +255,11 @@ class _CommentTreeState extends State<CommentTree> {
                                       final link =
                                           'https://www.reddit.com/comments/${widget.comment.postId}/_/${widget.comment.id}/';
                                       Clipboard.setData(
-                                          ClipboardData(text: link));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                        ClipboardData(text: link),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(content: Text('Copied')),
                                       );
                                     },
@@ -253,10 +272,14 @@ class _CommentTreeState extends State<CommentTree> {
                                   const SizedBox(width: 16),
                                   InkWell(
                                     onTap: () {
-                                      Clipboard.setData(ClipboardData(
-                                          text: widget.comment.body));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      Clipboard.setData(
+                                        ClipboardData(
+                                          text: widget.comment.body,
+                                        ),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(content: Text('Copied')),
                                       );
                                     },
@@ -290,6 +313,20 @@ class _CommentTreeState extends State<CommentTree> {
                                       ),
                                     ),
                                   ],
+                                  if (widget.onBlock != null) ...[
+                                    const SizedBox(width: 16),
+                                    InkWell(
+                                      onTap: () => widget.onBlock!(
+                                        widget.comment.author,
+                                      ),
+                                      child: Icon(
+                                        Icons.block,
+                                        size: 16,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ],
@@ -314,18 +351,21 @@ class _CommentTreeState extends State<CommentTree> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: widget.comment.replies
-                      .map((reply) => CommentTree(
-                            comment: reply,
-                            voteOverrides: widget.voteOverrides,
-                            onVote: widget.onVote,
-                            saveOverrides: widget.saveOverrides,
-                            onSave: widget.onSave,
-                            onReply: widget.onReply,
-                            onAuthorTap: widget.onAuthorTap,
-                            onDelete: widget.onDelete,
-                            onEdit: widget.onEdit,
-                            showAwards: widget.showAwards,
-                          ))
+                      .map(
+                        (reply) => CommentTree(
+                          comment: reply,
+                          voteOverrides: widget.voteOverrides,
+                          onVote: widget.onVote,
+                          saveOverrides: widget.saveOverrides,
+                          onSave: widget.onSave,
+                          onReply: widget.onReply,
+                          onAuthorTap: widget.onAuthorTap,
+                          onDelete: widget.onDelete,
+                          onEdit: widget.onEdit,
+                          onBlock: widget.onBlock,
+                          showAwards: widget.showAwards,
+                        ),
+                      )
                       .toList(),
                 ),
         ),

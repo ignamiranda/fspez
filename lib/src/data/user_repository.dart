@@ -14,11 +14,14 @@ class UserRepository {
     String username, {
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/user/$username/about',
-        sessionCookie: sessionCookie);
+    final data = await _client.get(
+      '/user/$username/about',
+      sessionCookie: sessionCookie,
+    );
     final about = data['data'] as Map<String, dynamic>;
 
     return UserProfile(
+      id: about['id'] as String? ?? '',
       username: about['name'] as String? ?? username,
       linkKarma: about['link_karma'] as int? ?? 0,
       commentKarma: about['comment_karma'] as int? ?? 0,
@@ -39,13 +42,15 @@ class UserRepository {
     CommentSort sort = CommentSort.new_,
     SessionCookie? sessionCookie,
   }) async {
-    final data = await _client.get('/user/$username/comments',
-        queryParams: {
-          if (after != null) 'after': after,
-          'limit': '25',
-          'sort': sort.queryValue,
-        },
-        sessionCookie: sessionCookie);
+    final data = await _client.get(
+      '/user/$username/comments',
+      queryParams: {
+        if (after != null) 'after': after,
+        'limit': '25',
+        'sort': sort.queryValue,
+      },
+      sessionCookie: sessionCookie,
+    );
 
     final listing = data['data'] as Map<String, dynamic>;
     final children = listing['children'] as List<dynamic>;

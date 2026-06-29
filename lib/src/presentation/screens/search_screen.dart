@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/auth_providers.dart';
+import '../../data/write_providers.dart';
 import '../../domain/models/post.dart';
 import '../providers/search_providers.dart';
+import '../utils/block_user_helpers.dart';
 import '../widgets/post_card.dart';
 import '../widgets/subreddit_card.dart';
 import '../widgets/user_search_card.dart';
@@ -32,7 +35,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     'Communities',
     'Comments',
     'Media',
-    'Profiles'
+    'Profiles',
   ];
 
   @override
@@ -43,10 +46,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     _tabController.addListener(_onTabChanged);
   }
 
-  SearchRequest get _request => (
-        query: _lastQuery,
-        subreddit: _subredditScope,
-      );
+  SearchRequest get _request => (query: _lastQuery, subreddit: _subredditScope);
 
   @override
   void dispose() {
@@ -130,10 +130,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               icon: const Icon(Icons.public),
               onPressed: () => setState(() => _subredditScope = null),
             ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _search,
-          ),
+          IconButton(icon: const Icon(Icons.search), onPressed: _search),
         ],
         bottom: _hasSearched
             ? TabBar(
@@ -148,8 +145,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               children: [
                 if (_subredditScope != null)
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: [
                         Chip(
@@ -164,28 +163,31 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                     controller: _tabController,
                     children: [
                       _PostsTab(
-                          request: _request,
-                          scrollController: _scrollControllers[0]),
+                        request: _request,
+                        scrollController: _scrollControllers[0],
+                      ),
                       _CommunitiesTab(
-                          request: _request,
-                          scrollController: _scrollControllers[1]),
+                        request: _request,
+                        scrollController: _scrollControllers[1],
+                      ),
                       _CommentsTab(
-                          request: _request,
-                          scrollController: _scrollControllers[2]),
+                        request: _request,
+                        scrollController: _scrollControllers[2],
+                      ),
                       _MediaTab(
-                          request: _request,
-                          scrollController: _scrollControllers[3]),
+                        request: _request,
+                        scrollController: _scrollControllers[3],
+                      ),
                       _ProfilesTab(
-                          request: _request,
-                          scrollController: _scrollControllers[4]),
+                        request: _request,
+                        scrollController: _scrollControllers[4],
+                      ),
                     ],
                   ),
                 ),
               ],
             )
-          : const Center(
-              child: Text('Enter a query to search Reddit'),
-            ),
+          : const Center(child: Text('Enter a query to search Reddit')),
     );
   }
 }
@@ -232,24 +234,29 @@ class _PostsTab extends ConsumerWidget {
           return PostCard(
             post: post,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PostDetailScreen(post: post),
-              ),
+              MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
             ),
             onSubredditTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => SubredditFeedScreen(
-                  subredditName: post.subreddit.name,
-                ),
+                builder: (_) =>
+                    SubredditFeedScreen(subredditName: post.subreddit.name),
               ),
             ),
             onAuthorTap: post.author != '[deleted]'
                 ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            UserProfileScreen(username: post.author),
-                      ),
-                    )
+                    MaterialPageRoute(
+                      builder: (_) => UserProfileScreen(username: post.author),
+                    ),
+                  )
+                : null,
+            onBlock:
+                ref.read(activeAccountProvider) != null &&
+                    post.author != '[deleted]'
+                ? () => handleBlockUser(
+                    context: context,
+                    notifier: ref.read(blockActionProvider.notifier),
+                    username: post.author,
+                  )
                 : null,
           );
         },
@@ -264,8 +271,10 @@ class _CommunitiesTab extends ConsumerWidget {
   final SearchRequest request;
   final ScrollController scrollController;
 
-  const _CommunitiesTab(
-      {required this.request, required this.scrollController});
+  const _CommunitiesTab({
+    required this.request,
+    required this.scrollController,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -355,9 +364,7 @@ class _CommentsTab extends ConsumerWidget {
           return _CommentCard(
             post: post,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PostDetailScreen(post: post),
-              ),
+              MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
             ),
           );
         },
@@ -444,8 +451,11 @@ class _CommentCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(Icons.chat_bubble_outline,
-                    size: 14, color: cs.onSurfaceVariant),
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 14,
+                  color: cs.onSurfaceVariant,
+                ),
                 const SizedBox(width: 2),
                 Text(
                   '${post.commentCount}',
@@ -485,10 +495,12 @@ class _MediaTab extends ConsumerWidget {
 
     // Client-side filter for image/video/gallery posts
     final mediaPosts = state.items
-        .where((p) =>
-            p.type == PostType.image ||
-            p.type == PostType.video ||
-            p.type == PostType.gallery)
+        .where(
+          (p) =>
+              p.type == PostType.image ||
+              p.type == PostType.video ||
+              p.type == PostType.gallery,
+        )
         .toList();
 
     if (mediaPosts.isEmpty) {
@@ -512,24 +524,29 @@ class _MediaTab extends ConsumerWidget {
           return PostCard(
             post: post,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PostDetailScreen(post: post),
-              ),
+              MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
             ),
             onSubredditTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => SubredditFeedScreen(
-                  subredditName: post.subreddit.name,
-                ),
+                builder: (_) =>
+                    SubredditFeedScreen(subredditName: post.subreddit.name),
               ),
             ),
             onAuthorTap: post.author != '[deleted]'
                 ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            UserProfileScreen(username: post.author),
-                      ),
-                    )
+                    MaterialPageRoute(
+                      builder: (_) => UserProfileScreen(username: post.author),
+                    ),
+                  )
+                : null,
+            onBlock:
+                ref.read(activeAccountProvider) != null &&
+                    post.author != '[deleted]'
+                ? () => handleBlockUser(
+                    context: context,
+                    notifier: ref.read(blockActionProvider.notifier),
+                    username: post.author,
+                  )
                 : null,
           );
         },
