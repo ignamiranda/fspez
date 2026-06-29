@@ -83,7 +83,8 @@ class _ComposeAutotestScreenState extends State<ComposeAutotestScreen> {
               ? (result['result']['value'] as String? ?? '')
               : '')
           : '';
-      await _log('page inspect: ${str.substring(0, str.length.clamp(0, 6000))}');
+      await _log(
+          'page inspect: ${str.substring(0, str.length.clamp(0, 6000))}');
       exit(1);
     } catch (e) {
       await _log('error=$e');

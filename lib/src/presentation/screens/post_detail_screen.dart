@@ -185,7 +185,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         });
                       }
                     : null,
-                onDelete: actions != null && username != null && post.author == username
+                onDelete: actions != null &&
+                        username != null &&
+                        post.author == username
                     ? () => handleDelete(context, actions, postFullname)
                     : null,
               ),
@@ -350,8 +352,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           : null,
                       saveOverrides: saveOverrides,
                       onSave: actions != null
-                          ? (fullname) =>
-                              handleSave(actions, fullname, context)
+                          ? (fullname) => handleSave(actions, fullname, context)
                           : null,
                       onReply: loggedIn ? _replyToComment : null,
                       onAuthorTap: (author) {
@@ -376,7 +377,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               });
                             }
                           : null,
-                      onDelete: actions != null && username != null && c.author == username
+                      onDelete: actions != null &&
+                              username != null &&
+                              c.author == username
                           ? (fullname) {
                               handleDelete(context, actions, fullname)
                                   .then((deleted) {

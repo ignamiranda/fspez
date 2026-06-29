@@ -15,8 +15,7 @@ class LoginScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.reddit, size: 80,
-                  color: theme.colorScheme.primary),
+              Icon(Icons.reddit, size: 80, color: theme.colorScheme.primary),
               const SizedBox(height: 16),
               Text('fspez',
                   style: theme.textTheme.headlineMedium?.copyWith(
@@ -24,8 +23,7 @@ class LoginScreen extends ConsumerWidget {
                   )),
               const SizedBox(height: 8),
               Text('A third-party Reddit client',
-                  style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant)),
+                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
               const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: () {

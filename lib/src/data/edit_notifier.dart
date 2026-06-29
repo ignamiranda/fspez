@@ -24,7 +24,8 @@ class EditNotifier extends StateNotifier<EditState> {
   Future<bool> edit(String thingId, String text, SessionCookie cookie) async {
     state = const EditState(isSaving: true);
     try {
-      await _client.editContent(thingId: thingId, text: text, sessionCookie: cookie);
+      await _client.editContent(
+          thingId: thingId, text: text, sessionCookie: cookie);
       state = const EditState(success: true);
       return true;
     } catch (e) {

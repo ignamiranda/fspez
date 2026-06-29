@@ -21,7 +21,8 @@ class AuthAcquirer {
   }) async {
     final provider = CdpCookieProvider(controller);
     final store = SessionAcquirer(cookieProvider: provider);
-    final cookie = await store.acquire(maxAttempts: maxAttempts, interval: interval);
+    final cookie =
+        await store.acquire(maxAttempts: maxAttempts, interval: interval);
     if (cookie == null) return null;
 
     final modhash = await _modhashFetcher.fetch(cookie);

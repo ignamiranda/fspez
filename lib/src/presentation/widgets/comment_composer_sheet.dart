@@ -147,7 +147,8 @@ class _CommentComposerSheetContentState
     final newText =
         '${text.substring(0, lineStart)}$prefix${text.substring(lineStart)}';
     _controller.text = newText;
-    _controller.selection = TextSelection.collapsed(offset: pos + prefix.length);
+    _controller.selection =
+        TextSelection.collapsed(offset: pos + prefix.length);
   }
 
   Future<bool?> _confirmDiscard() {
@@ -200,8 +201,8 @@ class _CommentComposerSheetContentState
                 width: 32,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.4),
+                  color:
+                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -221,8 +222,8 @@ class _CommentComposerSheetContentState
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.reply, size: 14,
-                            color: theme.colorScheme.primary),
+                        Icon(Icons.reply,
+                            size: 14, color: theme.colorScheme.primary),
                         const SizedBox(width: 4),
                         Text(
                           'Replying to u/${widget.parentAuthor}',
@@ -262,8 +263,8 @@ class _CommentComposerSheetContentState
                   _ToolbarButton(
                     icon: Icons.format_italic,
                     tooltip: 'Italic',
-                    onPressed: () => _insertMarkdown('*', '*',
-                        placeholder: 'italic'),
+                    onPressed: () =>
+                        _insertMarkdown('*', '*', placeholder: 'italic'),
                   ),
                   _ToolbarButton(
                     icon: Icons.strikethrough_s,

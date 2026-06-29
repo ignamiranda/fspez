@@ -30,7 +30,8 @@ class ComposeTestRunner {
       );
 
       cookie = await _ensureModhash(cookie);
-      await _log('cookie raw=${cookie.rawCookie != null} modhash=${cookie.modhash != null}');
+      await _log(
+          'cookie raw=${cookie.rawCookie != null} modhash=${cookie.modhash != null}');
 
       await _client.compose(
         fields: {

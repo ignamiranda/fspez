@@ -19,7 +19,8 @@ class ComposeWebViewScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ComposeWebViewScreen> createState() => _ComposeWebViewScreenState();
+  ConsumerState<ComposeWebViewScreen> createState() =>
+      _ComposeWebViewScreenState();
 }
 
 class _ComposeWebViewScreenState extends ConsumerState<ComposeWebViewScreen> {

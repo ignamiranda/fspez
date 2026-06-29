@@ -99,8 +99,8 @@ class _FeedMediaPrefetcherState extends ConsumerState<FeedMediaPrefetcher> {
     _lastPrefetchedIndex = lastVisible;
 
     for (int i = lastVisible; i < prefetchEnd; i++) {
-      final urls = extractPreviewUrls(widget.posts[i],
-          skipSensitive: skipSensitive);
+      final urls =
+          extractPreviewUrls(widget.posts[i], skipSensitive: skipSensitive);
       for (final url in urls) {
         if (_prefetchedUrls.add(url)) {
           precacheImage(NetworkImage(url), context);
