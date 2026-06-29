@@ -1,5 +1,5 @@
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'session_store.dart';
+import 'session_acquirer.dart';
 
 class CdpCookieProvider implements CookieProvider {
   final InAppWebViewController _controller;

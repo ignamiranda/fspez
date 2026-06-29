@@ -325,15 +325,15 @@ class _MessageBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final cn = item is CommentNotification ? item : null;
+    final subreddit = item is CommentNotification
+        ? (item as CommentNotification).subreddit
+        : null;
     return Padding(
       padding: const EdgeInsets.only(left: 34, right: 16, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (cn != null && cn.subreddit != null) ...[
-            Text(
-              'r/${cn.subreddit}',
+          if (subreddit != null) Text('r/$subreddit'),
           RedditBody(item.body),
           if (onReply != null) ...[
             const SizedBox(height: 8),
