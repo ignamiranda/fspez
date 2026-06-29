@@ -9,6 +9,3 @@
 
 Exception: Local dev/debugging may use temporary session tokens (e.g., `REDDIT_SESSION` in `.env`) that never ship in builds or reach users.
 
-## Workflow
-
-- **Handoff storage**: When the `handoff` skill produces a handoff file, save it to `$env:TEMP`, not to `handoffs/` in the workspace. The `handoff` skill's instruction is authoritative. The project `handoffs/` dir is for pre-existing or human-authored handoffs only.
