@@ -1,13 +1,12 @@
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
-import '../domain/models/user_flair.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/enums/comment_sort.dart';
-import '../domain/enums/vote_direction.dart';
 import 'reddit_client.dart';
 import 'api_responses/api_responses.dart';
 import 'reddit_award_html_parser.dart';
+import 'parsers/shared_parsers.dart';
 
 class PostDetail {
   final Post post;
@@ -113,44 +112,8 @@ class CommentRepository {
     return children
         .whereType<Map<String, dynamic>>()
         .where((child) => child['kind'] == 't1')
-        .map((child) => _commentFromApi(
-            ApiComment.fromJson(child['data'] as Map<String, dynamic>)))
+        .map((child) => commentFromApiData(child['data'] as Map<String, dynamic>))
         .toList();
-  }
-
-  Comment _commentFromApi(ApiComment api) {
-    final vote = api.likes == true
-        ? VoteDirection.upvote
-        : api.likes == false
-            ? VoteDirection.downvote
-            : VoteDirection.none;
-    return Comment(
-      id: api.id,
-      body: api.body,
-      author: api.author,
-      score: api.score,
-      vote: vote,
-      isSaved: api.saved,
-      isSubmitter: api.isSubmitter,
-      isModerator: api.distinguished == 'moderator',
-      isStickied: api.stickied,
-      awardCount: api.awardCount,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(api.createdUtc * 1000),
-      postId: api.linkId,
-      parentId: api.parentId,
-      depth: api.depth,
-      replies: api.replies.map(_commentFromApi).toList(),
-      isCollapsed: api.collapsed,
-      authorFlair: UserFlair.fromApi(
-        text: api.authorFlairText,
-        richtext: api.authorFlairRichtext,
-        backgroundColor: api.authorFlairBackgroundColor,
-        textColor: api.authorFlairTextColor,
-      ),
-      subreddit: api.commentSubreddit,
-      linkTitle: api.linkTitle,
-      linkPermalink: api.linkPermalink,
-    );
   }
 
   Comment _applyAwards(Comment comment, Map<String, int> awardCounts) {
