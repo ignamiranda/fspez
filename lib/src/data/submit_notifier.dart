@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/flair_option.dart';
 import '../domain/models/session_cookie.dart';
@@ -18,6 +20,12 @@ class SubmitState {
   final bool isFlairRequired;
   final bool isFetchingFlairs;
 
+  // Media state
+  final PlatformFile? selectedImage;
+  final List<PlatformFile> galleryFiles;
+  final List<String> galleryCaptions;
+  final PlatformFile? selectedVideo;
+
   const SubmitState({
     this.isSubmitting = false,
     this.error,
@@ -26,6 +34,10 @@ class SubmitState {
     this.selectedFlair,
     this.isFlairRequired = false,
     this.isFetchingFlairs = false,
+    this.selectedImage,
+    this.galleryFiles = const [],
+    this.galleryCaptions = const [],
+    this.selectedVideo,
   });
 
   bool get canSubmit =>
@@ -43,6 +55,13 @@ class SubmitState {
     bool? isFetchingFlairs,
     bool clearError = false,
     bool clearFlairOptions = false,
+    PlatformFile? selectedImage,
+    bool clearImage = false,
+    List<PlatformFile>? galleryFiles,
+    List<String>? galleryCaptions,
+    bool clearGallery = false,
+    PlatformFile? selectedVideo,
+    bool clearVideo = false,
   }) {
     return SubmitState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -53,6 +72,10 @@ class SubmitState {
       selectedFlair: selectedFlair ?? this.selectedFlair,
       isFlairRequired: isFlairRequired ?? this.isFlairRequired,
       isFetchingFlairs: isFetchingFlairs ?? this.isFetchingFlairs,
+      selectedImage: clearImage ? null : (selectedImage ?? this.selectedImage),
+      galleryFiles: clearGallery ? const [] : (galleryFiles ?? this.galleryFiles),
+      galleryCaptions: clearGallery ? const [] : (galleryCaptions ?? this.galleryCaptions),
+      selectedVideo: clearVideo ? null : (selectedVideo ?? this.selectedVideo),
     );
   }
 }
@@ -144,19 +167,77 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
 
   void reset() => state = const SubmitState();
 
+  // ========== Media state mutations ==========
+
+  void setImage(PlatformFile? file) {
+    state = state.copyWith(selectedImage: file);
+  }
+
+  void clearImage() {
+    state = state.copyWith(clearImage: true);
+  }
+
+  void setGalleryFiles(List<PlatformFile> files) {
+    state = state.copyWith(
+      galleryFiles: files,
+      galleryCaptions: List.filled(files.length, ''),
+    );
+  }
+
+  void addGalleryImages(List<PlatformFile> files) {
+    final combined = [...state.galleryFiles, ...files];
+    if (combined.length > 20) return; // Hard cap
+    state = state.copyWith(
+      galleryFiles: combined,
+      galleryCaptions: [
+        ...state.galleryCaptions,
+        ...List.filled(files.length, ''),
+      ],
+    );
+  }
+
+  void removeGalleryItem(int index) {
+    final files = List<PlatformFile>.from(state.galleryFiles)..removeAt(index);
+    final captions = List<String>.from(state.galleryCaptions)
+      ..removeAt(index);
+    state = state.copyWith(galleryFiles: files, galleryCaptions: captions);
+  }
+
+  void updateGalleryCaption(int index, String caption) {
+    final captions = List<String>.from(state.galleryCaptions);
+    if (index < captions.length) {
+      captions[index] = caption;
+      state = state.copyWith(galleryCaptions: captions);
+    }
+  }
+
+  void setVideo(PlatformFile? file) {
+    state = state.copyWith(selectedVideo: file);
+  }
+
+  void clearVideo() {
+    state = state.copyWith(clearVideo: true);
+  }
+
+  void clearAllMedia() {
+    state =
+        state.copyWith(clearImage: true, clearGallery: true, clearVideo: true);
+  }
+
   /// Upload an image and submit as a link post with the image URL.
   Future<bool> submitImage({
     required String title,
     required String subreddit,
-    required Uint8List imageBytes,
-    required String imageFilename,
+    required PlatformFile file,
     required SessionCookie sessionCookie,
   }) async {
     state = const SubmitState(isSubmitting: true);
     try {
+      if (file.path == null) throw Exception('File path is null');
+      final bytes = await File(file.path!).readAsBytes();
       final media = await _mediaClient.uploadImage(
-        bytes: imageBytes,
-        filename: imageFilename,
+        bytes: bytes,
+        filename: file.name,
         sessionCookie: sessionCookie,
       );
       final fields = <String, String>{
@@ -178,15 +259,16 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
   Future<bool> submitVideo({
     required String title,
     required String subreddit,
-    required Uint8List videoBytes,
-    required String videoFilename,
+    required PlatformFile file,
     required SessionCookie sessionCookie,
   }) async {
     state = const SubmitState(isSubmitting: true);
     try {
+      if (file.path == null) throw Exception('File path is null');
+      final bytes = await File(file.path!).readAsBytes();
       final media = await _mediaClient.uploadVideo(
-        bytes: videoBytes,
-        filename: videoFilename,
+        bytes: bytes,
+        filename: file.name,
         sessionCookie: sessionCookie,
       );
       final fields = <String, String>{
@@ -208,11 +290,27 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
   Future<bool> submitGallery({
     required String title,
     required String subreddit,
-    required List<({Uint8List bytes, String filename, String caption})> items,
+    required List<PlatformFile> files,
+    required List<String> captions,
     required SessionCookie sessionCookie,
   }) async {
     state = const SubmitState(isSubmitting: true);
     try {
+      final items = <({Uint8List bytes, String filename, String caption})>[];
+      for (var i = 0; i < files.length; i++) {
+        final f = files[i];
+        if (f.path == null) continue;
+        final bytes = await File(f.path!).readAsBytes();
+        items.add((
+          bytes: bytes,
+          filename: f.name,
+          caption: i < captions.length ? captions[i].trim() : '',
+        ));
+      }
+      if (items.isEmpty) {
+        state = const SubmitState(error: 'No valid images selected');
+        return false;
+      }
       final uploads = <({String mediaId, String caption})>[];
       for (final item in items) {
         final media = await _mediaClient.uploadImage(

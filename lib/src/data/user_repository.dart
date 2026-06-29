@@ -69,19 +69,6 @@ class UserRepository {
   }
 
   Comment _parseComment(Map<String, dynamic> data) {
-    return Comment(
-      id: data['id'] as String? ?? '',
-      body: data['body'] as String? ?? '',
-      author: data['author'] as String? ?? '[deleted]',
-      score: data['score'] as int? ?? 0,
-      vote: parseVoteDirection(data['likes']),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        (data['created_utc'] as num).toInt() * 1000,
-      ),
-      subreddit: data['subreddit'] as String? ?? '',
-      linkTitle: data['link_title'] as String? ?? '',
-      linkPermalink: data['link_permalink'] as String? ?? '',
-      postId: data['link_id'] as String? ?? '',
-    );
+    return commentFromApiData(data);
   }
 }

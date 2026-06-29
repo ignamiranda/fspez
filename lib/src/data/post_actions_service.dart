@@ -1,24 +1,22 @@
 import '../domain/enums/vote_direction.dart';
 import '../domain/models/session_cookie.dart';
-import 'delete_notifier.dart';
+import 'action_notifier.dart';
 import 'edit_notifier.dart';
-import 'hide_notifier.dart';
-import 'save_notifier.dart';
-import 'vote_notifier.dart';
+import 'write_operation_notifier.dart';
 
 class PostActionsService {
-  final VoteNotifier _voteNotifier;
-  final SaveNotifier _saveNotifier;
-  final HideNotifier _hideNotifier;
-  final DeleteNotifier _deleteNotifier;
+  final ActionNotifier<VoteDirection> _voteNotifier;
+  final ActionNotifier<bool> _saveNotifier;
+  final ActionNotifier<bool> _hideNotifier;
+  final ActionNotifier<void> _deleteNotifier;
   final EditNotifier _editNotifier;
   final SessionCookie _sessionCookie;
 
   const PostActionsService({
-    required VoteNotifier voteNotifier,
-    required SaveNotifier saveNotifier,
-    required HideNotifier hideNotifier,
-    required DeleteNotifier deleteNotifier,
+    required ActionNotifier<VoteDirection> voteNotifier,
+    required ActionNotifier<bool> saveNotifier,
+    required ActionNotifier<bool> hideNotifier,
+    required ActionNotifier<void> deleteNotifier,
     required EditNotifier editNotifier,
     required SessionCookie sessionCookie,
   })  : _voteNotifier = voteNotifier,
@@ -29,23 +27,52 @@ class PostActionsService {
         _sessionCookie = sessionCookie;
 
   void vote(String fullname, VoteDirection direction) {
-    _voteNotifier.toggle(fullname, direction);
+    final current = _voteNotifier.effective(fullname, VoteDirection.none);
+    final next = current == direction ? VoteDirection.none : direction;
+    final sc = _sessionCookie;
+    _voteNotifier.write(
+      fullname,
+      next,
+      current,
+      () => _voteNotifier.redditClient.postForm('/api/vote',
+          fields: {'id': fullname, 'dir': next.value.toString()},
+          sessionCookie: sc),
+      onError: WriteErrorPolicy.keepOptimistic,
+    ).catchError((_) {}); // Vote failure is non-critical — swallow.
   }
 
-  Future<void> toggleSave(String fullname) {
-    return _saveNotifier.toggle(fullname);
+  Future<void> toggleSave(String fullname) async {
+    final current = _saveNotifier.peek(fullname) ?? false;
+    final next = !current;
+    final sc = _sessionCookie;
+    try {
+      await _saveNotifier.write(fullname, next, current, () async {
+        if (next) {
+          await _saveNotifier.redditClient.save(fullname, sc);
+        } else {
+          await _saveNotifier.redditClient.unsave(fullname, sc);
+        }
+      });
+    } catch (e) {
+      throw PostActionException('Save failed: $e');
+    }
   }
 
-  Future<void> hide(String fullname) {
-    return _hideNotifier.toggle(fullname);
+  Future<void> hide(String fullname) async {
+    final sc = _sessionCookie;
+    await _hideNotifier.write(fullname, true, _hideNotifier.peek(fullname),
+      () => _hideNotifier.redditClient.hide(fullname, sc));
   }
 
-  Future<void> unhide(String fullname) {
-    return _hideNotifier.unhide(fullname);
+  Future<void> unhide(String fullname) async {
+    final sc = _sessionCookie;
+    await _hideNotifier.redditClient.unhide(fullname, sc);
   }
 
-  Future<void> delete(String fullname) {
-    return _deleteNotifier.delete(fullname, _sessionCookie);
+  Future<void> delete(String fullname) async {
+    final sc = _sessionCookie;
+    await _deleteNotifier.write(fullname, null, null,
+      () => _deleteNotifier.redditClient.deleteContent(fullname, sc));
   }
 
   Future<void> edit(String thingId, String text) async {

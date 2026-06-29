@@ -1,11 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/delete_notifier.dart';
+import 'package:fspez/src/data/action_notifier.dart';
 import 'package:fspez/src/data/edit_notifier.dart';
-import 'package:fspez/src/data/hide_notifier.dart';
 import 'package:fspez/src/data/post_actions_service.dart';
 import 'package:fspez/src/data/reddit_client.dart';
-import 'package:fspez/src/data/save_notifier.dart';
-import 'package:fspez/src/data/vote_notifier.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,10 +19,10 @@ SessionCookie _cookie() {
 void main() {
   late _MockRedditClient client;
   late SessionCookie cookie;
-  late VoteNotifier voteNotifier;
-  late SaveNotifier saveNotifier;
-  late HideNotifier hideNotifier;
-  late DeleteNotifier deleteNotifier;
+  late ActionNotifier<VoteDirection> voteNotifier;
+  late ActionNotifier<bool> saveNotifier;
+  late ActionNotifier<bool> hideNotifier;
+  late ActionNotifier<void> deleteNotifier;
   late EditNotifier editNotifier;
   late PostActionsService service;
 
@@ -51,10 +48,10 @@ void main() {
           sessionCookie: any(named: 'sessionCookie'),
         )).thenAnswer((_) async {});
 
-    voteNotifier = VoteNotifier(client, cookie);
-    saveNotifier = SaveNotifier(client, cookie);
-    hideNotifier = HideNotifier(client, cookie);
-    deleteNotifier = DeleteNotifier(client, cookie);
+    voteNotifier = ActionNotifier<VoteDirection>(client, cookie);
+    saveNotifier = ActionNotifier<bool>(client, cookie);
+    hideNotifier = ActionNotifier<bool>(client, cookie);
+    deleteNotifier = ActionNotifier<void>(client, cookie);
     editNotifier = EditNotifier(client);
     service = PostActionsService(
       voteNotifier: voteNotifier,
@@ -66,7 +63,7 @@ void main() {
     );
   });
 
-  test('routes votes through VoteNotifier and keeps optimistic failures',
+  test('routes votes through ActionNotifier and keeps optimistic failures',
       () async {
     when(() => client.postForm(any(),
             fields: any(named: 'fields'),
@@ -76,32 +73,32 @@ void main() {
     service.vote('t3_post', VoteDirection.upvote);
     await Future<void>.delayed(Duration.zero);
 
-    expect(voteNotifier.effectiveVote('t3_post', VoteDirection.none),
+    expect(voteNotifier.effectiveValue('t3_post', VoteDirection.none),
         VoteDirection.upvote);
   });
 
-  test('routes saves through SaveNotifier and rethrows after reverting',
+  test('routes saves through ActionNotifier and rethrows after reverting',
       () async {
     when(() => client.save(any(), any())).thenThrow(
         const RedditApiException(statusCode: 403, message: 'Forbidden'));
 
     await expectLater(
       () => service.toggleSave('t3_post'),
-      throwsA(isA<SaveException>()),
+      throwsA(isA<PostActionException>()),
     );
-    expect(saveNotifier.effectiveSaved('t3_post', false), false);
+    expect(saveNotifier.effectiveValue('t3_post', false), false);
   });
 
-  test('routes hide and unhide through HideNotifier', () async {
+  test('routes hide and unhide through ActionNotifier', () async {
     await service.hide('t3_post');
     expect(hideNotifier.state['t3_post'], true);
 
     await service.unhide('t3_post');
-    expect(hideNotifier.state['t3_post'], isNull);
+    expect(hideNotifier.state['t3_post'], true);
     verify(() => client.unhide('t3_post', cookie)).called(1);
   });
 
-  test('routes delete through DeleteNotifier with active session', () async {
+  test('routes delete through ActionNotifier with active session', () async {
     await service.delete('t3_post');
 
     verify(() => client.deleteContent('t3_post', cookie)).called(1);
