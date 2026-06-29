@@ -39,7 +39,9 @@ jobs:
 
       - name: Get version
         id: version
-        run: grep '^version: ' pubspec.yaml | sed 's/version: //' | sed 's/^/VERSION=/' >> $GITHUB_OUTPUT
+        run: |
+          ver=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
+          echo "VERSION=$ver" >> $GITHUB_OUTPUT
 
       - uses: softprops/action-gh-release@v2
         with:
