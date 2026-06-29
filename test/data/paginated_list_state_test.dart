@@ -26,7 +26,7 @@ void main() {
     });
 
     test('custom constructor sets all fields', () {
-      final state = PaginatedListState<String>(
+      const state = PaginatedListState<String>(
         items: ['a', 'b'],
         isLoading: false,
         isLoadingMore: true,
@@ -114,19 +114,19 @@ void main() {
 
     group('removeItem', () {
       test('removes matching item', () {
-        final state = PaginatedListState<String>(items: ['a', 'b', 'c']);
+        const state = PaginatedListState<String>(items: ['a', 'b', 'c']);
         final result = state.removeItem((s) => s == 'b');
         expect(result.items, ['a', 'c']);
       });
 
       test('returns same list when no item matches', () {
-        final state = PaginatedListState<String>(items: ['a', 'b']);
+        const state = PaginatedListState<String>(items: ['a', 'b']);
         final result = state.removeItem((s) => s == 'z');
         expect(result.items, ['a', 'b']);
       });
 
       test('preserves other fields', () {
-        final state = PaginatedListState<String>(
+        const state = PaginatedListState<String>(
           items: ['a', 'b'],
           hasMore: true,
           isStale: true,
@@ -140,13 +140,13 @@ void main() {
 
     group('replaceItem', () {
       test('replaces first matching item', () {
-        final state = PaginatedListState<String>(items: ['a', 'b', 'a']);
+        const state = PaginatedListState<String>(items: ['a', 'b', 'a']);
         final result = state.replaceItem((s) => s == 'a', 'x');
         expect(result.items, ['x', 'b', 'a']);
       });
 
       test('preserves other fields', () {
-        final state = PaginatedListState<String>(
+        const state = PaginatedListState<String>(
           items: ['a'],
           hasMore: true,
           error: 'err',

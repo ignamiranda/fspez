@@ -106,11 +106,10 @@ class _FlairPickerTile extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return ListTile(
-      leading: Radio<bool>(
-        value: true,
-        groupValue: isSelected ? true : null,
-        onChanged: (_) => onTap(),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      leading: Icon(
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        size: 20,
       ),
       title: flair != null ? _FlairChip(flair: flair!) : const Text('None'),
       trailing: flair?.backgroundColor != null

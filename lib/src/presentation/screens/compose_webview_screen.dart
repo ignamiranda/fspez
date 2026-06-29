@@ -67,7 +67,7 @@ class _ComposeWebViewScreenState extends ConsumerState<ComposeWebViewScreen> {
           'returnByValue': true,
           'expression': '''
             (async function() {
-              const modhash = ${widget.modhash.isEmpty ? '""' : ("'" + _jsEscape(widget.modhash) + "'")};
+              const modhash = ${widget.modhash.isEmpty ? '""' : "'${_jsEscape(widget.modhash)}'"};
               return new Promise(function(resolve) {
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', 'https://www.reddit.com/api/compose');
@@ -93,17 +93,19 @@ class _ComposeWebViewScreenState extends ConsumerState<ComposeWebViewScreen> {
 
       await _log('result=$result');
       _timeout?.cancel();
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
       if (result is Map && result['result'] is Map) {
         final value = result['result']['value'];
-        if (value is Map && mounted) {
-          await _log('status=${value['status']}');
-          Navigator.of(context).pop(value['status'] == 200);
+        if (value is Map) {
+          _log('status=${value['status']}');
+          navigator.pop(value['status'] == 200);
         }
-      } else if (mounted) {
-        Navigator.of(context).pop(true);
+      } else {
+        navigator.pop(true);
       }
     } catch (e) {
-      await _log('error=$e');
+      _log('error=$e');
       _timeout?.cancel();
       if (mounted) Navigator.of(context).pop(false);
     }

@@ -47,7 +47,7 @@ class FeedCache {
   CachedFeedEntry? get(String accountId, FeedPageConfig config) {
     final key = _key(accountId, config);
     final json = _prefs.getString(key);
-    final timestamp = _prefs.getInt('${key}.ts');
+    final timestamp = _prefs.getInt('$key.ts');
     if (json == null || timestamp == null) return null;
     try {
       final decoded = jsonDecode(json);
@@ -65,14 +65,14 @@ class FeedCache {
   void set(String accountId, FeedPageConfig config, Map<String, dynamic> json) {
     final key = _key(accountId, config);
     _prefs.setString(key, jsonEncode(json));
-    _prefs.setInt('${key}.ts', DateTime.now().millisecondsSinceEpoch);
+    _prefs.setInt('$key.ts', DateTime.now().millisecondsSinceEpoch);
   }
 
   /// Removes the cached entry for the given account + config.
   void remove(String accountId, FeedPageConfig config) {
     final key = _key(accountId, config);
     _prefs.remove(key);
-    _prefs.remove('${key}.ts');
+    _prefs.remove('$key.ts');
   }
 
   /// Removes all cached feed entries for a specific account.

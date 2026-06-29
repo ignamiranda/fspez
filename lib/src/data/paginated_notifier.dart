@@ -30,10 +30,9 @@ class PaginatedNotifier<T> extends StateNotifier<PaginatedListState<T>> {
   String? after;
 
   PaginatedNotifier({
-    required Future<PaginatedResult<T>> Function({String? after}) fetchPage,
+    required this.fetchPage,
     bool autoLoad = true,
-  })  : fetchPage = fetchPage,
-        super(const PaginatedListState.initial()) {
+  }) : super(const PaginatedListState.initial()) {
     if (autoLoad) {
       Future.microtask(() => loadInitial());
     }

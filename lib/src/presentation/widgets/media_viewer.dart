@@ -199,14 +199,14 @@ class _MediaViewerState extends State<MediaViewer> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (widget.isNsfw)
-                                _SensitivePill(
+                                const _SensitivePill(
                                   label: 'NSFW',
                                   color: Colors.redAccent,
                                 ),
                               if (widget.isNsfw && widget.isSpoiler)
                                 const SizedBox(width: 6),
                               if (widget.isSpoiler)
-                                _SensitivePill(
+                                const _SensitivePill(
                                   label: 'Spoiler',
                                   color: Colors.amber,
                                 ),
@@ -376,7 +376,7 @@ class _VideoPageState extends State<_VideoPage> {
               child: GestureDetector(
                 onTap: _togglePlayPause,
                 child: Container(
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.black38,
                     shape: BoxShape.circle,
                   ),
@@ -446,9 +446,9 @@ class _VideoSeekBar extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: SliderTheme(
-            data: SliderThemeData(
+            data: const SliderThemeData(
               trackHeight: 3,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
               activeTrackColor: Colors.white,
               inactiveTrackColor: Colors.white30,
               thumbColor: Colors.white,
@@ -477,15 +477,12 @@ class _ZoomableImagePage extends StatefulWidget {
   final ValueChanged<double>? onDragUpdate;
   final VoidCallback? onDragEnd;
   final ValueChanged<bool>? onZoomChanged;
-  final bool enableDismiss;
-
   const _ZoomableImagePage({
     required this.imageUrl,
     required this.onTap,
     this.onDragUpdate,
     this.onDragEnd,
     this.onZoomChanged,
-    this.enableDismiss = true,
   });
 
   @override
@@ -586,11 +583,10 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
             MediaQuery.of(context).size.width / 2,
             MediaQuery.of(context).size.height / 2,
           );
-      // ignore: deprecated_member_use
       final newMatrix = Matrix4.identity()
-        ..translate(tapPos.dx, tapPos.dy)
-        ..scale(3.0)
-        ..translate(-tapPos.dx, -tapPos.dy);
+        ..translateByDouble(tapPos.dx, tapPos.dy, 0, 1.0)
+        ..scaleByDouble(3.0, 3.0, 3.0, 1.0)
+        ..translateByDouble(-tapPos.dx, -tapPos.dy, 0, 1.0);
       _transformationController.value = newMatrix;
       _updateZoomState();
     }
@@ -603,8 +599,7 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
   void _onInteractionUpdate(ScaleUpdateDetails details) {
     _updateZoomState();
 
-    if (widget.enableDismiss &&
-        !_isLongImage &&
+    if (!_isLongImage &&
         details.pointerCount == 1 &&
         !_isZoomed) {
       final dy = details.focalPointDelta.dy;

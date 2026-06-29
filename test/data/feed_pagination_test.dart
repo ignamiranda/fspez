@@ -12,7 +12,7 @@ Post _post(String id) {
     id: id,
     title: 'Post $id',
     author: 'user',
-    subreddit: Subreddit(id: '', name: 'test'),
+    subreddit: const Subreddit(id: '', name: 'test'),
     createdAt: DateTime.now(),
     permalink: '/r/test/$id',
     type: PostType.link,
@@ -32,7 +32,7 @@ void main() {
   group('FeedPageNotifier', () {
     test('initial state has isLoading true', () {
       final notifier = FeedPageNotifier(
-        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+        fetchPage: ({after}) => Future.value(const PaginatedResult<Post>(
           items: [],
         )),
         autoLoad: false,
@@ -203,35 +203,35 @@ void main() {
     test('same config with different sort are different', () {
       expect(
         const FeedPageConfig.home(),
-        isNot(FeedPageConfig.home(sort: FeedSort.new_)),
+        isNot(const FeedPageConfig.home(sort: FeedSort.new_)),
       );
     });
 
     test('subreddit configs differ by name', () {
       expect(
-        FeedPageConfig.subreddit('flutter'),
-        isNot(FeedPageConfig.subreddit('dart')),
+        const FeedPageConfig.subreddit('flutter'),
+        isNot(const FeedPageConfig.subreddit('dart')),
       );
     });
 
     test('search configs differ by query', () {
       expect(
-        FeedPageConfig.search('foo'),
-        isNot(FeedPageConfig.search('bar')),
+        const FeedPageConfig.search('foo'),
+        isNot(const FeedPageConfig.search('bar')),
       );
     });
 
     test('user configs differ by username', () {
       expect(
-        FeedPageConfig.user('alice'),
-        isNot(FeedPageConfig.user('bob')),
+        const FeedPageConfig.user('alice'),
+        isNot(const FeedPageConfig.user('bob')),
       );
     });
 
     test('user config equals same username', () {
       expect(
-        FeedPageConfig.user('alice'),
-        equals(FeedPageConfig.user('alice')),
+        const FeedPageConfig.user('alice'),
+        equals(const FeedPageConfig.user('alice')),
       );
     });
   });
@@ -239,7 +239,7 @@ void main() {
   group('FeedPageNotifier cache seeding', () {
     test('seedFromCache populates state and sets isStale', () {
       final notifier = FeedPageNotifier(
-        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+        fetchPage: ({after}) => Future.value(const PaginatedResult<Post>(
           items: [],
         )),
         autoLoad: false,
@@ -260,7 +260,7 @@ void main() {
 
     test('seedFromCache with isStale:false does not mark content as stale', () {
       final notifier = FeedPageNotifier(
-        fetchPage: ({after}) => Future.value(PaginatedResult<Post>(
+        fetchPage: ({after}) => Future.value(const PaginatedResult<Post>(
           items: [],
         )),
         autoLoad: false,

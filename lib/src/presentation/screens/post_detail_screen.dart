@@ -60,6 +60,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     String? parentAuthor,
     String? parentBody,
   }) {
+    final messenger = ScaffoldMessenger.of(context);
     showCommentComposerSheet(
       context,
       thingId: thingId ?? widget.post.fullname,
@@ -68,7 +69,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     ).then((posted) {
       if (posted == true && context.mounted) {
         ref.invalidate(postDetailProvider(_postDetailParams()));
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Comment posted'),
             duration: Duration(seconds: 2),

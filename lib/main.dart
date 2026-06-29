@@ -25,8 +25,9 @@ void main() async {
     return;
   }
 
+  // ignore: prefer_const_declarations
   final prefs = await SharedPreferences.getInstance();
-  final secureStorage = const FlutterSecureStorage();
+  const secureStorage = FlutterSecureStorage();
 
   runApp(
     ProviderScope(

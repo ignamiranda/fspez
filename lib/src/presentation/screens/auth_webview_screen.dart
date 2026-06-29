@@ -78,7 +78,7 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
             },
           ),
           if (_loading)
-            Positioned(
+            const Positioned(
               left: 0,
               right: 0,
               top: 8,
@@ -86,10 +86,10 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
                 child: Card(
                   child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         SizedBox(
                           width: 16,
                           height: 16,

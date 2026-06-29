@@ -60,9 +60,9 @@ enum FeedPageKind {
 
 class FeedPageNotifier extends PaginatedNotifier<Post> {
   FeedPageNotifier({
-    required Future<PaginatedResult<Post>> Function({String? after}) fetchPage,
-    bool autoLoad = true,
-  }) : super(fetchPage: fetchPage, autoLoad: autoLoad);
+    required super.fetchPage,
+    super.autoLoad = true,
+  });
 
   /// Seeds cached items directly into state (skips loading state).
   ///
