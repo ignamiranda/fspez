@@ -61,7 +61,8 @@ jobs:
       - name: Get version
         if: github.ref == 'refs/heads/master'
         id: version
-        run: echo "VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')" >> $GITHUB_OUTPUT
+        run: |
+          grep '^version: ' pubspec.yaml | sed 's/version: //' | sed 's/^/VERSION=/' >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: github.ref == 'refs/heads/master'
