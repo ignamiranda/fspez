@@ -16,6 +16,7 @@ import 'media_viewer.dart';
 import 'bottom_sheet_menu.dart';
 import 'user_flair_chip.dart';
 import 'video_playback_coordinator.dart';
+import 'report_sheet.dart';
 
 class PostCard extends ConsumerStatefulWidget {
   final Post post;
@@ -485,6 +486,17 @@ class _OverflowMenu extends StatelessWidget {
             context,
           ).showSnackBar(const SnackBar(content: Text('Copied')));
         },
+      ),
+    );
+    primaryActions.add(
+      BottomSheetAction(
+        icon: Icons.flag_outlined,
+        label: 'Report',
+        onTap: () => showReportSheet(
+          context,
+          thingId: post.fullname,
+          subreddit: post.subreddit.name,
+        ),
       ),
     );
 

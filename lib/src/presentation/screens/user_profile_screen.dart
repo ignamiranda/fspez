@@ -18,6 +18,7 @@ import '../utils/profile_formatters.dart';
 import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'post_detail_screen.dart';
+import '../widgets/report_sheet.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   final String username;
@@ -144,17 +145,37 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text('u/${widget.username}'),
-        actions: _tabController.index == 2
-            ? null
-            : [
-                IconButton(
-                  icon: const Icon(Icons.sort),
-                  tooltip: _tabController.index == 0
-                      ? 'Sort posts'
-                      : 'Sort comments',
-                  onPressed: _showSortMenu,
+        actions: [
+          if (_tabController.index != 2)
+            IconButton(
+              icon: const Icon(Icons.sort),
+              tooltip: _tabController.index == 0
+                  ? 'Sort posts'
+                  : 'Sort comments',
+              onPressed: _showSortMenu,
+            ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => showPostActionSheet(
+              context,
+              primaryActions: [
+                BottomSheetAction(
+                  icon: Icons.flag_outlined,
+                  label: 'Report u/${widget.username}',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    showReportSheet(
+                      context,
+                      thingId: 't2_${widget.username}',
+                      subreddit: null,
+                    );
+                  },
                 ),
               ],
+              authorActions: [],
+            ),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

@@ -272,6 +272,18 @@ class RedditClient {
     await _oldRedditPost('/api/del', fullname, sessionCookie);
   }
 
+  Future<void> reportContent({
+    required String thingId,
+    required String reason,
+    SessionCookie? sessionCookie,
+  }) async {
+    await postForm(
+      '/api/report',
+      fields: {'api_type': 'json', 'thing_id': thingId, 'reason': reason},
+      sessionCookie: sessionCookie,
+    );
+  }
+
   Future<void> hide(String fullname, SessionCookie sessionCookie) async {
     await postForm(
       '/api/hide',
@@ -355,7 +367,6 @@ class RedditClient {
     final about = data['data'] as Map<String, dynamic>;
     final id = about['id'] as String? ?? '';
     return 't2_$id';
-  }
   }
 }
 

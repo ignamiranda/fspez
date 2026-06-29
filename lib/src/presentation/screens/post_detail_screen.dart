@@ -22,6 +22,7 @@ import '../widgets/post_media_tile.dart';
 import '../widgets/reddit_body.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
+import '../widgets/report_sheet.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final Post post;
@@ -153,6 +154,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             (post.isSpoiler && settings.spoilerBlur));
     final showAwards = settings.showAwards;
 
+    void onReportPost() => showReportSheet(
+      context,
+      thingId: post.fullname,
+      subreddit: post.subreddit.name,
+    );
+
+    void onReportComment(String fullname, String? subreddit) =>
+        showReportSheet(context, thingId: fullname, subreddit: subreddit);
+
     return Column(
       children: [
         Expanded(
@@ -210,6 +220,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         username: post.author,
                       )
                     : null,
+                onReport: onReportPost,
               ),
               if (post.selftext != null && post.selftext!.isNotEmpty)
                 Padding(
@@ -378,6 +389,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           ? (fullname) => handleSave(actions, fullname, context)
                           : null,
                       onReply: loggedIn ? _replyToComment : null,
+                      onReport: onReportComment,
                       onAuthorTap: (author) {
                         if (author != '[deleted]') {
                           Navigator.of(context).push(
@@ -479,6 +491,7 @@ class _PostDetailHeader extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onBlock;
+  final VoidCallback? onReport;
 
   const _PostDetailHeader({
     required this.post,
@@ -491,6 +504,7 @@ class _PostDetailHeader extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onBlock,
+    this.onReport,
   });
 
   @override
@@ -533,6 +547,7 @@ class _PostDetailHeader extends StatelessWidget {
             onSave: onSave,
             onEdit: onEdit,
             onDelete: onDelete,
+            onReport: onReport,
           ),
           if (onBlock != null) ...[
             const SizedBox(height: 4),

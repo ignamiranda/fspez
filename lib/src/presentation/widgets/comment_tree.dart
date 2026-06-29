@@ -18,6 +18,7 @@ class CommentTree extends StatefulWidget {
   final void Function(String fullname)? onDelete;
   final void Function(String fullname)? onEdit;
   final void Function(String author)? onBlock;
+  final void Function(String fullname, String? subreddit)? onReport;
   final bool showAwards;
 
   const CommentTree({
@@ -32,6 +33,7 @@ class CommentTree extends StatefulWidget {
     this.onDelete,
     this.onEdit,
     this.onBlock,
+    this.onReport,
     this.showAwards = true,
   });
 
@@ -289,6 +291,21 @@ class _CommentTreeState extends State<CommentTree> {
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
+                                  if (widget.onReport != null) ...[
+                                    const SizedBox(width: 16),
+                                    InkWell(
+                                      onTap: () => widget.onReport!(
+                                        widget.comment.fullname,
+                                        widget.comment.subreddit,
+                                      ),
+                                      child: Icon(
+                                        Icons.flag_outlined,
+                                        size: 16,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                   if (widget.onEdit != null) ...[
                                     const SizedBox(width: 16),
                                     InkWell(
@@ -363,6 +380,7 @@ class _CommentTreeState extends State<CommentTree> {
                           onDelete: widget.onDelete,
                           onEdit: widget.onEdit,
                           onBlock: widget.onBlock,
+                          onReport: widget.onReport,
                           showAwards: widget.showAwards,
                         ),
                       )
