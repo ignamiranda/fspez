@@ -16,3 +16,5 @@ android/local.properties
 ios/Pods/
 ios/.symlinks/
 .env
+android/app/*.jks
+android/key.properties
