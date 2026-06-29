@@ -10,4 +10,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - run: echo hi
+      - uses: actions/checkout@v4
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.0.1+test
+          files: README.md
+          generate_release_notes: true
