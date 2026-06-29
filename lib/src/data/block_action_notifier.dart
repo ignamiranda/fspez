@@ -23,21 +23,18 @@ class BlockActionNotifier extends WriteOperationNotifier<bool> {
     if (previous == true) return;
     final sc = sessionCookie;
     if (sc == null) throw Exception('No session');
-    try {
-      final accountId = await _resolveAccountId(username);
-      await write(username, true, previous, () async {
-        await redditClient.blockUser(accountId, sc);
-      });
-    } catch (_) {
-      rethrow;
-    }
+    final accountId = await _resolveAccountId(username);
+    await write(username, true, previous, () async {
+      await redditClient.blockUser(accountId, sc);
+    });
   }
 
   Future<void> unblock(String username) async {
+    final previous = state[username];
+    if (previous == false) return;
     final sc = sessionCookie;
     if (sc == null) throw Exception('No session');
     final accountId = await _resolveAccountId(username);
-    final previous = state[username];
     optimisticSet(username, false);
     try {
       await redditClient.unblockUser(accountId, sc);
@@ -64,10 +61,11 @@ class BlockActionNotifier extends WriteOperationNotifier<bool> {
 
   /// Unblock using a known accountId directly.
   Future<void> unblockKnown(String username, String accountId) async {
+    final previous = state[username];
+    if (previous == false) return;
     final sc = sessionCookie;
     if (sc == null) throw Exception('No session');
     _accountIdCache[username] = accountId;
-    final previous = state[username];
     optimisticSet(username, false);
     try {
       await redditClient.unblockUser(accountId, sc);
