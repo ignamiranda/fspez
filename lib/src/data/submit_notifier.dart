@@ -60,7 +60,6 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
         'sr': subreddit,
         'title': title,
         'url': media.assetUrl,
-        'uh': sessionCookie.modhash ?? '',
       };
       await _client.submit(fields: fields, sessionCookie: sessionCookie);
       state = const SubmitState(success: true);
@@ -91,7 +90,6 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
         'sr': subreddit,
         'title': title,
         'url': media.assetUrl,
-        'uh': sessionCookie.modhash ?? '',
       };
       await _client.submit(fields: fields, sessionCookie: sessionCookie);
       state = const SubmitState(success: true);
@@ -134,7 +132,6 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
         'sr': subreddit,
         'title': title,
         'items': galleryItems,
-        if (sessionCookie.modhash != null) 'uh': sessionCookie.modhash!,
       };
       await _client.submitGalleryPost(
           fields: fields, sessionCookie: sessionCookie);

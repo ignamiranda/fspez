@@ -21,36 +21,23 @@ class MediaUploadClient {
     required Uint8List bytes,
     required String filename,
     required SessionCookie sessionCookie,
-  }) async {
-    final mime = _mimeForImage(filename);
-    final lease = await _redditClient.requestUploadAsset(
-      filepath: filename,
-      mimetype: mime,
-      sessionCookie: sessionCookie,
-    );
-    final response = await _httpClient.put(
-      Uri.parse(lease.uploadUrl),
-      headers: {'Content-Type': mime},
-      body: bytes,
-    );
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return MediaUploadResult(
-        assetId: lease.assetId,
-        assetUrl: lease.assetUrl,
-      );
-    }
-    throw MediaUploadException(
-      message: 'S3 upload failed: ${response.statusCode} ${response.body}',
-    );
-  }
+  }) =>
+      _upload(bytes, filename, _mimeForImage(filename), sessionCookie);
 
   /// Upload a single video file. Returns the Reddit asset ID and CDN URL.
   Future<MediaUploadResult> uploadVideo({
     required Uint8List bytes,
     required String filename,
     required SessionCookie sessionCookie,
-  }) async {
-    final mime = _mimeForVideo(filename);
+  }) =>
+      _upload(bytes, filename, _mimeForVideo(filename), sessionCookie);
+
+  Future<MediaUploadResult> _upload(
+    Uint8List bytes,
+    String filename,
+    String mime,
+    SessionCookie sessionCookie,
+  ) async {
     final lease = await _redditClient.requestUploadAsset(
       filepath: filename,
       mimetype: mime,

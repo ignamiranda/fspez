@@ -41,7 +41,9 @@ final deleteProvider =
 });
 
 final mediaUploadClientProvider = Provider<MediaUploadClient>((ref) {
-  return MediaUploadClient(ref.watch(redditClientProvider));
+  final client = MediaUploadClient(ref.watch(redditClientProvider));
+  ref.onDispose(client.dispose);
+  return client;
 });
 
 final submitProvider =
