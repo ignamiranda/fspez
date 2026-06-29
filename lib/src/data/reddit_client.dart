@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../domain/models/flair_option.dart';
 import '../domain/models/session_cookie.dart';
 import 'http_transport.dart';
 
@@ -9,17 +10,23 @@ class RedditClient {
   final HttpTransport _transport;
 
   RedditClient({http.Client? httpClient, HttpTransport? transport})
-      : _transport = transport ?? HttpTransport(httpClient: httpClient);
+    : _transport = transport ?? HttpTransport(httpClient: httpClient);
 
-  Future<Map<String, dynamic>> get(String path,
-      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, String>? queryParams,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.readJsonUri(path, queryParams: queryParams);
     final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
     return _transport.handleJsonResponse(response);
   }
 
-  Future<String> getHtml(String path,
-      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+  Future<String> getHtml(
+    String path, {
+    Map<String, String>? queryParams,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.webUri(path, queryParams: queryParams);
     final response = await _transport.getHtml(uri, sessionCookie);
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -31,8 +38,11 @@ class RedditClient {
     );
   }
 
-  Future<Map<String, dynamic>> post(String path,
-      {Map<String, dynamic>? body, SessionCookie? sessionCookie}) async {
+  Future<Map<String, dynamic>> post(
+    String path, {
+    Map<String, dynamic>? body,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.webUri(path);
     final response = await _transport.post(
       uri,
@@ -43,15 +53,21 @@ class RedditClient {
     return _transport.handleJsonResponse(response);
   }
 
-  Future<dynamic> getRaw(String path,
-      {Map<String, String>? queryParams, SessionCookie? sessionCookie}) async {
+  Future<dynamic> getRaw(
+    String path, {
+    Map<String, String>? queryParams,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.readJsonUri(path, queryParams: queryParams);
     final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
     return _transport.handleRawJsonResponse(response);
   }
 
-  Future<Map<String, dynamic>> postForm(String path,
-      {Map<String, String>? fields, SessionCookie? sessionCookie}) async {
+  Future<Map<String, dynamic>> postForm(
+    String path, {
+    Map<String, String>? fields,
+    SessionCookie? sessionCookie,
+  }) async {
     final uri = _transport.webUri(path);
     final response = await _transport.post(
       uri,
@@ -94,7 +110,10 @@ class RedditClient {
   }
 
   Future<void> _oldRedditPost(
-      String path, String fullname, SessionCookie sessionCookie) async {
+    String path,
+    String fullname,
+    SessionCookie sessionCookie,
+  ) async {
     final uri = _transport.oldRedditUri(path);
     final response = await _transport.post(
       uri,
@@ -152,12 +171,16 @@ class RedditClient {
             final errors = jsonField['errors'];
             if (errors is List && errors.isNotEmpty) {
               throw RedditApiException(
-                  statusCode: response.statusCode, message: response.body);
+                statusCode: response.statusCode,
+                message: response.body,
+              );
             }
           }
           if (decoded['error'] != null) {
             throw RedditApiException(
-                statusCode: response.statusCode, message: response.body);
+              statusCode: response.statusCode,
+              message: response.body,
+            );
           }
         }
       } catch (_) {}
@@ -200,18 +223,63 @@ class RedditClient {
   }
 
   Future<void> deleteContent(
-      String fullname, SessionCookie sessionCookie) async {
+    String fullname,
+    SessionCookie sessionCookie,
+  ) async {
     await _oldRedditPost('/api/del', fullname, sessionCookie);
   }
 
   Future<void> hide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/hide',
-        fields: {'id': fullname}, sessionCookie: sessionCookie);
+    await postForm(
+      '/api/hide',
+      fields: {'id': fullname},
+      sessionCookie: sessionCookie,
+    );
   }
 
   Future<void> unhide(String fullname, SessionCookie sessionCookie) async {
-    await postForm('/api/unhide',
-        fields: {'id': fullname}, sessionCookie: sessionCookie);
+    await postForm(
+      '/api/unhide',
+      fields: {'id': fullname},
+      sessionCookie: sessionCookie,
+    );
+  }
+
+  /// Fetches post flair templates for [subreddit] via the www API endpoint.
+  ///
+  /// Returns an empty list on failure or when the subreddit has no flairs.
+  Future<List<FlairOption>> fetchFlairOptions(
+    String subreddit,
+    SessionCookie? sessionCookie,
+  ) async {
+    try {
+      final uri = _transport.webUri('/api/v1/$subreddit/post_flairs');
+      final response = await _transport.get(
+        uri,
+        ApiEndpoint.json,
+        sessionCookie,
+      );
+      final decoded = _transport.handleRawJsonResponse(response);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map<String, dynamic>>()
+            .map((e) => FlairOption.fromJson(e))
+            .toList();
+      }
+      if (decoded is Map<String, dynamic>) {
+        final templates =
+            decoded['subreddit_flair_templates'] as List<dynamic>?;
+        if (templates != null) {
+          return templates
+              .whereType<Map<String, dynamic>>()
+              .map((e) => FlairOption.fromJson(e))
+              .toList();
+        }
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 }
 

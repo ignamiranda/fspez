@@ -1,7 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/write_providers.dart';
+import '../../domain/models/flair_option.dart';
+import '../widgets/flair_picker_sheet.dart';
 import '../widgets/subreddit_rules_sheet.dart';
 
 class SubmitScreen extends ConsumerStatefulWidget {
@@ -28,11 +31,19 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     if (widget.subreddit != null) {
       _subredditController.text = widget.subreddit!;
     }
-    _subredditController.addListener(() => setState(() {}));
+    _subredditController.addListener(_onSubredditChanged);
+  }
+
+  void _onSubredditChanged() {
+    setState(() {});
+    ref
+        .read(submitProvider.notifier)
+        .onSubredditChanged(_subredditController.text);
   }
 
   @override
   void dispose() {
+    _subredditController.removeListener(_onSubredditChanged);
     _titleController.dispose();
     _textController.dispose();
     _urlController.dispose();
@@ -59,10 +70,9 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       fields['url'] = _urlController.text.trim();
     }
 
-    final success = await ref.read(submitProvider.notifier).submit(
-          fields: fields,
-          sessionCookie: account.sessionCookie,
-        );
+    final success = await ref
+        .read(submitProvider.notifier)
+        .submit(fields: fields, sessionCookie: account.sessionCookie);
 
     if (!mounted) return;
     if (success) {
@@ -87,9 +97,27 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     showSubredditRulesSheet(context, subredditName: subreddit);
   }
 
+  Future<void> _showFlairPicker() async {
+    final notifier = ref.read(submitProvider.notifier);
+    final state = ref.read(submitProvider);
+    if (state.flairOptions.isEmpty) return;
+
+    final picked = await showFlairPickerSheet(
+      context,
+      options: state.flairOptions,
+      currentSelection: state.selectedFlair,
+    );
+
+    if (!mounted) return;
+    if (picked != state.selectedFlair) {
+      notifier.selectFlair(picked);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final submitState = ref.watch(submitProvider);
+    final canSubmit = submitState.canSubmit;
 
     return Scaffold(
       appBar: AppBar(
@@ -97,14 +125,15 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
         actions: [
           if (submitState.isSubmitting)
             const Center(
-                child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ))
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
           else
             TextButton(
-              onPressed: _submit,
+              onPressed: canSubmit ? _submit : null,
               child: const Text('Submit'),
             ),
         ],
@@ -156,6 +185,53 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
             ),
             maxLines: 2,
           ),
+          // Flair section — visible when flair options exist for the target subreddit.
+          if (submitState.flairOptions.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: _showFlairPicker,
+              borderRadius: BorderRadius.circular(8),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Flair',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: submitState.isFetchingFlairs
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : const Icon(Icons.arrow_drop_down),
+                ),
+                child: submitState.selectedFlair != null
+                    ? _FlairChip(flair: submitState.selectedFlair!)
+                    : Text(
+                        submitState.isFetchingFlairs
+                            ? 'Loading…'
+                            : 'Select a flair',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+              ),
+            ),
+            if (submitState.isFlairRequired &&
+                submitState.selectedFlair == null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 12),
+                child: Text(
+                  'This community requires flair',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+              ),
+          ],
           const SizedBox(height: 12),
           if (_isLink)
             TextField(
@@ -179,5 +255,58 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
         ],
       ),
     );
+  }
+}
+
+/// Small pill showing the selected flair text with its colors.
+class _FlairChip extends StatelessWidget {
+  final FlairOption flair;
+
+  const _FlairChip({required this.flair});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bg = flair.backgroundColor != null
+        ? Color(flair.backgroundColor!)
+        : theme.colorScheme.surfaceContainerHighest;
+    final fg = _resolveForeground(bg);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        flair.displayText,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w600,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Color _resolveForeground(Color background) {
+    if (flair.textColor != null) {
+      return Color(flair.textColor!);
+    }
+    final luminance = _relativeLuminance(background);
+    return luminance > 0.179 ? Colors.black87 : Colors.white;
+  }
+
+  static double _relativeLuminance(Color c) {
+    final r = _linearize(c.r);
+    final g = _linearize(c.g);
+    final b = _linearize(c.b);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  static double _linearize(double v) {
+    return (v <= 0.04045) ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) as double;
   }
 }
