@@ -64,8 +64,8 @@ void main() {
     });
 
     test('subreddit configs differ by name', () {
-      final flutterConfig = FeedPageConfig.subreddit('flutter');
-      final dartConfig = FeedPageConfig.subreddit('dart');
+      const flutterConfig = FeedPageConfig.subreddit('flutter');
+      const dartConfig = FeedPageConfig.subreddit('dart');
 
       cache.set('anon', flutterConfig, {'data': 'flutter'});
       cache.set('anon', dartConfig, {'data': 'dart'});

@@ -1,4 +1,4 @@
-import 'package:fspez/src/data/session_store.dart';
+import 'package:fspez/src/data/session_acquirer.dart';
 
 class FakeCookieProvider implements CookieProvider {
   String? _cookieValue;
