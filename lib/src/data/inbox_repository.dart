@@ -64,10 +64,12 @@ class InboxRepository {
     String fullname,
     SessionCookie sessionCookie,
   ) async {
-    await _client.postForm('/api/read_message', fields: {
-      'id': fullname,
-      'uh': sessionCookie.modhash ?? '',
-    }, sessionCookie: sessionCookie);
+    await _client.postForm('/api/read_message',
+        fields: {
+          'id': fullname,
+          'uh': sessionCookie.modhash ?? '',
+        },
+        sessionCookie: sessionCookie);
   }
 
   Future<void> reply({

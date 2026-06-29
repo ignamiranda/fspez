@@ -2,8 +2,17 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../domain/models/session_cookie.dart';
 import 'http_transport.dart';
+import 'media_upload_response.dart';
 
-enum ApiEndpoint { json, form, oldReddit, comment, submit, compose }
+enum ApiEndpoint {
+  json,
+  form,
+  oldReddit,
+  comment,
+  submit,
+  compose,
+  mediaUpload
+}
 
 class RedditClient {
   final HttpTransport _transport;
@@ -79,6 +88,40 @@ class RedditClient {
         return {'success': true};
       }
     }
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
+  Future<UploadLease> requestUploadAsset({
+    required String filepath,
+    required String mimetype,
+    required SessionCookie sessionCookie,
+  }) async {
+    final uri = _transport.webUri('/api/media/asset.json');
+    final response = await _transport.postJson(
+      uri,
+      ApiEndpoint.mediaUpload,
+      sessionCookie,
+      body: {'filepath': filepath, 'mimetype': mimetype},
+    );
+    final json = _transport.handleJsonResponse(response);
+    return UploadLease.fromJson(json);
+  }
+
+  Future<void> submitGalleryPost({
+    required Map<String, String> fields,
+    required SessionCookie sessionCookie,
+  }) async {
+    final uri = _transport.webUri('/api/submit_gallery_post.json');
+    final response = await _transport.post(
+      uri,
+      ApiEndpoint.submit,
+      sessionCookie,
+      body: Uri(queryParameters: fields).query,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
     throw RedditApiException(
       statusCode: response.statusCode,
       message: response.body,

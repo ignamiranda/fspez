@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/enums/vote_direction.dart';
+import 'media_client.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'vote_notifier.dart';
@@ -39,9 +40,16 @@ final deleteProvider =
   return DeleteNotifier(client, cookie);
 });
 
+final mediaUploadClientProvider = Provider<MediaUploadClient>((ref) {
+  return MediaUploadClient(ref.watch(redditClientProvider));
+});
+
 final submitProvider =
     StateNotifierProvider<SubmitNotifier, SubmitState>((ref) {
-  return SubmitNotifier(ref.watch(redditClientProvider));
+  return SubmitNotifier(
+    ref.watch(redditClientProvider),
+    ref.watch(mediaUploadClientProvider),
+  );
 });
 
 final composeProvider =

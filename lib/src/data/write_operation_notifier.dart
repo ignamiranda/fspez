@@ -15,11 +15,9 @@ abstract class WriteOperationNotifier<V>
     String key,
     V optimisticValue,
     V? previousValue,
-    Future<void> Function() apiCall,
-    {
+    Future<void> Function() apiCall, {
     WriteErrorPolicy onError = WriteErrorPolicy.revert,
-  }
-  ) async {
+  }) async {
     optimisticSet(key, optimisticValue);
     try {
       await apiCall();

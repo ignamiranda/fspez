@@ -38,7 +38,8 @@ class _HiddenScreenState extends ConsumerState<HiddenScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(feedPageProvider(_config).notifier).refresh(),
+            onPressed: () =>
+                ref.read(feedPageProvider(_config).notifier).refresh(),
           ),
         ],
       ),

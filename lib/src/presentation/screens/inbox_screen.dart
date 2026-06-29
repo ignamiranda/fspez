@@ -276,9 +276,8 @@ class _MessageTile extends StatelessWidget {
                       Text(
                         item.subject,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: item.isNew
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          fontWeight:
+                              item.isNew ? FontWeight.w600 : FontWeight.normal,
                         ),
                         maxLines: isExpanded ? null : 2,
                         overflow: isExpanded ? null : TextOverflow.ellipsis,

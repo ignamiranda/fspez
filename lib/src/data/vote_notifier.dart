@@ -24,7 +24,8 @@ class VoteNotifier extends WriteOperationNotifier<VoteDirection> {
 
   void toggle(String fullname, VoteDirection tappedDirection) {
     final current = state[fullname] ?? VoteDirection.none;
-    final next = current == tappedDirection ? VoteDirection.none : tappedDirection;
+    final next =
+        current == tappedDirection ? VoteDirection.none : tappedDirection;
     vote(fullname, next);
   }
 

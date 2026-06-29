@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -48,8 +49,35 @@ class HttpTransport {
         headers: _headersFor(endpoint, cookie), body: body);
   }
 
+  Future<http.Response> postJson(
+    Uri uri,
+    ApiEndpoint endpoint,
+    SessionCookie? cookie, {
+    Map<String, dynamic>? body,
+  }) {
+    return _httpClient.post(
+      uri,
+      headers: _headersFor(endpoint, cookie),
+      body: body != null ? jsonEncode(body) : null,
+    );
+  }
+
   Future<http.Response> getHtml(Uri uri, SessionCookie? cookie) {
     return _httpClient.get(uri, headers: _headersForHtml(cookie));
+  }
+
+  Future<void> putBytes(Uri uri, Uint8List bytes,
+      {Map<String, String>? headers}) async {
+    final response = await _httpClient.put(
+      uri,
+      headers: headers,
+      body: bytes,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+    throw RedditApiException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
   }
 
   Map<String, dynamic> handleJsonResponse(http.Response response) {
@@ -99,14 +127,23 @@ class HttpTransport {
       case ApiEndpoint.comment:
       case ApiEndpoint.compose:
         return _formHeaders(cookie, useBrowserUA: false);
+      case ApiEndpoint.mediaUpload:
+        return {
+          'User-Agent': 'fspez/0.1.0',
+          'Content-Type': 'application/json',
+          if (cookie != null) 'Cookie': 'reddit_session=${cookie.value}',
+          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
+        };
     }
   }
 
-  Map<String, String> _formHeaders(SessionCookie? cookie, {bool useBrowserUA = false}) {
+  Map<String, String> _formHeaders(SessionCookie? cookie,
+      {bool useBrowserUA = false}) {
     final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
     return {
       'User-Agent': useBrowserUA ? _browserUA : 'fspez/0.1.0',
-      'Content-Type': 'application/x-www-form-urlencoded${useBrowserUA ? '; charset=UTF-8' : ''}',
+      'Content-Type':
+          'application/x-www-form-urlencoded${useBrowserUA ? '; charset=UTF-8' : ''}',
       'Cookie': c,
       if (useBrowserUA) 'Accept': '*/*',
       if (useBrowserUA) 'X-Requested-With': 'XMLHttpRequest',
@@ -118,7 +155,8 @@ class HttpTransport {
     final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
     return {
       'User-Agent': _browserUA,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Cookie': c,
     };
   }

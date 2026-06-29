@@ -101,8 +101,8 @@ int awardCount(Map<String, dynamic> data) {
 
   final allAwardings = data['all_awardings'];
   if (allAwardings is List) {
-    final counted =
-        allAwardings.whereType<Map<String, dynamic>>().fold<int>(0, (sum, award) {
+    final counted = allAwardings.whereType<Map<String, dynamic>>().fold<int>(0,
+        (sum, award) {
       final count = award['count'];
       if (count is num) return sum + count.toInt();
       if (count is String) {

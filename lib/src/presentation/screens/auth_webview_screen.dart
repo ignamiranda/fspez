@@ -28,7 +28,8 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
         redditClient: ref.read(redditClientProvider),
       );
 
-      final cookie = await acquirer.acquire(c, maxAttempts: 20, interval: const Duration(milliseconds: 500));
+      final cookie = await acquirer.acquire(c,
+          maxAttempts: 20, interval: const Duration(milliseconds: 500));
       if (cookie == null || _done) return;
 
       _done = true;
@@ -76,7 +77,7 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
               _acquireSession();
             },
           ),
-            if (_loading)
+          if (_loading)
             Positioned(
               left: 0,
               right: 0,
@@ -84,12 +85,14 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
               child: Center(
                 child: Card(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
                         SizedBox(
-                          width: 16, height: 16,
+                          width: 16,
+                          height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                         SizedBox(width: 12),

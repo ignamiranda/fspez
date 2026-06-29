@@ -13,7 +13,8 @@ class SessionCookie with EquatableMixin {
     this.modhash,
   });
 
-  factory SessionCookie.fromValue(String cookieValue, {String? rawCookie, String? modhash}) {
+  factory SessionCookie.fromValue(String cookieValue,
+      {String? rawCookie, String? modhash}) {
     return SessionCookie(
       value: cookieValue,
       expiresAt: DateTime.now().add(const Duration(days: 365)),

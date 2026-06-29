@@ -6,7 +6,8 @@ class SaveException implements Exception {
   final String body;
   const SaveException({required this.statusCode, required this.body});
   @override
-  String toString() => 'SaveException($statusCode): ${body.length > 200 ? body.substring(0, 200) : body}';
+  String toString() =>
+      'SaveException($statusCode): ${body.length > 200 ? body.substring(0, 200) : body}';
 }
 
 class SaveNotifier extends WriteOperationNotifier<bool> {

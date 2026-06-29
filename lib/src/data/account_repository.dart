@@ -40,7 +40,8 @@ class AccountRepository {
       return;
     }
 
-    final usernameIndex = accounts.indexWhere((a) => a.username == account.username);
+    final usernameIndex =
+        accounts.indexWhere((a) => a.username == account.username);
     if (usernameIndex >= 0) {
       accounts[usernameIndex] = account;
     } else {

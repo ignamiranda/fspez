@@ -645,9 +645,8 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
       transformationController: _transformationController,
       minScale: 1.0,
       maxScale: 5.0,
-      boundaryMargin: _isZoomed
-          ? const EdgeInsets.all(double.infinity)
-          : EdgeInsets.zero,
+      boundaryMargin:
+          _isZoomed ? const EdgeInsets.all(double.infinity) : EdgeInsets.zero,
       onInteractionStart: _onInteractionStart,
       onInteractionUpdate: _onInteractionUpdate,
       onInteractionEnd: _onInteractionEnd,

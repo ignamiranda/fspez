@@ -94,8 +94,7 @@ class FeedScreenScaffold extends ConsumerWidget {
         HapticFeedback.mediumImpact();
 
         final previousState = state;
-        final previousIds =
-            previousState.items.map((p) => p.fullname).toSet();
+        final previousIds = previousState.items.map((p) => p.fullname).toSet();
 
         String? anchorId;
         if (scrollController.hasClients &&
@@ -121,8 +120,7 @@ class FeedScreenScaffold extends ConsumerWidget {
             return;
           }
 
-          final newIds =
-              newState.items.map((p) => p.fullname).toSet();
+          final newIds = newState.items.map((p) => p.fullname).toSet();
           final addedCount = newIds.difference(previousIds).length;
 
           if (addedCount > 0) {
@@ -148,10 +146,10 @@ class FeedScreenScaffold extends ConsumerWidget {
           }
 
           if (anchorId != null && scrollController.hasClients) {
-            final oldIndex = previousState.items
-                .indexWhere((p) => p.fullname == anchorId);
-            final newIndex = newState.items
-                .indexWhere((p) => p.fullname == anchorId);
+            final oldIndex =
+                previousState.items.indexWhere((p) => p.fullname == anchorId);
+            final newIndex =
+                newState.items.indexWhere((p) => p.fullname == anchorId);
             if (oldIndex >= 0 && newIndex >= 0) {
               final itemsShift = newIndex - oldIndex;
               if (itemsShift > 0) {
