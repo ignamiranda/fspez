@@ -64,6 +64,12 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
 
   SubmitNotifier(this._client) : super(const SubmitState());
 
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
   /// Called when the subreddit text field value changes.
   ///
   /// Fetches flairs with 300ms debounce. Reuses cached results instantly.
@@ -114,11 +120,14 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
   }) async {
     if (!canSubmit) return false;
 
-    state = const SubmitState(isSubmitting: true);
+    // Capture flair before resetting state.
+    final flairId = state.selectedFlair?.flairTemplateId;
+    final flairText = state.selectedFlair?.text;
+    state = state.copyWith(isSubmitting: true);
     try {
-      if (state.selectedFlair != null) {
-        fields['flair_id'] = state.selectedFlair!.flairTemplateId;
-        fields['flair_text'] = state.selectedFlair!.text;
+      if (flairId != null) {
+        fields['flair_id'] = flairId;
+        fields['flair_text'] = flairText ?? '';
       }
       await _client.submit(fields: fields, sessionCookie: sessionCookie);
       state = const SubmitState(success: true);
