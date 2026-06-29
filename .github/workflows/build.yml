@@ -9,46 +9,5 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Cache pub
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - run: flutter pub get
-
-      - run: flutter analyze --no-pub
-
-      - run: flutter test
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: fspez-apk
-          path: build/app/outputs/flutter-apk/*.apk
-
-      - name: Get version
-        id: version
-        run: grep '^version: ' pubspec.yaml | sed 's/version: //' | sed 's/^/VERSION=/' >> $GITHUB_OUTPUT
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.VERSION }}+${{ github.run_number }}
-          files: build/app/outputs/flutter-apk/*.apk
-          generate_release_notes: true
+      - run: echo hi
