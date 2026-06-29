@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/inbox_providers.dart';
 import '../../data/inbox_notifier.dart';
+import '../../data/write_providers.dart';
+import '../utils/block_user_helpers.dart';
 import '../../domain/models/inbox_item.dart';
 import '../../domain/models/inbox_feed.dart';
 import '../tab_scroll_signal.dart';
@@ -41,8 +43,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     ref.listen<int>(tabScrollSignalProvider, (_, __) {
       final c = _inboxScrollController;
       if (c != null && c.hasClients && c.offset > 0) {
-        c.animateTo(0,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        c.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
     final state = ref.watch(inboxProvider);
@@ -57,11 +62,16 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.inbox_outlined,
-                  size: 64, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.inbox_outlined,
+                size: 64,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 16),
-              Text('Log in to see your inbox.',
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+              Text(
+                'Log in to see your inbox.',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
             ],
           ),
         ),
@@ -95,17 +105,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               },
             ),
           ),
-          Expanded(
-            child: _buildBody(state, notifier, theme),
-          ),
+          Expanded(child: _buildBody(state, notifier, theme)),
         ],
       ),
       floatingActionButton: FloatingActionButton.small(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const ComposeScreen(),
-          ),
-        ),
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ComposeScreen())),
         child: const Icon(Icons.edit_outlined),
       ),
     );
@@ -123,12 +129,17 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline,
-                  size: 48, color: theme.colorScheme.error),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: theme.colorScheme.error,
+              ),
               const SizedBox(height: 16),
-              Text(state.error!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: theme.colorScheme.error)),
+              Text(
+                state.error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ],
           ),
         ),
@@ -140,11 +151,16 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined,
-                size: 64, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.inbox_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
-            Text('No messages yet.',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              'No messages yet.',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
@@ -166,6 +182,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
             );
           }
           final msg = state.messages[index];
+          final account = ref.read(activeAccountProvider);
           return _MessageTile(
             item: msg,
             isExpanded: _expandedIds.contains(msg.id),
@@ -197,6 +214,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                     );
                   }
                 : null,
+            onBlock: account != null && msg.author != '[deleted]'
+                ? () => handleBlockUser(
+                    context: context,
+                    notifier: ref.read(blockActionProvider.notifier),
+                    username: msg.author,
+                  )
+                : null,
           );
         },
       ),
@@ -209,12 +233,14 @@ class _MessageTile extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
   final VoidCallback? onReply;
+  final VoidCallback? onBlock;
 
   const _MessageTile({
     required this.item,
     required this.isExpanded,
     required this.onToggle,
     this.onReply,
+    this.onBlock,
   });
 
   @override
@@ -260,9 +286,11 @@ class _MessageTile extends StatelessWidget {
                           if (item is CommentNotification)
                             Padding(
                               padding: const EdgeInsets.only(right: 4),
-                              child: Icon(Icons.reply_outlined,
-                                  size: 14,
-                                  color: theme.colorScheme.onSurfaceVariant),
+                              child: Icon(
+                                Icons.reply_outlined,
+                                size: 14,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           Text(
                             timeAgo(item.createdAt),
@@ -270,6 +298,65 @@ class _MessageTile extends StatelessWidget {
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
+                          if (onBlock != null) ...[
+                            const SizedBox(width: 4),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(16),
+                                    ),
+                                  ),
+                                  builder: (ctx) => SafeArea(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 8,
+                                        bottom: 16,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: 32,
+                                            height: 4,
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(ctx)
+                                                  .colorScheme
+                                                  .onSurfaceVariant
+                                                  .withValues(alpha: 0.4),
+                                              borderRadius:
+                                                  BorderRadius.circular(2),
+                                            ),
+                                          ),
+                                          ListTile(
+                                            leading: const Icon(Icons.block),
+                                            title: Text(
+                                              'Block u/${item.author}',
+                                            ),
+                                            onTap: () {
+                                              Navigator.of(ctx).pop();
+                                              onBlock!();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.more_horiz,
+                                  size: 18,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 2),
@@ -366,13 +453,19 @@ class _MessageBody extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(reply.author,
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(
+                          reply.author,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(width: 8),
-                        Text(timeAgo(reply.createdAt),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
+                        Text(
+                          timeAgo(reply.createdAt),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 2),

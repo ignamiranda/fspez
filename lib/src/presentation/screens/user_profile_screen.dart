@@ -4,12 +4,14 @@ import '../../data/auth_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../data/feed_providers.dart';
 import '../../data/user_providers.dart';
+import '../../data/write_providers.dart';
 import '../../domain/enums/comment_sort.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/user_profile.dart';
 import '../../domain/models/comment.dart';
+import '../utils/block_user_helpers.dart';
 import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
 import '../utils/profile_formatters.dart';
@@ -208,11 +210,16 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_bubble_outline,
-                size: 48, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No comments yet.',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              'No comments yet.',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
@@ -282,8 +289,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.arrow_upward,
-                          size: 14, color: theme.colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.arrow_upward,
+                        size: 14,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         '${comment.score}',
@@ -336,15 +346,43 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 const SizedBox(height: 4),
                 if (profile.isGold)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade100,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text('Gold',
+                    child: Text(
+                      'Gold',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                  ),
+                if (ref.watch(blockActionProvider)[profile.username] == true)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Blocked',
                         style: TextStyle(
-                            fontSize: 11, color: Colors.amber.shade900)),
+                          fontSize: 11,
+                          color: theme.colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
                 const SizedBox(height: 10),
                 Text(
@@ -380,6 +418,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
             ),
             const SizedBox(height: 12),
           ],
+          _BlockButton(profile: profile),
         ],
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -387,8 +426,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.person_off_outlined,
-                size: 48, color: theme.colorScheme.error),
+            Icon(
+              Icons.person_off_outlined,
+              size: 48,
+              color: theme.colorScheme.error,
+            ),
             const SizedBox(height: 8),
             Text('Could not load profile.', style: theme.textTheme.bodySmall),
           ],
@@ -432,10 +474,65 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 12),
         Text(label, style: theme.textTheme.bodyMedium),
         const Spacer(),
-        Text(value,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _BlockButton extends ConsumerWidget {
+  final UserProfile profile;
+
+  const _BlockButton({required this.profile});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final blocked = ref.watch(blockActionProvider)[profile.username] ?? false;
+    final theme = Theme.of(context);
+
+    if (blocked) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => handleUnblockUser(
+              context: context,
+              notifier: ref.read(blockActionProvider.notifier),
+              username: profile.username,
+              accountId: profile.accountId,
+            ),
+            icon: const Icon(Icons.person_off_outlined, size: 18),
+            label: const Text('Unblock'),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => handleBlockUser(
+            context: context,
+            notifier: ref.read(blockActionProvider.notifier),
+            username: profile.username,
+            accountId: profile.accountId,
+          ),
+          icon: const Icon(Icons.block, size: 18),
+          label: const Text('Block'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: theme.colorScheme.error,
+            side: BorderSide(color: theme.colorScheme.error),
+          ),
+        ),
+      ),
     );
   }
 }

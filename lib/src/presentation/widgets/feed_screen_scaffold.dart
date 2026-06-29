@@ -7,6 +7,7 @@ import '../../data/feed_pagination.dart';
 import '../../data/feed_providers.dart';
 import '../../data/write_providers.dart';
 import '../../domain/models/post.dart';
+import '../utils/block_user_helpers.dart';
 import '../utils/interaction_helpers.dart';
 import 'feed_media_prefetcher.dart';
 import 'post_list.dart';
@@ -38,8 +39,10 @@ class FeedScreenScaffold extends ConsumerWidget {
     final saveOverrides = ref.watch(saveProvider);
     final hiddenMap = ref.watch(hideProvider);
     final actions = ref.read(postActionsServiceProvider);
-    final hidden =
-        hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
+    final hidden = hiddenMap.entries
+        .where((e) => e.value)
+        .map((e) => e.key)
+        .toSet();
     final account = ref.watch(activeAccountProvider);
     Widget? statusBanner;
 
@@ -112,10 +115,12 @@ class FeedScreenScaffold extends ConsumerWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
-                ..showSnackBar(const SnackBar(
-                  content: Text('Could not refresh'),
-                  duration: Duration(seconds: 2),
-                ));
+                ..showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not refresh'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
             }
             return;
           }
@@ -127,21 +132,27 @@ class FeedScreenScaffold extends ConsumerWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-                  content: Text(addedCount == 1
-                      ? '1 new post loaded'
-                      : '$addedCount new posts loaded'),
-                  duration: const Duration(seconds: 2),
-                ));
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      addedCount == 1
+                          ? '1 new post loaded'
+                          : '$addedCount new posts loaded',
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
             }
           } else if (previousIds.isNotEmpty) {
             if (context.mounted) {
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
-                ..showSnackBar(const SnackBar(
-                  content: Text("You're up to date"),
-                  duration: Duration(seconds: 2),
-                ));
+                ..showSnackBar(
+                  const SnackBar(
+                    content: Text("You're up to date"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
             }
           }
 
@@ -154,11 +165,8 @@ class FeedScreenScaffold extends ConsumerWidget {
               final itemsShift = newIndex - oldIndex;
               if (itemsShift > 0) {
                 final estimatedShift = itemsShift * 120.0;
-                final newOffset =
-                    (scrollController.offset + estimatedShift).clamp(
-                  0.0,
-                  scrollController.position.maxScrollExtent,
-                );
+                final newOffset = (scrollController.offset + estimatedShift)
+                    .clamp(0.0, scrollController.position.maxScrollExtent);
                 scrollController.jumpTo(newOffset);
               }
             }
@@ -167,10 +175,12 @@ class FeedScreenScaffold extends ConsumerWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
-              ..showSnackBar(const SnackBar(
-                content: Text('Could not refresh'),
-                duration: Duration(seconds: 2),
-              ));
+              ..showSnackBar(
+                const SnackBar(
+                  content: Text('Could not refresh'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
           }
         }
       },
@@ -183,9 +193,9 @@ class FeedScreenScaffold extends ConsumerWidget {
       onPostSave: actions != null
           ? (fullname) {
               final post = state.items.cast<Post?>().firstWhere(
-                    (p) => p?.fullname == fullname,
-                    orElse: () => null,
-                  );
+                (p) => p?.fullname == fullname,
+                orElse: () => null,
+              );
               final wasSaved = post != null
                   ? (saveOverrides[fullname] ?? post.isSaved)
                   : saveOverrides[fullname] ?? false;
@@ -206,9 +216,12 @@ class FeedScreenScaffold extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
-                      child: Text('Delete',
-                          style: TextStyle(
-                              color: Theme.of(ctx).colorScheme.error)),
+                      child: Text(
+                        'Delete',
+                        style: TextStyle(
+                          color: Theme.of(ctx).colorScheme.error,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -250,14 +263,16 @@ class FeedScreenScaffold extends ConsumerWidget {
               if (!context.mounted) return;
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-                  content: const Text('Post hidden'),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () => actions.unhide(post.fullname),
+                ..showSnackBar(
+                  SnackBar(
+                    content: const Text('Post hidden'),
+                    action: SnackBarAction(
+                      label: 'Undo',
+                      onPressed: () => actions.unhide(post.fullname),
+                    ),
+                    duration: const Duration(seconds: 4),
                   ),
-                  duration: const Duration(seconds: 4),
-                ));
+                );
             }
           : null,
       onPostUnhide: actions != null && !filterHidden
@@ -274,19 +289,24 @@ class FeedScreenScaffold extends ConsumerWidget {
               );
             }
           : null,
-      onPostTap: (post) => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PostDetailScreen(post: post),
-        ),
-      ),
-      onSubredditTap: onSubredditTapOverride ??
+      onPostBlock: account != null
+          ? (post) => handleBlockUser(
+              context: context,
+              notifier: ref.read(blockActionProvider.notifier),
+              username: post.author,
+            )
+          : null,
+      onPostTap: (post) => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => PostDetailScreen(post: post))),
+      onSubredditTap:
+          onSubredditTapOverride ??
           (post) => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => SubredditFeedScreen(
-                    subredditName: post.subreddit.name,
-                  ),
-                ),
-              ),
+            MaterialPageRoute(
+              builder: (_) =>
+                  SubredditFeedScreen(subredditName: post.subreddit.name),
+            ),
+          ),
       onAuthorTap: (post) {
         if (post.author != '[deleted]') {
           Navigator.of(context).push(

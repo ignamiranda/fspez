@@ -324,6 +324,39 @@ class RedditClient {
       return [];
     }
   }
+
+  Future<void> blockUser(String accountId, SessionCookie sessionCookie) async {
+    await postForm(
+      '/api/block',
+      fields: {'account_id': accountId},
+      sessionCookie: sessionCookie,
+    );
+  }
+
+  Future<void> unblockUser(
+    String accountId,
+    SessionCookie sessionCookie,
+  ) async {
+    await postForm(
+      '/api/unblock',
+      fields: {'account_id': accountId},
+      sessionCookie: sessionCookie,
+    );
+  }
+
+  Future<String> fetchAccountId(
+    String username, {
+    SessionCookie? sessionCookie,
+  }) async {
+    final data = await get(
+      '/user/$username/about',
+      sessionCookie: sessionCookie,
+    );
+    final about = data['data'] as Map<String, dynamic>;
+    final id = about['id'] as String? ?? '';
+    return 't2_$id';
+  }
+  }
 }
 
 class RedditApiException implements Exception {

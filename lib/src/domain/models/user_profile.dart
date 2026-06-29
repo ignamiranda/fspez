@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class UserProfile with EquatableMixin {
+  final String id;
   final String username;
   final int linkKarma;
   final int commentKarma;
@@ -11,6 +12,7 @@ class UserProfile with EquatableMixin {
   final String? subredditName;
 
   const UserProfile({
+    required this.id,
     required this.username,
     this.linkKarma = 0,
     this.commentKarma = 0,
@@ -21,15 +23,19 @@ class UserProfile with EquatableMixin {
     this.subredditName,
   });
 
+  /// The Reddit fullname for this user (t2_{id}).
+  String get accountId => 't2_$id';
+
   @override
   List<Object?> get props => [
-        username,
-        linkKarma,
-        commentKarma,
-        createdAt,
-        iconUrl,
-        isGold,
-        isMod,
-        subredditName,
-      ];
+    id,
+    username,
+    linkKarma,
+    commentKarma,
+    createdAt,
+    iconUrl,
+    isGold,
+    isMod,
+    subredditName,
+  ];
 }
