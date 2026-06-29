@@ -1,15 +1,13 @@
 import '../domain/models/session_cookie.dart';
 import 'optimistic_state_notifier.dart';
-import 'reddit_client.dart';
 
 enum WriteErrorPolicy { revert, keepOptimistic }
 
 abstract class WriteOperationNotifier<V>
     extends OptimisticStateNotifier<String, V> {
-  final RedditClient redditClient;
   final SessionCookie? sessionCookie;
 
-  WriteOperationNotifier(this.redditClient, this.sessionCookie);
+  WriteOperationNotifier(this.sessionCookie);
 
   Future<void> write(
     String key,

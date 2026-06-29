@@ -2,6 +2,7 @@ import '../domain/enums/vote_direction.dart';
 import '../domain/models/session_cookie.dart';
 import 'action_notifier.dart';
 import 'edit_notifier.dart';
+import 'interaction_client.dart';
 import 'write_operation_notifier.dart';
 
 class PostActionsService {
@@ -10,20 +11,23 @@ class PostActionsService {
   final ActionNotifier<bool> _hideNotifier;
   final ActionNotifier<void> _deleteNotifier;
   final EditNotifier _editNotifier;
+  final InteractionClient _client;
   final SessionCookie _sessionCookie;
 
-  const PostActionsService({
+  PostActionsService({
     required ActionNotifier<VoteDirection> voteNotifier,
     required ActionNotifier<bool> saveNotifier,
     required ActionNotifier<bool> hideNotifier,
     required ActionNotifier<void> deleteNotifier,
     required EditNotifier editNotifier,
+    required InteractionClient client,
     required SessionCookie sessionCookie,
   })  : _voteNotifier = voteNotifier,
         _saveNotifier = saveNotifier,
         _hideNotifier = hideNotifier,
         _deleteNotifier = deleteNotifier,
         _editNotifier = editNotifier,
+        _client = client,
         _sessionCookie = sessionCookie;
 
   void vote(String fullname, VoteDirection direction) {
@@ -34,9 +38,11 @@ class PostActionsService {
       fullname,
       next,
       current,
-      () => _voteNotifier.redditClient.postForm('/api/vote',
-          fields: {'id': fullname, 'dir': next.value.toString()},
-          sessionCookie: sc),
+      () => _client.vote(
+        fullname: fullname,
+        direction: next.value,
+        sessionCookie: sc,
+      ),
       onError: WriteErrorPolicy.keepOptimistic,
     ).catchError((_) {}); // Vote failure is non-critical — swallow.
   }
@@ -48,9 +54,9 @@ class PostActionsService {
     try {
       await _saveNotifier.write(fullname, next, current, () async {
         if (next) {
-          await _saveNotifier.redditClient.save(fullname, sc);
+          await _client.save(fullname, sc);
         } else {
-          await _saveNotifier.redditClient.unsave(fullname, sc);
+          await _client.unsave(fullname, sc);
         }
       });
     } catch (e) {
@@ -61,18 +67,18 @@ class PostActionsService {
   Future<void> hide(String fullname) async {
     final sc = _sessionCookie;
     await _hideNotifier.write(fullname, true, _hideNotifier.peek(fullname),
-      () => _hideNotifier.redditClient.hide(fullname, sc));
+      () => _client.hide(fullname, sc));
   }
 
   Future<void> unhide(String fullname) async {
     final sc = _sessionCookie;
-    await _hideNotifier.redditClient.unhide(fullname, sc);
+    await _client.unhide(fullname, sc);
   }
 
   Future<void> delete(String fullname) async {
     final sc = _sessionCookie;
     await _deleteNotifier.write(fullname, null, null,
-      () => _deleteNotifier.redditClient.deleteContent(fullname, sc));
+      () => _client.deleteContent(fullname, sc));
   }
 
   Future<void> edit(String thingId, String text) async {

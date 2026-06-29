@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/inbox_repository.dart';
+import 'package:fspez/src/data/message_client.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/models/inbox_feed.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
@@ -9,19 +10,25 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockHttpClient extends Mock implements http.Client {}
 
+class _MockMessageClient extends Mock implements MessageClient {}
+
 void main() {
   late _MockHttpClient mockHttp;
   late RedditClient client;
+  late _MockMessageClient mockMessageClient;
   late InboxRepository repository;
 
   setUpAll(() {
     registerFallbackValue(Uri());
+    registerFallbackValue(SessionCookie(value: '', expiresAt: DateTime.now()));
+    registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
     mockHttp = _MockHttpClient();
+    mockMessageClient = _MockMessageClient();
     client = RedditClient(httpClient: mockHttp);
-    repository = InboxRepository(client);
+    repository = InboxRepository(client, mockMessageClient);
   });
 
   group('fetchInbox', () {
@@ -189,14 +196,8 @@ void main() {
   });
 
   group('reply', () {
-    test('sends comment to www.reddit.com with thing_id and text', () async {
-      when(() => mockHttp.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          )).thenAnswer((_) async => http.Response(
-            '{"success": true}', 200));
-
+    test('sends comment through MessageClient with thing_id and text',
+        () async {
       final cookie = SessionCookie(
         value: 'session_val',
         expiresAt: DateTime.now().add(const Duration(days: 1)),
@@ -204,21 +205,24 @@ void main() {
         modhash: 'modhash123',
       );
 
+      when(() => mockMessageClient.comment(
+            fields: any(named: 'fields'),
+            sessionCookie: any(named: 'sessionCookie'),
+          )).thenAnswer((_) async {});
+
       await repository.reply(
         fullname: 't4_msg1',
         text: 'Reply text',
         sessionCookie: cookie,
       );
 
-      verify(() => mockHttp.post(
-        Uri.parse('https://www.reddit.com/api/comment'),
-        headers: {
-          'User-Agent': 'fspez/0.1.0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': 'reddit_session=session_val; loggedin=1',
-          'X-Modhash': 'modhash123',
+      verify(() => mockMessageClient.comment(
+        fields: {
+          'thing_id': 't4_msg1',
+          'text': 'Reply text',
+          'uh': 'modhash123',
         },
-        body: 'thing_id=t4_msg1&text=Reply+text&uh=modhash123',
+        sessionCookie: cookie,
       )).called(1);
     });
   });

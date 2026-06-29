@@ -2,12 +2,14 @@ import '../domain/models/inbox_feed.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
 import 'inbox_parser.dart';
+import 'message_client.dart';
 
 class InboxRepository {
   final RedditClient _client;
+  final MessageClient _messageClient;
   final InboxParser _parser;
 
-  InboxRepository(this._client, {InboxParser? parser})
+  InboxRepository(this._client, this._messageClient, {InboxParser? parser})
       : _parser = parser ?? InboxParser();
 
   Future<InboxFeed> fetchInbox({
@@ -77,7 +79,7 @@ class InboxRepository {
     required String text,
     required SessionCookie sessionCookie,
   }) async {
-    await _client.comment(
+    await _messageClient.comment(
       fields: {
         'thing_id': fullname,
         'text': text,

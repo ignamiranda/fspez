@@ -6,13 +6,17 @@ import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'subreddit_repository.dart';
 import 'comment_repository.dart';
+import 'write_providers.dart';
 
 final subredditRepositoryProvider = Provider<SubredditRepository>((ref) {
   return SubredditRepository(ref.watch(redditClientProvider));
 });
 
 final commentRepositoryProvider = Provider<CommentRepository>((ref) {
-  return CommentRepository(ref.watch(redditClientProvider));
+  return CommentRepository(
+    ref.watch(redditClientProvider),
+    ref.watch(messageClientProvider),
+  );
 });
 
 final postDetailProvider = FutureProvider.family<PostDetail,

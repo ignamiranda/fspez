@@ -1,28 +1,40 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/action_notifier.dart';
-import 'package:fspez/src/data/reddit_client.dart';
+import 'package:fspez/src/data/http_transport.dart';
+import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/write_operation_notifier.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
+import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 
 class _MockHttpClient extends Mock implements http.Client {}
 
+SessionCookie _testCookie() {
+  return SessionCookie(
+    value: 'test',
+    expiresAt: DateTime.now().add(const Duration(days: 1)),
+  );
+}
+
 void main() {
   late _MockHttpClient mockHttp;
-  late RedditClient client;
+  late InteractionClient interactionClient;
   late ActionNotifier<VoteDirection> notifier;
+  late SessionCookie cookie;
 
   setUpAll(() {
     registerFallbackValue(Uri());
+    registerFallbackValue(_testCookie());
   });
 
   setUp(() {
     mockHttp = _MockHttpClient();
+    cookie = _testCookie();
     when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
         .thenAnswer((_) async => http.Response('{}', 200));
-    client = RedditClient(httpClient: mockHttp);
-    notifier = ActionNotifier<VoteDirection>(client, null);
+    interactionClient = InteractionClient(HttpTransport(httpClient: mockHttp));
+    notifier = ActionNotifier<VoteDirection>(null);
   });
 
   group('write', () {
@@ -42,15 +54,18 @@ void main() {
 
     test('calls api/vote with correct parameters', () async {
       await notifier.write('t3_post1', VoteDirection.upvote, null,
-        () => notifier.redditClient.postForm('/api/vote',
-            fields: {'id': 't3_post1', 'dir': '1'},
-            sessionCookie: null));
+        () => interactionClient.vote(
+          fullname: 't3_post1',
+          direction: 1,
+          sessionCookie: cookie,
+        ));
 
       verify(() => mockHttp.post(
         Uri.parse('https://www.reddit.com/api/vote'),
         headers: {
           'User-Agent': 'fspez/0.1.0',
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': 'reddit_session=test',
         },
         body: 'id=t3_post1&dir=1',
       )).called(1);
@@ -58,15 +73,18 @@ void main() {
 
     test('calls api/vote with downvote direction', () async {
       await notifier.write('t3_post1', VoteDirection.downvote, null,
-        () => notifier.redditClient.postForm('/api/vote',
-            fields: {'id': 't3_post1', 'dir': '-1'},
-            sessionCookie: null));
+        () => interactionClient.vote(
+          fullname: 't3_post1',
+          direction: -1,
+          sessionCookie: cookie,
+        ));
 
       verify(() => mockHttp.post(
         Uri.parse('https://www.reddit.com/api/vote'),
         headers: {
           'User-Agent': 'fspez/0.1.0',
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': 'reddit_session=test',
         },
         body: 'id=t3_post1&dir=-1',
       )).called(1);
@@ -78,9 +96,11 @@ void main() {
 
       await expectLater(
         notifier.write('t3_post1', VoteDirection.upvote, null,
-          () => notifier.redditClient.postForm('/api/vote',
-              fields: {'id': 't3_post1', 'dir': '1'},
-              sessionCookie: null),
+          () => interactionClient.vote(
+            fullname: 't3_post1',
+            direction: 1,
+            sessionCookie: cookie,
+          ),
           onError: WriteErrorPolicy.keepOptimistic),
         throwsA(isA<Exception>()),
       );

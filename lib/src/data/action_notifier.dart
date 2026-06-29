@@ -5,7 +5,7 @@ import 'write_operation_notifier.dart';
 /// Replaces VoteNotifier, SaveNotifier, HideNotifier, DeleteNotifier.
 /// Keeps the WriteOperationNotifier pattern but removes the per-file subclass boilerplate.
 class ActionNotifier<V> extends WriteOperationNotifier<V> {
-  ActionNotifier(super.redditClient, super.sessionCookie);
+  ActionNotifier(super.sessionCookie);
 
   V effectiveValue(String key, V original) => effective(key, original);
 

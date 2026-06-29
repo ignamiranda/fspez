@@ -103,7 +103,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       appBar: AppBar(
         title: const Text('New Message'),
         actions: [
-          if (composeState.isSending)
+          if (composeState.isProcessing)
             const Padding(
               padding: EdgeInsets.all(16),
               child: SizedBox(

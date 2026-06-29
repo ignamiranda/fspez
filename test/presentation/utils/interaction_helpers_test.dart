@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/action_notifier.dart';
 import 'package:fspez/src/data/edit_notifier.dart';
+import 'package:fspez/src/data/http_transport.dart';
+import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/post_actions_service.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
@@ -12,13 +14,13 @@ import 'package:http/http.dart' as http;
 
 class _MockHttpClient extends Mock implements http.Client {}
 
-class _MockRedditClient extends Mock implements RedditClient {}
+class _MockInteractionClient extends Mock implements InteractionClient {}
 
 Widget _app(Widget body) => MaterialApp(home: Scaffold(body: body));
 
 void main() {
   late _MockHttpClient mockHttp;
-  late _MockRedditClient mockClient;
+  late _MockInteractionClient mockClient;
   late ActionNotifier<VoteDirection> voteNotifier;
   late ActionNotifier<bool> saveNotifier;
   late ActionNotifier<bool> hideNotifier;
@@ -31,7 +33,7 @@ void main() {
 
   setUp(() {
     mockHttp = _MockHttpClient();
-    mockClient = _MockRedditClient();
+    mockClient = _MockInteractionClient();
     when(() => mockHttp.post(any(),
             headers: any(named: 'headers'), body: any(named: 'body')))
         .thenAnswer((_) async => http.Response('{}', 200));
@@ -39,17 +41,18 @@ void main() {
     when(() => mockClient.unsave(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.hide(any(), any())).thenAnswer((_) async {});
     when(() => mockClient.unhide(any(), any())).thenAnswer((_) async {});
-    voteNotifier = ActionNotifier<VoteDirection>(RedditClient(httpClient: mockHttp), null);
     final cookie = SessionCookie(
         value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
-    saveNotifier = ActionNotifier<bool>(mockClient, cookie);
-    hideNotifier = ActionNotifier<bool>(mockClient, cookie);
+    voteNotifier = ActionNotifier<VoteDirection>(null);
+    saveNotifier = ActionNotifier<bool>(cookie);
+    hideNotifier = ActionNotifier<bool>(cookie);
     actions = PostActionsService(
       voteNotifier: voteNotifier,
       saveNotifier: saveNotifier,
       hideNotifier: hideNotifier,
-      deleteNotifier: ActionNotifier<void>(mockClient, cookie),
+      deleteNotifier: ActionNotifier<void>(cookie),
       editNotifier: EditNotifier(mockClient),
+      client: mockClient,
       sessionCookie: cookie,
     );
   });
@@ -62,20 +65,14 @@ void main() {
     });
 
     testWidgets('toggles from upvote to none', (tester) async {
-      await voteNotifier.write('t3_test', VoteDirection.upvote, null,
-        () => voteNotifier.redditClient.postForm('/api/vote',
-            fields: {'id': 't3_test', 'dir': '1'},
-            sessionCookie: null));
+      voteNotifier.optimisticSet('t3_test', VoteDirection.upvote);
       handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveValue('t3_test', VoteDirection.none),
           VoteDirection.none);
     });
 
     testWidgets('toggles from downvote to upvote', (tester) async {
-      await voteNotifier.write('t3_test', VoteDirection.downvote, null,
-        () => voteNotifier.redditClient.postForm('/api/vote',
-            fields: {'id': 't3_test', 'dir': '-1'},
-            sessionCookie: null));
+      voteNotifier.optimisticSet('t3_test', VoteDirection.downvote);
       handleVote(actions, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveValue('t3_test', VoteDirection.upvote),
           VoteDirection.upvote);

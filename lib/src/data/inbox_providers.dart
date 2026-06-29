@@ -3,9 +3,13 @@ import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'inbox_repository.dart';
 import 'inbox_notifier.dart';
+import 'write_providers.dart';
 
 final inboxRepositoryProvider = Provider<InboxRepository>((ref) {
-  return InboxRepository(ref.watch(redditClientProvider));
+  return InboxRepository(
+    ref.watch(redditClientProvider),
+    ref.watch(messageClientProvider),
+  );
 });
 
 final inboxProvider = StateNotifierProvider<InboxNotifier, InboxState>((ref) {

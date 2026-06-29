@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
-import '../../data/reddit_client_provider.dart';
+import '../../data/write_providers.dart';
 import '../../domain/models/subreddit_rule.dart';
 
 class _ReportCategory {
@@ -81,11 +81,11 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
     });
     try {
       await ref
-          .read(redditClientProvider)
+          .read(interactionClientProvider)
           .reportContent(
             thingId: widget.thingId,
             reason: reason,
-            sessionCookie: account?.sessionCookie,
+            sessionCookie: account?.sessionCookie ?? (throw Exception('No session')),
           );
       if (!mounted) return;
       Navigator.of(context).pop();
