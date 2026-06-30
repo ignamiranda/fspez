@@ -20,7 +20,7 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
 
   Future<void> _acquireSession() async {
     final c = _controller;
-    if (c == null || _done) return;
+    if (c == null || _done || _loading) return;
 
     setState(() => _loading = true);
     try {
