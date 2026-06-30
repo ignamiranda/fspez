@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../data/app_settings.dart';
 import '../../domain/enums/app_theme_mode.dart';
 import '../../domain/enums/comment_sort.dart';
@@ -87,6 +88,19 @@ class SettingsScreen extends ConsumerWidget {
                 onChanged: (sort) {
                   notifier.setDefaultCommentSort(sort);
                 },
+              ),
+            ),
+          ]),
+          const _SectionHeader(label: 'About'),
+          _SettingsCard(children: [
+            ListTile(
+              title: const Text('Report Issue'),
+              subtitle: const Text('Open a GitHub issue to report a bug or request a feature.'),
+              leading: const Icon(Icons.bug_report_outlined),
+              trailing: const Icon(Icons.open_in_new, size: 18),
+              onTap: () => launchUrl(
+                Uri.parse('https://github.com/ignamiranda/fspez/issues/new'),
+                mode: LaunchMode.externalApplication,
               ),
             ),
           ]),
