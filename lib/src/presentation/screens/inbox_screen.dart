@@ -11,6 +11,7 @@ import '../tab_scroll_signal.dart';
 import '../utils/format_utils.dart';
 import '../utils/infinite_scroll.dart';
 import '../widgets/reddit_body.dart';
+import 'auth_webview_screen.dart';
 import 'compose_screen.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -71,6 +72,16 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               Text(
                 'Log in to see your inbox.',
                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
+                  );
+                },
+                icon: const Icon(Icons.login),
+                label: const Text('Log in'),
               ),
             ],
           ),

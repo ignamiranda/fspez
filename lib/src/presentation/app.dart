@@ -45,6 +45,7 @@ class _AppGateState extends ConsumerState<_AppGate> {
   @override
   Widget build(BuildContext context) {
     final account = ref.watch(activeAccountProvider);
+    final isGuest = ref.watch(guestModeProvider);
     final isLoggedIn = account != null;
 
     if (_wasLoggedIn != null && _wasLoggedIn != isLoggedIn) {
@@ -54,7 +55,7 @@ class _AppGateState extends ConsumerState<_AppGate> {
     }
     _wasLoggedIn = isLoggedIn;
 
-    return isLoggedIn ? const _MainShell() : const LoginScreen();
+    return isGuest || isLoggedIn ? const _MainShell() : const LoginScreen();
   }
 }
 

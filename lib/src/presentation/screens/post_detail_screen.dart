@@ -176,7 +176,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 effectiveVote: postEffectiveVote,
                 onVote: actions != null
                     ? (dir) => handleVote(actions, postFullname, dir)
-                    : null,
+                    : (dir) => requireLoginForAction(context, action: 'vote'),
                 effectiveSaved: postEffectiveSaved,
                 onSave: actions != null
                     ? () {
@@ -189,7 +189,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           wasSaved: wasSaved,
                         );
                       }
-                    : null,
+                    : () => requireLoginForAction(context, action: 'save'),
                 onEdit: username != null && post.author == username
                     ? () {
                         showEditSheet(
@@ -210,7 +210,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         username != null &&
                         post.author == username
                     ? () => handleDelete(context, actions, postFullname)
-                    : null,
+                    : actions == null
+                        ? () => requireLoginForAction(context, action: 'delete')
+                        : null,
                 onBlock:
                     username != null &&
                         post.author != '[deleted]' &&
@@ -384,12 +386,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onVote: actions != null
                           ? (fullname, dir) =>
                               handleVote(actions, fullname, dir)
-                          : null,
+                          : (fullname, dir) => requireLoginForAction(context, action: 'vote'),
                       saveOverrides: saveOverrides,
                       onSave: actions != null
                           ? (fullname) => handleSave(actions, fullname, context)
-                          : null,
-                      onReply: loggedIn ? _replyToComment : null,
+                          : (fullname) => requireLoginForAction(context, action: 'save'),
+                      onReply: loggedIn ? _replyToComment : (id, author, body) => requireLoginForAction(context, action: 'reply to this'),
                       onReport: onReportComment,
                       onAuthorTap: (author) {
                         if (author != '[deleted]') {
@@ -425,7 +427,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                                 }
                               });
                             }
-                          : null,
+                          : actions == null
+                              ? (fullname) => requireLoginForAction(context, action: 'delete')
+                              : null,
                       onBlock: username != null &&
                               c.author != '[deleted]' &&
                               c.author != username
