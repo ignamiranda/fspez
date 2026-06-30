@@ -40,7 +40,7 @@ lib/
 ```sh
 flutter pub get                         # handles pubspec + flutter_inappwebview_windows dep override
 flutter analyze --no-pub                # CI uses --no-pub
-flutter test                            # 270 tests, all pass
+flutter test                            # 235 tests, all pass
 flutter run -d windows                  # Windows dev
 ```
 
