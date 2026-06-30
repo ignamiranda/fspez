@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/action_notifier.dart';
 import 'package:fspez/src/data/edit_notifier.dart';
-import 'package:fspez/src/data/http_transport.dart';
 import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/post_actions_service.dart';
 import 'package:fspez/src/data/reddit_client.dart';
