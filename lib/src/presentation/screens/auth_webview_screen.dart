@@ -48,9 +48,31 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
         SnackBar(content: Text('Logged in as $username')),
       );
       Navigator.of(context).pop();
+    } catch (e) {
+      debugPrint('SessionAcquisition failed: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sign-in failed: ${_shortError(e)}'),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(label: 'Retry', onPressed: _acquireSession),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _shortError(Object e) {
+    final s = e.toString();
+    // Keep socket/host messages readable but not too technical
+    if (s.contains('SocketException')) {
+      return 'Could not connect to Reddit. Check your network connection.';
+    }
+    if (s.length > 100) {
+      return '${s.substring(0, 100)}...';
+    }
+    return s;
   }
 
   @override
