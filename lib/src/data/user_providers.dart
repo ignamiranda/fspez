@@ -11,6 +11,19 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
 final userProfileProvider =
     FutureProvider.family<UserProfile, String>((ref, username) async {
   final repo = ref.watch(userRepositoryProvider);
-  final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return repo.fetchProfile(username, sessionCookie: sessionCookie);
+  final account = ref.watch(activeAccountProvider);
+  final sessionCookie = account?.sessionCookie;
+  final profile = await repo.fetchProfile(username, sessionCookie: sessionCookie);
+
+  // Fetch actual moderated subreddits only when viewing own profile
+  List<String> moderated = const [];
+  if (account?.username == username && sessionCookie != null) {
+    try {
+      moderated = await repo.fetchModeratedSubreddits(sessionCookie: sessionCookie);
+    } catch (_) {
+      // Non-fatal — moderated subs are supplemental info
+    }
+  }
+
+  return profile.copyWith(moderatedSubreddits: moderated);
 });

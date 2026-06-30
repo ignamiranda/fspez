@@ -9,7 +9,7 @@ class UserProfile with EquatableMixin {
   final String? iconUrl;
   final bool isGold;
   final bool isMod;
-  final String? subredditName;
+  final List<String> moderatedSubreddits;
 
   const UserProfile({
     required this.id,
@@ -20,11 +20,35 @@ class UserProfile with EquatableMixin {
     this.iconUrl,
     this.isGold = false,
     this.isMod = false,
-    this.subredditName,
+    this.moderatedSubreddits = const [],
   });
 
   /// The Reddit fullname for this user (t2_{id}).
   String get accountId => 't2_$id';
+
+  UserProfile copyWith({
+    String? id,
+    String? username,
+    int? linkKarma,
+    int? commentKarma,
+    DateTime? createdAt,
+    String? iconUrl,
+    bool? isGold,
+    bool? isMod,
+    List<String>? moderatedSubreddits,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      linkKarma: linkKarma ?? this.linkKarma,
+      commentKarma: commentKarma ?? this.commentKarma,
+      createdAt: createdAt ?? this.createdAt,
+      iconUrl: iconUrl ?? this.iconUrl,
+      isGold: isGold ?? this.isGold,
+      isMod: isMod ?? this.isMod,
+      moderatedSubreddits: moderatedSubreddits ?? this.moderatedSubreddits,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -36,6 +60,6 @@ class UserProfile with EquatableMixin {
     iconUrl,
     isGold,
     isMod,
-    subredditName,
+    moderatedSubreddits,
   ];
 }

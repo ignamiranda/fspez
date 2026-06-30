@@ -31,8 +31,6 @@ class UserRepository {
       iconUrl: _iconUrl(about),
       isGold: about['is_gold'] as bool? ?? false,
       isMod: about['is_mod'] as bool? ?? false,
-      subredditName:
-          (about['subreddit'] as Map<String, dynamic>?)?['name'] as String?,
     );
   }
 
@@ -59,6 +57,27 @@ class UserRepository {
         .whereType<Map<String, dynamic>>()
         .where((child) => child['kind'] == 't1')
         .map((child) => _parseComment(child['data'] as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Fetches subreddits the authenticated user moderates.
+  ///
+  /// Requires a valid session cookie. Returns display names only
+  /// (e.g., ["flutter", "dartlang"]).
+  Future<List<String>> fetchModeratedSubreddits({
+    required SessionCookie sessionCookie,
+  }) async {
+    final data = await _client.get(
+      '/subreddits/mine/moderator',
+      sessionCookie: sessionCookie,
+    );
+    final listing = data['data'] as Map<String, dynamic>? ?? {};
+    final children = listing['children'] as List<dynamic>? ?? [];
+    return children
+        .whereType<Map<String, dynamic>>()
+        .map((c) => c['data'] as Map<String, dynamic>? ?? {})
+        .where((d) => d['display_name'] != null)
+        .map((d) => d['display_name'] as String)
         .toList();
   }
 

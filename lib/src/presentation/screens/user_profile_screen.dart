@@ -18,6 +18,7 @@ import '../utils/profile_formatters.dart';
 import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
 import 'post_detail_screen.dart';
+import 'subreddit_feed_screen.dart';
 import '../widgets/report_sheet.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
@@ -431,12 +432,40 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
           if (profile.isMod) ...[
             _InfoRow(
               label: 'Moderator',
-              value: profile.subredditName != null
-                  ? 'r/${profile.subredditName}'
+              value: profile.moderatedSubreddits.isNotEmpty
+                  ? '${profile.moderatedSubreddits.length} subreddit${profile.moderatedSubreddits.length == 1 ? '' : 's'}'
                   : 'Yes',
               icon: Icons.shield_outlined,
               theme: theme,
             ),
+            if (profile.moderatedSubreddits.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 32),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: profile.moderatedSubreddits.map((sub) =>
+                    ActionChip(
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      label: Text('r/$sub',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => SubredditFeedScreen(subredditName: sub),
+                          ),
+                        );
+                      },
+                    ),
+                  ).toList(),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
           ],
           _BlockButton(profile: profile),

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/user_repository.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/enums/comment_sort.dart';
+import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
@@ -14,6 +15,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Uri());
+    registerFallbackValue(SessionCookie(value: '', expiresAt: DateTime.now()));
   });
 
   setUp(() {
@@ -49,7 +51,6 @@ void main() {
       expect(profile.isGold, isTrue);
       expect(profile.isMod, isFalse);
       expect(profile.iconUrl, 'https://example.com/icon.png');
-      expect(profile.subredditName, isNull);
     });
 
     test('uses fallback username when name field is missing', () async {
@@ -197,6 +198,90 @@ void main() {
       verify(() => mockHttp.get(
             Uri.parse(
                 'https://old.reddit.com/user/sorter/comments.json?limit=25&sort=top'),
+            headers: any(named: 'headers'),
+          )).called(1);
+    });
+  });
+
+  group('fetchModeratedSubreddits', () {
+    test('returns list of display names', () async {
+      when(() => mockHttp.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('''
+        {
+          "data": {
+            "children": [
+              {"data": {"display_name": "flutter", "name": "t5_abc"}},
+              {"data": {"display_name": "dartlang", "name": "t5_def"}}
+            ]
+          }
+        }
+      ''', 200));
+
+      final subs = await repository.fetchModeratedSubreddits(
+        sessionCookie: SessionCookie(value: 'sess', expiresAt: DateTime.now()),
+      );
+
+      expect(subs, ['flutter', 'dartlang']);
+    });
+
+    test('returns empty list when no moderated subreddits', () async {
+      when(() => mockHttp.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('''
+        {
+          "data": {
+            "children": []
+          }
+        }
+      ''', 200));
+
+      final subs = await repository.fetchModeratedSubreddits(
+        sessionCookie: SessionCookie(value: 'sess', expiresAt: DateTime.now()),
+      );
+
+      expect(subs, isEmpty);
+    });
+
+    test('skips children without display_name', () async {
+      when(() => mockHttp.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('''
+        {
+          "data": {
+            "children": [
+              {"data": {"name": "t5_xyz"}},
+              {"data": {"display_name": "valid"}}
+            ]
+          }
+        }
+      ''', 200));
+
+      final subs = await repository.fetchModeratedSubreddits(
+        sessionCookie: SessionCookie(value: 'sess', expiresAt: DateTime.now()),
+      );
+
+      expect(subs, ['valid']);
+    });
+
+    test('hits correct endpoint', () async {
+      when(() => mockHttp.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('''
+        {"data": {"children": []}}
+      ''', 200));
+
+      await repository.fetchModeratedSubreddits(
+        sessionCookie: SessionCookie(value: 'sess', expiresAt: DateTime.now()),
+      );
+
+      verify(() => mockHttp.get(
+            Uri.parse(
+                'https://old.reddit.com/subreddits/mine/moderator.json'),
             headers: any(named: 'headers'),
           )).called(1);
     });
