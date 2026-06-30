@@ -39,9 +39,10 @@ lib/
 
 ```sh
 flutter pub get                         # handles pubspec + flutter_inappwebview_windows dep override
-flutter analyze --no-pub                # CI uses --no-pub
-flutter test                            # 235 tests, all pass
-flutter run -d windows                  # Windows dev
+flutter analyze                         # runs pub get first if needed
+flutter analyze --no-pub                # CI uses --no-pub (must already have deps)
+flutter test                            # 239 tests, all pass
+flutter run -d windows                  # Windows dev (start.bat shorthand)
 ```
 
 No codegen, no build\_runner, no freezed. All models hand-written.
