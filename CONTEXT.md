@@ -35,3 +35,7 @@ _Avoid_: Community (in code or API contexts)
 **Draft**:
 A locally saved, unsubmitted post, comment, or direct message. Stored on-device, not on Reddit's servers, until the User chooses to submit or discard it.
 _Avoid_: Temp, work-in-progress
+
+**Guest**:
+A mode where the User browses Reddit without an Account. No session cookie, no modhash. Read operations (feed, post, comments, search) work normally. Write operations (vote, comment, submit, inbox) prompt login via confirmation dialog → AuthWebViewScreen. Guest mode is ephemeral — not persisted across app restarts.
+_Avoid_: Anonymous, offline

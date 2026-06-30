@@ -59,34 +59,52 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         ],
       ),
       body: activeAccount == null
-          ? _buildLoggedOut(context)
+          ? _buildGuestView(context)
           : _buildLoggedIn(context, accounts, activeAccount, sessionHealth),
     );
   }
 
-  Widget _buildLoggedOut(BuildContext context) {
+  Widget _buildGuestView(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.person_outline,
-              size: 64, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(height: 16),
-          Text('Not logged in',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
-              );
-            },
-            icon: const Icon(Icons.login),
-            label: const Text('Add Account'),
+    return ListView(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Icon(Icons.person_outline,
+                    size: 64, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(height: 16),
+                Text('Browsing as guest',
+                    style: theme.textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text('Log in to access your account, inbox, and post.',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.login),
+                  label: const Text('Log in'),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        ListTile(
+          leading: const Icon(Icons.settings_outlined),
+          title: const Text('Settings'),
+          onTap: () => _openSettings(context),
+        ),
+      ],
     );
   }
 

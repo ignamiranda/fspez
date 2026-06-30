@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/post_actions_service.dart';
 import '../../domain/enums/vote_direction.dart';
+import '../screens/auth_webview_screen.dart';
 
 void handleVote(
   PostActionsService actions,
@@ -137,4 +138,31 @@ Future<bool> handleDelete(
     }
     return false;
   }
+}
+
+/// Shows a confirmation dialog when a guest tries a write action,
+/// then navigates to the login screen on confirm.
+void requireLoginForAction(BuildContext context, {String action = 'perform that action'}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Log in required'),
+      content: Text('You need to log in to $action. Log in now?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.of(ctx).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
+            );
+          },
+          child: const Text('Log in'),
+        ),
+      ],
+    ),
+  );
 }
