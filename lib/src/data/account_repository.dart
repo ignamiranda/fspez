@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
@@ -12,7 +13,13 @@ class AccountRepository {
   AccountRepository(this._storage);
 
   Future<List<Account>> loadAll() async {
-    final json = await _storage.read(key: _accountsKey);
+    String? json;
+    try {
+      json = await _storage.read(key: _accountsKey);
+    } on PlatformException {
+      await _storage.delete(key: _accountsKey);
+      return [];
+    }
     if (json == null) return [];
 
     final list = jsonDecode(json) as List<dynamic>;
@@ -66,7 +73,12 @@ class AccountRepository {
     final remaining = accounts.where((a) => a.id != accountId).toList();
     await _persistAll(remaining);
 
-    final activeId = await _storage.read(key: _activeAccountIdKey);
+    String? activeId;
+    try {
+      activeId = await _storage.read(key: _activeAccountIdKey);
+    } on PlatformException {
+      return;
+    }
     if (activeId == accountId) {
       await _storage.delete(key: _activeAccountIdKey);
     }
@@ -77,7 +89,12 @@ class AccountRepository {
   }
 
   Future<Account?> loadActive() async {
-    final activeId = await _storage.read(key: _activeAccountIdKey);
+    String? activeId;
+    try {
+      activeId = await _storage.read(key: _activeAccountIdKey);
+    } on PlatformException {
+      return null;
+    }
     if (activeId == null) return null;
     final all = await loadAll();
     return all.where((a) => a.id == activeId).firstOrNull;
