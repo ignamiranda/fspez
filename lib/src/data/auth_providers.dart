@@ -28,11 +28,14 @@ final accountsProvider = FutureProvider<List<Account>>((ref) async {
   return ref.watch(accountRepositoryProvider).loadAll();
 });
 
+final corruptedSessionProvider = StateProvider<bool>((ref) => false);
+
 final activeAccountProvider =
     StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
   return ActiveAccountNotifier(
     ref.watch(accountRepositoryProvider),
     ref.watch(accountListVersionProvider.notifier),
     ref.watch(feedCacheProvider),
+    ref.watch(corruptedSessionProvider.notifier),
   );
 });
