@@ -140,7 +140,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               ],
             ),
             onTap: account.id == activeAccount.id
-                ? null
+                ? () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => UserProfileScreen(
+                            username: activeAccount.username),
+                      ),
+                    );
+                  }
                 : () => _switchAccount(account),
           ),
           if (account != accounts.last) const Divider(height: 1),
@@ -152,19 +159,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
-            );
-          },
-        ),
-        const Divider(),
-        ListTile(
-          leading: const Icon(Icons.person),
-          title: const Text('My Profile'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    UserProfileScreen(username: activeAccount.username),
-              ),
             );
           },
         ),
@@ -184,18 +178,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const HiddenScreen()),
-            );
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.history),
-          title: const Text('History'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    UserProfileScreen(username: activeAccount.username),
-              ),
             );
           },
         ),
