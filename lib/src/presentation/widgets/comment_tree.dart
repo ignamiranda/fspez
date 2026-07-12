@@ -181,174 +181,175 @@ class _CommentTreeState extends State<CommentTree> {
                               const SizedBox(height: 4),
                               RedditBody(widget.comment.body),
                               const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  InkWell(
-                                    onTap: () => widget.onVote?.call(
-                                      fullname,
-                                      VoteDirection.upvote,
-                                    ),
-                                    child: Icon(
-                                      effectiveVote == VoteDirection.upvote
-                                          ? Icons.arrow_upward
-                                          : Icons.arrow_upward_outlined,
-                                      size: 16,
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _CommentActionButton(
+                                      icon: Icons.arrow_upward_outlined,
+                                      activeIcon: Icons.arrow_upward,
+                                      isActive:
+                                          effectiveVote == VoteDirection.upvote,
                                       color:
                                           effectiveVote == VoteDirection.upvote
                                           ? theme.colorScheme.primary
-                                          : theme.colorScheme.onSurfaceVariant,
+                                          : null,
+                                      onTap: () => widget.onVote?.call(
+                                        fullname,
+                                        VoteDirection.upvote,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  InkWell(
-                                    onTap: () => widget.onVote?.call(
-                                      fullname,
-                                      VoteDirection.downvote,
-                                    ),
-                                    child: Icon(
-                                      effectiveVote == VoteDirection.downvote
-                                          ? Icons.arrow_downward
-                                          : Icons.arrow_downward_outlined,
-                                      size: 16,
+                                    const SizedBox(width: 4),
+                                    _CommentActionButton(
+                                      icon: Icons.arrow_downward_outlined,
+                                      activeIcon: Icons.arrow_downward,
+                                      isActive:
+                                          effectiveVote ==
+                                          VoteDirection.downvote,
                                       color:
                                           effectiveVote ==
                                               VoteDirection.downvote
                                           ? theme.colorScheme.secondary
-                                          : theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  if (widget.onReply != null)
-                                    InkWell(
-                                      onTap: () => widget.onReply!(
-                                        widget.comment.fullname,
-                                        widget.comment.author,
-                                        widget.comment.body,
+                                          : null,
+                                      onTap: () => widget.onVote?.call(
+                                        fullname,
+                                        VoteDirection.downvote,
                                       ),
-                                      child: Icon(
-                                        Icons.reply_outlined,
-                                        size: 16,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    )
-                                  else
-                                    Icon(
-                                      Icons.reply_outlined,
-                                      size: 16,
-                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
-                                  const SizedBox(width: 16),
-                                  InkWell(
-                                    onTap: () => widget.onSave?.call(fullname),
-                                    child: Icon(
-                                      effectiveSaved
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_outline,
-                                      size: 16,
+                                    const SizedBox(width: 8),
+                                    if (widget.onReply != null)
+                                      _CommentActionButton(
+                                        icon: Icons.reply_outlined,
+                                        onTap: () => widget.onReply!(
+                                          widget.comment.fullname,
+                                          widget.comment.author,
+                                          widget.comment.body,
+                                        ),
+                                      )
+                                    else
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 6,
+                                        ),
+                                        child: Icon(
+                                          Icons.reply_outlined,
+                                          size: 18,
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    const SizedBox(width: 8),
+                                    _CommentActionButton(
+                                      icon: Icons.bookmark_outline,
+                                      activeIcon: Icons.bookmark,
+                                      isActive: effectiveSaved,
                                       color: effectiveSaved
                                           ? theme.colorScheme.tertiary
-                                          : theme.colorScheme.onSurfaceVariant,
+                                          : null,
+                                      onTap: () =>
+                                          widget.onSave?.call(fullname),
                                     ),
+                                ),
+                                const SizedBox(width: 16),
+                                PopupMenuButton<String>(
+                                  icon: Icon(
+                                    Icons.more_horiz,
+                                    size: 16,
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
-                                  const SizedBox(width: 16),
-                                  PopupMenuButton<String>(
-                                    icon: Icon(
-                                      Icons.more_horiz,
-                                      size: 16,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                    onSelected: (value) {
-                                      switch (value) {
-                                        case 'copy_link':
-                                          final link = 'https://www.reddit.com/comments/${widget.comment.postId}/_/${widget.comment.id}/';
-                                          Clipboard.setData(ClipboardData(text: link));
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Copied')),
-                                          );
-                                        case 'copy_body':
-                                          Clipboard.setData(ClipboardData(text: widget.comment.body));
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Copied')),
-                                          );
-                                        case 'report':
-                                          widget.onReport?.call(widget.comment.fullname, widget.comment.subreddit);
-                                        case 'edit':
-                                          widget.onEdit?.call(fullname);
-                                        case 'delete':
-                                          widget.onDelete?.call(fullname);
-                                        case 'block':
-                                          widget.onBlock?.call(widget.comment.author);
-                                      }
-                                    },
-                                    itemBuilder: (context) {
-                                      final items = <PopupMenuEntry<String>>[];
+                                  onSelected: (value) {
+                                    switch (value) {
+                                      case 'copy_link':
+                                        final link = 'https://www.reddit.com/comments/${widget.comment.postId}/_/${widget.comment.id}/';
+                                        Clipboard.setData(ClipboardData(text: link));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Copied')),
+                                        );
+                                      case 'copy_body':
+                                        Clipboard.setData(ClipboardData(text: widget.comment.body));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Copied')),
+                                        );
+                                      case 'report':
+                                        widget.onReport?.call(widget.comment.fullname, widget.comment.subreddit);
+                                      case 'edit':
+                                        widget.onEdit?.call(fullname);
+                                      case 'delete':
+                                        widget.onDelete?.call(fullname);
+                                      case 'block':
+                                        widget.onBlock?.call(widget.comment.author);
+                                    }
+                                  },
+                                  itemBuilder: (context) {
+                                    final items = <PopupMenuEntry<String>>[];
+                                    items.add(
+                                      const PopupMenuItem(
+                                        value: 'copy_link',
+                                        child: ListTile(
+                                          leading: Icon(Icons.link, size: 16),
+                                          title: Text('Copy Link'),
+                                        ),
+                                      ),
+                                    );
+                                    items.add(
+                                      const PopupMenuItem(
+                                        value: 'copy_body',
+                                        child: ListTile(
+                                          leading: Icon(Icons.content_copy, size: 16),
+                                          title: Text('Copy Body'),
+                                        ),
+                                      ),
+                                    );
+                                    if (widget.onReport != null) {
                                       items.add(
                                         const PopupMenuItem(
-                                          value: 'copy_link',
+                                          value: 'report',
                                           child: ListTile(
-                                            leading: Icon(Icons.link, size: 16),
-                                            title: Text('Copy Link'),
+                                            leading: Icon(Icons.flag_outlined, size: 16),
+                                            title: Text('Report'),
                                           ),
                                         ),
                                       );
+                                    }
+                                    if (widget.onEdit != null) {
                                       items.add(
                                         const PopupMenuItem(
-                                          value: 'copy_body',
+                                          value: 'edit',
                                           child: ListTile(
-                                            leading: Icon(Icons.content_copy, size: 16),
-                                            title: Text('Copy Body'),
+                                            leading: Icon(Icons.edit_outlined, size: 16),
+                                            title: Text('Edit'),
                                           ),
                                         ),
                                       );
-                                      if (widget.onReport != null) {
-                                        items.add(
-                                          const PopupMenuItem(
-                                            value: 'report',
-                                            child: ListTile(
-                                              leading: Icon(Icons.flag_outlined, size: 16),
-                                              title: Text('Report'),
-                                            ),
+                                    }
+                                    if (widget.onDelete != null) {
+                                      items.add(
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: ListTile(
+                                            leading: Icon(Icons.delete_outline, size: 16),
+                                            title: Text('Delete'),
                                           ),
-                                        );
-                                      }
-                                      if (widget.onEdit != null) {
-                                        items.add(
-                                          const PopupMenuItem(
-                                            value: 'edit',
-                                            child: ListTile(
-                                              leading: Icon(Icons.edit_outlined, size: 16),
-                                              title: Text('Edit'),
-                                            ),
+                                        ),
+                                      );
+                                    }
+                                    if (widget.onBlock != null) {
+                                      items.add(
+                                        const PopupMenuItem(
+                                          value: 'block',
+                                          child: ListTile(
+                                            leading: Icon(Icons.block, size: 16),
+                                            title: Text('Block'),
                                           ),
-                                        );
-                                      }
-                                      if (widget.onDelete != null) {
-                                        items.add(
-                                          const PopupMenuItem(
-                                            value: 'delete',
-                                            child: ListTile(
-                                              leading: Icon(Icons.delete_outline, size: 16),
-                                              title: Text('Delete'),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      if (widget.onBlock != null) {
-                                        items.add(
-                                          const PopupMenuItem(
-                                            value: 'block',
-                                            child: ListTile(
-                                              leading: Icon(Icons.block, size: 16),
-                                              title: Text('Block'),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return items;
-                                    },
-                                  ),
-                                ],
+                                        ),
+                                      );
+                                    }
+                                    return items;
+                                  },
+                                ),
+                              ],
                               ),
                             ],
                           ),
@@ -392,6 +393,39 @@ class _CommentTreeState extends State<CommentTree> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _CommentActionButton extends StatelessWidget {
+  final IconData icon;
+  final IconData? activeIcon;
+  final bool isActive;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  const _CommentActionButton({
+    required this.icon,
+    this.activeIcon,
+    this.isActive = false,
+    this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Icon(
+          isActive && activeIcon != null ? activeIcon! : icon,
+          size: 18,
+          color: color ?? theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }
