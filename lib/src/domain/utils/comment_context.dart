@@ -13,7 +13,12 @@ class ParsedCommentContext {
 ParsedCommentContext? parseCommentContext(String? context) {
   if (context == null || context.isEmpty) return null;
 
-  final uri = Uri.tryParse(context);
+  var url = context;
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+    url = 'https://$url';
+  }
+
+  final uri = Uri.tryParse(url);
   if (uri == null) return null;
 
   final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();

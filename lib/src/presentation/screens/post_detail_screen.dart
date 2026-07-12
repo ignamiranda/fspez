@@ -59,21 +59,26 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     if (widget.initialCommentId != null) {
       ref.listen(postDetailProvider(_postDetailParams()), (_, next) {
         next.whenData((detail) {
+          if (!mounted) return;
           _scheduleScrollToComment(widget.initialCommentId!);
         });
       });
     }
   }
 
-  void _scheduleScrollToComment(String targetId) {
+  void _scheduleScrollToComment(String targetId, {int retries = 5}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = _commentKeys[targetId];
       if (key?.currentContext != null) {
         Scrollable.ensureVisible(
           key!.currentContext!,
-          alignment: 0.3,
+          alignment: 0.5,
           duration: const Duration(milliseconds: 300),
         );
+      } else if (retries > 0) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _scheduleScrollToComment(targetId, retries: retries - 1);
+        });
       }
     });
   }
