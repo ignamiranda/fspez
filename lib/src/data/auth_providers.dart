@@ -14,8 +14,6 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   throw UnimplementedError('FlutterSecureStorage must be overridden in main');
 });
 
-final guestModeProvider = StateProvider<bool>((ref) => false);
-
 final accountRepositoryProvider = Provider<AccountRepository>((ref) {
   return AccountRepository(ref.watch(secureStorageProvider));
 });

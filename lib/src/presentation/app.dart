@@ -10,6 +10,7 @@ import 'screens/auth_webview_screen.dart';
 import '../data/app_settings.dart';
 import '../data/auth_providers.dart';
 import '../data/inbox_providers.dart';
+import 'providers/guest_mode_provider.dart';
 import '../data/session_health.dart';
 import '../domain/enums/app_theme_mode.dart';
 import '../domain/models/session_cookie.dart';

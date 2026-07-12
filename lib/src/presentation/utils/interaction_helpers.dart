@@ -140,8 +140,6 @@ Future<bool> handleDelete(
   }
 }
 
-/// Shows a confirmation dialog when a guest tries a write action,
-/// then navigates to the login screen on confirm.
 void requireLoginForAction(BuildContext context, {String action = 'perform that action'}) {
   showDialog(
     context: context,
