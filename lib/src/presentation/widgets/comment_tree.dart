@@ -8,6 +8,7 @@ import 'reddit_body.dart';
 import 'user_flair_chip.dart';
 
 class CommentTree extends StatefulWidget {
+  final Map<String, GlobalKey>? commentKeys;
   final Comment comment;
   final Map<String, VoteDirection> voteOverrides;
   final void Function(String fullname, VoteDirection direction)? onVote;
@@ -23,6 +24,7 @@ class CommentTree extends StatefulWidget {
 
   const CommentTree({
     super.key,
+    this.commentKeys,
     required this.comment,
     this.voteOverrides = const {},
     this.onVote,
@@ -372,6 +374,8 @@ class _CommentTreeState extends State<CommentTree> {
                   children: widget.comment.replies
                       .map(
                         (reply) => CommentTree(
+                          key: widget.commentKeys?[reply.id],
+                          commentKeys: widget.commentKeys,
                           comment: reply,
                           voteOverrides: widget.voteOverrides,
                           onVote: widget.onVote,

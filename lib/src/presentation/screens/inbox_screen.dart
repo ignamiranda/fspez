@@ -7,12 +7,14 @@ import '../../data/write_providers.dart';
 import '../utils/block_user_helpers.dart';
 import '../../domain/models/inbox_item.dart';
 import '../../domain/models/inbox_feed.dart';
+import '../../domain/utils/comment_context.dart';
 import '../tab_scroll_signal.dart';
 import '../utils/format_utils.dart';
 import '../utils/infinite_scroll.dart';
 import '../widgets/reddit_body.dart';
 import 'auth_webview_screen.dart';
 import 'compose_screen.dart';
+import 'post_detail_screen.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
   const InboxScreen({super.key});
@@ -198,6 +200,22 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
             item: msg,
             isExpanded: _expandedIds.contains(msg.id),
             onToggle: () {
+              if (msg is CommentNotification) {
+                final parsed = parseCommentContext(msg.context);
+                if (parsed != null) {
+                  if (msg.isNew) notifier.markAsRead(msg);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PostDetailScreen(
+                        subreddit: parsed.subreddit,
+                        postId: parsed.postId,
+                        initialCommentId: parsed.commentId,
+                      ),
+                    ),
+                  );
+                  return;
+                }
+              }
               final id = msg.id;
               final wasExpanded = _expandedIds.contains(id);
               setState(() {

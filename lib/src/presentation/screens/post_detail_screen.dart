@@ -8,6 +8,7 @@ import '../../data/write_providers.dart';
 import '../../data/comment_repository.dart';
 import '../../domain/enums/comment_sort.dart';
 import '../../domain/models/post.dart';
+import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/block_user_helpers.dart';
 import '../utils/interaction_helpers.dart';
@@ -25,9 +26,21 @@ import 'user_profile_screen.dart';
 import '../widgets/report_sheet.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
-  final Post post;
+  final Post? post;
+  final String? subreddit;
+  final String? postId;
+  final String? initialCommentId;
 
-  const PostDetailScreen({super.key, required this.post});
+  const PostDetailScreen({
+    super.key,
+    this.post,
+    this.subreddit,
+    this.postId,
+    this.initialCommentId,
+  }) : assert(
+    (post != null) ^ (subreddit != null && postId != null),
+    'Either post or (subreddit and postId) must be provided',
+  );
 
   @override
   ConsumerState<PostDetailScreen> createState() => _PostDetailScreenState();
@@ -36,6 +49,7 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   CommentSort _commentSort = CommentSort.best;
   bool _sensitiveRevealed = false;
+  final Map<String, GlobalKey> _commentKeys = {};
 
   @override
   void initState() {
@@ -44,15 +58,33 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ref.read(appSettingsProvider).defaultCommentSort ?? CommentSort.best;
   }
 
+  void _scheduleScrollToComment(List<Comment> comments, String targetId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = _commentKeys[targetId];
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          alignment: 0.3,
+          duration: const Duration(milliseconds: 300),
+        );
+      }
+    });
+  }
+
   ({String subreddit, String postId, CommentSort sort}) _postDetailParams([
     Post? post,
   ]) {
-    final target = post ?? widget.post;
-    return (
-      subreddit: target.subreddit.name,
-      postId: target.id,
-      sort: _commentSort,
-    );
+    if (post != null) {
+      return (subreddit: post.subreddit.name, postId: post.id, sort: _commentSort);
+    }
+    if (widget.post != null) {
+      return (subreddit: widget.post!.subreddit.name, postId: widget.post!.id, sort: _commentSort);
+    }
+    return (subreddit: widget.subreddit!, postId: widget.postId!, sort: _commentSort);
+  }
+
+  String get _postFullname {
+    return widget.post?.fullname ?? 't3_${widget.postId}';
   }
 
   void _openComposer({
@@ -63,7 +95,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
     showCommentComposerSheet(
       context,
-      thingId: thingId ?? widget.post.fullname,
+      thingId: thingId ?? _postFullname,
       parentAuthor: parentAuthor,
       parentBody: parentBody,
     ).then((posted) {
@@ -86,14 +118,31 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final account = ref.watch(activeAccountProvider);
-    final detailAsync = ref.watch(postDetailProvider(_postDetailParams()));
+    final params = _postDetailParams();
+    final detailAsync = ref.watch(postDetailProvider(params));
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
+
+    ref.listen(postDetailProvider(params), (_, next) {
+      next.whenData((detail) {
+        if (widget.initialCommentId != null) {
+          _scheduleScrollToComment(detail.comments, widget.initialCommentId!);
+        }
+      });
+    });
+
+    final appBarTitle = widget.post != null
+        ? 'r/${widget.post!.subreddit.name}'
+        : detailAsync.when(
+            data: (d) => 'r/${d.post.subreddit.name}',
+            loading: () => '',
+            error: (_, __) => '',
+          );
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'r/${widget.post.subreddit.name}',
+          appBarTitle,
           style: Theme.of(context).textTheme.titleSmall,
         ),
       ),
@@ -105,13 +154,18 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           saveOverrides: saveOverrides,
           loggedIn: account != null,
         ),
-        loading: () => _buildBody(
-          context,
-          null,
-          voteOverrides: voteOverrides,
-          saveOverrides: saveOverrides,
-          commentsLoading: true,
-        ),
+        loading: () {
+          if (widget.post != null) {
+            return _buildBody(
+              context,
+              null,
+              voteOverrides: voteOverrides,
+              saveOverrides: saveOverrides,
+              commentsLoading: true,
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -121,7 +175,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 const Icon(Icons.error_outline, size: 40),
                 const SizedBox(height: 8),
                 Text(
-                  'Failed to load comments',
+                  'Failed to load post',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -142,7 +196,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }) {
     final theme = Theme.of(context);
     final comments = detail?.comments ?? const [];
-    final post = detail?.post ?? widget.post;
+    final post = (detail?.post ?? widget.post)!;
     final postFullname = post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];
@@ -379,67 +433,73 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   child: Center(child: Text('No comments yet')),
                 )
               else
-                ...comments.map((c) => CommentTree(
-                      comment: c,
-                      showAwards: showAwards,
-                      voteOverrides: voteOverrides,
-                      onVote: actions != null
-                          ? (fullname, dir) =>
-                              handleVote(actions, fullname, dir)
-                          : (fullname, dir) => requireLoginForAction(context, action: 'vote'),
-                      saveOverrides: saveOverrides,
-                      onSave: actions != null
-                          ? (fullname) => handleSave(actions, fullname, context)
-                          : (fullname) => requireLoginForAction(context, action: 'save'),
-                      onReply: loggedIn ? _replyToComment : (id, author, body) => requireLoginForAction(context, action: 'reply to this'),
-                      onReport: onReportComment,
-                      onAuthorTap: (author) {
-                        if (author != '[deleted]') {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  UserProfileScreen(username: author),
-                            ),
-                          );
-                        }
-                      },
-                      onEdit: username != null && c.author == username
-                          ? (fullname) {
-                              showEditSheet(context,
-                                      currentText: c.body, thingId: fullname)
-                                  .then((saved) {
-                                if (saved == true && context.mounted) {
-                                  ref.invalidate(postDetailProvider(
-                                      _postDetailParams(post)));
-                                }
-                              });
-                            }
-                          : null,
-                      onDelete: actions != null &&
-                              username != null &&
-                              c.author == username
-                          ? (fullname) {
-                              handleDelete(context, actions, fullname)
-                                  .then((deleted) {
-                                if (deleted && context.mounted) {
-                                  ref.invalidate(postDetailProvider(
-                                      _postDetailParams(post)));
-                                }
-                              });
-                            }
-                          : actions == null
-                              ? (fullname) => requireLoginForAction(context, action: 'delete')
-                              : null,
-                      onBlock: username != null &&
-                              c.author != '[deleted]' &&
-                              c.author != username
-                          ? (author) => handleBlockUser(
-                              context: context,
-                              notifier: ref.read(blockActionProvider.notifier),
-                              username: author,
-                            )
-                          : null,
-                    )),
+                ...comments.map((c) {
+                  _commentKeys[c.id] ??= GlobalKey();
+                  return CommentTree(
+                    key: _commentKeys[c.id],
+                    commentKeys: _commentKeys,
+                    comment: c,
+                    showAwards: showAwards,
+                    voteOverrides: voteOverrides,
+                    onVote: actions != null
+                        ? (fullname, dir) =>
+                            handleVote(actions, fullname, dir)
+                        : (fullname, dir) => requireLoginForAction(context, action: 'vote'),
+                    saveOverrides: saveOverrides,
+                    onSave: actions != null
+                        ? (fullname) => handleSave(actions, fullname, context)
+                        : (fullname) => requireLoginForAction(context, action: 'save'),
+                    onReply: loggedIn ? _replyToComment : (id, author, body) => requireLoginForAction(context, action: 'reply to this'),
+                    onReport: onReportComment,
+                    onAuthorTap: (author) {
+                      if (author != '[deleted]') {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                UserProfileScreen(username: author),
+                          ),
+                        );
+                      }
+                    },
+                    onEdit: username != null && c.author == username
+                        ? (fullname) {
+                            showEditSheet(context,
+                                    currentText: c.body, thingId: fullname)
+                                .then((saved) {
+                              if (saved == true && context.mounted) {
+                                ref.invalidate(postDetailProvider(
+                                    _postDetailParams(post)));
+                              }
+                            });
+                          }
+                        : null,
+                    onDelete: actions != null &&
+                            username != null &&
+                            c.author == username
+                        ? (fullname) {
+                            handleDelete(context, actions, fullname)
+                                .then((deleted) {
+                              if (deleted && context.mounted) {
+                                ref.invalidate(postDetailProvider(
+                                    _postDetailParams(post)));
+                              }
+                            });
+                          }
+                        : actions == null
+                            ? (fullname) => requireLoginForAction(context, action: 'delete')
+                            : null,
+                    onBlock: username != null &&
+                            c.author != '[deleted]' &&
+                            c.author != username
+                        ? (author) => handleBlockUser(
+                            context: context,
+                            notifier:
+                                ref.read(blockActionProvider.notifier),
+                            username: author,
+                          )
+                        : null,
+                  );
+                }),
               const SizedBox(height: 8),
             ],
           ),
