@@ -189,7 +189,7 @@ class FeedScreenScaffold extends ConsumerWidget {
       saveOverrides: saveOverrides,
       onPostVote: actions != null
           ? (fullname, dir) => handleVote(actions, fullname, dir)
-          : null,
+          : (fullname, dir) => requireLoginForAction(context, action: 'vote'),
       onPostSave: actions != null
           ? (fullname) {
               final post = state.items.cast<Post?>().firstWhere(
@@ -201,7 +201,7 @@ class FeedScreenScaffold extends ConsumerWidget {
                   : saveOverrides[fullname] ?? false;
               handleSave(actions, fullname, context, wasSaved: wasSaved);
             }
-          : null,
+          : (fullname) => requireLoginForAction(context, action: 'save'),
       onPostDelete: actions != null && account != null
           ? (post) async {
               final confirmed = await showDialog<bool>(
@@ -250,7 +250,9 @@ class FeedScreenScaffold extends ConsumerWidget {
               if (undone) return;
               await actions.delete(post.fullname);
             }
-          : null,
+          : actions == null
+              ? (post) async => requireLoginForAction(context, action: 'delete')
+              : null,
       currentUsername: account?.username,
       hiddenFullnames: filterHidden ? hidden : const {},
       onPostHide: actions != null && filterHidden
@@ -274,7 +276,9 @@ class FeedScreenScaffold extends ConsumerWidget {
                   ),
                 );
             }
-          : null,
+          : actions == null
+              ? (post) async => requireLoginForAction(context, action: 'hide')
+              : null,
       onPostUnhide: actions != null && !filterHidden
           ? (post) async {
               final feedNotifier = ref.read(feedPageProvider(config).notifier);
@@ -288,14 +292,16 @@ class FeedScreenScaffold extends ConsumerWidget {
                 },
               );
             }
-          : null,
+          : actions == null
+              ? (post) async => requireLoginForAction(context, action: 'unhide')
+              : null,
       onPostBlock: account != null
           ? (post) => handleBlockUser(
               context: context,
               notifier: ref.read(blockActionProvider.notifier),
               username: post.author,
             )
-          : null,
+          : (post) => requireLoginForAction(context, action: 'block'),
       onPostTap: (post) => Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => PostDetailScreen(post: post))),

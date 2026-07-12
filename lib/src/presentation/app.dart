@@ -10,6 +10,7 @@ import 'screens/auth_webview_screen.dart';
 import '../data/app_settings.dart';
 import '../data/auth_providers.dart';
 import '../data/inbox_providers.dart';
+import 'providers/guest_mode_provider.dart';
 import '../data/session_health.dart';
 import '../domain/enums/app_theme_mode.dart';
 import '../domain/models/session_cookie.dart';
@@ -45,6 +46,7 @@ class _AppGateState extends ConsumerState<_AppGate> {
   @override
   Widget build(BuildContext context) {
     final account = ref.watch(activeAccountProvider);
+    final isGuest = ref.watch(guestModeProvider);
     final isLoggedIn = account != null;
 
     if (_wasLoggedIn != null && _wasLoggedIn != isLoggedIn) {
@@ -54,7 +56,7 @@ class _AppGateState extends ConsumerState<_AppGate> {
     }
     _wasLoggedIn = isLoggedIn;
 
-    return isLoggedIn ? const _MainShell() : const LoginScreen();
+    return isGuest || isLoggedIn ? const _MainShell() : const LoginScreen();
   }
 }
 

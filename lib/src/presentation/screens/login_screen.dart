@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/guest_mode_provider.dart';
 import 'auth_webview_screen.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -34,6 +35,11 @@ class LoginScreen extends ConsumerWidget {
                 },
                 icon: const Icon(Icons.login),
                 label: const Text('Log in with Reddit'),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => ref.read(guestModeProvider.notifier).state = true,
+                child: const Text('Browse as guest'),
               ),
             ],
           ),
