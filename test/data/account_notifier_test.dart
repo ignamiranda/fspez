@@ -4,10 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fspez/src/data/account_notifier.dart';
 import 'package:fspez/src/data/account_repository.dart';
-import 'package:fspez/src/data/auth_providers.dart';
 import 'package:fspez/src/data/feed_cache.dart';
 import 'package:fspez/src/domain/models/account.dart';
-import 'package:fspez/src/domain/models/session_cookie.dart';
 import 'account_repository_test.dart' show FakeSecureStorage;
 
 class ThrowingAccountRepository extends AccountRepository {

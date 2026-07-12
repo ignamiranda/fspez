@@ -17,7 +17,11 @@ class AccountRepository {
     try {
       json = await _storage.read(key: _accountsKey);
     } on PlatformException {
-      await _storage.delete(key: _accountsKey);
+      try {
+        await _storage.delete(key: _accountsKey);
+      } on PlatformException {
+        // both read and delete failed — nothing more we can do
+      }
       return [];
     }
     if (json == null) return [];
