@@ -8,7 +8,6 @@ import '../../data/write_providers.dart';
 import '../../data/comment_repository.dart';
 import '../../domain/enums/comment_sort.dart';
 import '../../domain/models/post.dart';
-import '../../domain/models/comment.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/block_user_helpers.dart';
 import '../utils/interaction_helpers.dart';
@@ -56,9 +55,17 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     super.initState();
     _commentSort =
         ref.read(appSettingsProvider).defaultCommentSort ?? CommentSort.best;
+
+    if (widget.initialCommentId != null) {
+      ref.listen(postDetailProvider(_postDetailParams()), (_, next) {
+        next.whenData((detail) {
+          _scheduleScrollToComment(widget.initialCommentId!);
+        });
+      });
+    }
   }
 
-  void _scheduleScrollToComment(List<Comment> comments, String targetId) {
+  void _scheduleScrollToComment(String targetId) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = _commentKeys[targetId];
       if (key?.currentContext != null) {
@@ -122,14 +129,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final detailAsync = ref.watch(postDetailProvider(params));
     final voteOverrides = ref.watch(voteProvider);
     final saveOverrides = ref.watch(saveProvider);
-
-    ref.listen(postDetailProvider(params), (_, next) {
-      next.whenData((detail) {
-        if (widget.initialCommentId != null) {
-          _scheduleScrollToComment(detail.comments, widget.initialCommentId!);
-        }
-      });
-    });
 
     final appBarTitle = widget.post != null
         ? 'r/${widget.post!.subreddit.name}'
@@ -196,7 +195,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }) {
     final theme = Theme.of(context);
     final comments = detail?.comments ?? const [];
-    final post = (detail?.post ?? widget.post)!;
+    final post = detail?.post ?? widget.post;
+    if (post == null) return const SizedBox.shrink();
     final postFullname = post.fullname;
     final postEffectiveVote = voteOverrides[postFullname];
     final postEffectiveSaved = saveOverrides[postFullname];

@@ -373,7 +373,9 @@ class _CommentTreeState extends State<CommentTree> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: widget.comment.replies
                       .map(
-                        (reply) => CommentTree(
+                        (reply) {
+                          widget.commentKeys?.putIfAbsent(reply.id, () => GlobalKey());
+                          return CommentTree(
                           key: widget.commentKeys?[reply.id],
                           commentKeys: widget.commentKeys,
                           comment: reply,
@@ -388,9 +390,10 @@ class _CommentTreeState extends State<CommentTree> {
                           onBlock: widget.onBlock,
                           onReport: widget.onReport,
                           showAwards: widget.showAwards,
-                        ),
-                      )
-                      .toList(),
+                        );
+                      },
+                    )
+                    .toList(),
                 ),
         ),
       ],
