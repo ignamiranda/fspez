@@ -181,170 +181,147 @@ class _CommentTreeState extends State<CommentTree> {
                               const SizedBox(height: 4),
                               RedditBody(widget.comment.body),
                               const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  InkWell(
-                                    onTap: () => widget.onVote?.call(
-                                      fullname,
-                                      VoteDirection.upvote,
-                                    ),
-                                    child: Icon(
-                                      effectiveVote == VoteDirection.upvote
-                                          ? Icons.arrow_upward
-                                          : Icons.arrow_upward_outlined,
-                                      size: 16,
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _CommentActionButton(
+                                      icon: Icons.arrow_upward_outlined,
+                                      activeIcon: Icons.arrow_upward,
+                                      isActive:
+                                          effectiveVote == VoteDirection.upvote,
                                       color:
                                           effectiveVote == VoteDirection.upvote
                                           ? theme.colorScheme.primary
-                                          : theme.colorScheme.onSurfaceVariant,
+                                          : null,
+                                      onTap: () => widget.onVote?.call(
+                                        fullname,
+                                        VoteDirection.upvote,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  InkWell(
-                                    onTap: () => widget.onVote?.call(
-                                      fullname,
-                                      VoteDirection.downvote,
-                                    ),
-                                    child: Icon(
-                                      effectiveVote == VoteDirection.downvote
-                                          ? Icons.arrow_downward
-                                          : Icons.arrow_downward_outlined,
-                                      size: 16,
+                                    const SizedBox(width: 4),
+                                    _CommentActionButton(
+                                      icon: Icons.arrow_downward_outlined,
+                                      activeIcon: Icons.arrow_downward,
+                                      isActive:
+                                          effectiveVote ==
+                                          VoteDirection.downvote,
                                       color:
                                           effectiveVote ==
                                               VoteDirection.downvote
                                           ? theme.colorScheme.secondary
-                                          : theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  if (widget.onReply != null)
-                                    InkWell(
-                                      onTap: () => widget.onReply!(
-                                        widget.comment.fullname,
-                                        widget.comment.author,
-                                        widget.comment.body,
+                                          : null,
+                                      onTap: () => widget.onVote?.call(
+                                        fullname,
+                                        VoteDirection.downvote,
                                       ),
-                                      child: Icon(
-                                        Icons.reply_outlined,
-                                        size: 16,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    )
-                                  else
-                                    Icon(
-                                      Icons.reply_outlined,
-                                      size: 16,
-                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
-                                  const SizedBox(width: 16),
-                                  InkWell(
-                                    onTap: () => widget.onSave?.call(fullname),
-                                    child: Icon(
-                                      effectiveSaved
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_outline,
-                                      size: 16,
+                                    const SizedBox(width: 8),
+                                    if (widget.onReply != null)
+                                      _CommentActionButton(
+                                        icon: Icons.reply_outlined,
+                                        onTap: () => widget.onReply!(
+                                          widget.comment.fullname,
+                                          widget.comment.author,
+                                          widget.comment.body,
+                                        ),
+                                      )
+                                    else
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 6,
+                                        ),
+                                        child: Icon(
+                                          Icons.reply_outlined,
+                                          size: 18,
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    const SizedBox(width: 8),
+                                    _CommentActionButton(
+                                      icon: Icons.bookmark_outline,
+                                      activeIcon: Icons.bookmark,
+                                      isActive: effectiveSaved,
                                       color: effectiveSaved
                                           ? theme.colorScheme.tertiary
-                                          : theme.colorScheme.onSurfaceVariant,
+                                          : null,
+                                      onTap: () =>
+                                          widget.onSave?.call(fullname),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  InkWell(
-                                    onTap: () {
-                                      final link =
-                                          'https://www.reddit.com/comments/${widget.comment.postId}/_/${widget.comment.id}/';
-                                      Clipboard.setData(
-                                        ClipboardData(text: link),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(content: Text('Copied')),
-                                      );
-                                    },
-                                    child: Icon(
-                                      Icons.link,
-                                      size: 16,
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                    const SizedBox(width: 8),
+                                    _CommentActionButton(
+                                      icon: Icons.link,
+                                      onTap: () {
+                                        final link =
+                                            'https://www.reddit.com/comments/${widget.comment.postId}/_/${widget.comment.id}/';
+                                        Clipboard.setData(
+                                          ClipboardData(text: link),
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Copied'),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  InkWell(
-                                    onTap: () {
-                                      Clipboard.setData(
-                                        ClipboardData(
-                                          text: widget.comment.body,
+                                    const SizedBox(width: 8),
+                                    _CommentActionButton(
+                                      icon: Icons.content_copy,
+                                      onTap: () {
+                                        Clipboard.setData(
+                                          ClipboardData(
+                                            text: widget.comment.body,
+                                          ),
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Copied'),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    if (widget.onReport != null) ...[
+                                      const SizedBox(width: 8),
+                                      _CommentActionButton(
+                                        icon: Icons.flag_outlined,
+                                        onTap: () => widget.onReport!(
+                                          widget.comment.fullname,
+                                          widget.comment.subreddit,
                                         ),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(content: Text('Copied')),
-                                      );
-                                    },
-                                    child: Icon(
-                                      Icons.content_copy,
-                                      size: 16,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  if (widget.onReport != null) ...[
-                                    const SizedBox(width: 16),
-                                    InkWell(
-                                      onTap: () => widget.onReport!(
-                                        widget.comment.fullname,
-                                        widget.comment.subreddit,
                                       ),
-                                      child: Icon(
-                                        Icons.flag_outlined,
-                                        size: 16,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
+                                    ],
+                                    if (widget.onEdit != null) ...[
+                                      const SizedBox(width: 8),
+                                      _CommentActionButton(
+                                        icon: Icons.edit_outlined,
+                                        onTap: () => widget.onEdit!(fullname),
                                       ),
-                                    ),
+                                    ],
+                                    if (widget.onDelete != null) ...[
+                                      const SizedBox(width: 8),
+                                      _CommentActionButton(
+                                        icon: Icons.delete_outline,
+                                        onTap: () => widget.onDelete!(fullname),
+                                      ),
+                                    ],
+                                    if (widget.onBlock != null) ...[
+                                      const SizedBox(width: 8),
+                                      _CommentActionButton(
+                                        icon: Icons.block,
+                                        onTap: () => widget.onBlock!(
+                                          widget.comment.author,
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                  if (widget.onEdit != null) ...[
-                                    const SizedBox(width: 16),
-                                    InkWell(
-                                      onTap: () => widget.onEdit!(fullname),
-                                      child: Icon(
-                                        Icons.edit_outlined,
-                                        size: 16,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                  if (widget.onDelete != null) ...[
-                                    const SizedBox(width: 16),
-                                    InkWell(
-                                      onTap: () => widget.onDelete!(fullname),
-                                      child: Icon(
-                                        Icons.delete_outline,
-                                        size: 16,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                  if (widget.onBlock != null) ...[
-                                    const SizedBox(width: 16),
-                                    InkWell(
-                                      onTap: () => widget.onBlock!(
-                                        widget.comment.author,
-                                      ),
-                                      child: Icon(
-                                        Icons.block,
-                                        size: 16,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                                ),
                               ),
                             ],
                           ),
@@ -388,6 +365,39 @@ class _CommentTreeState extends State<CommentTree> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _CommentActionButton extends StatelessWidget {
+  final IconData icon;
+  final IconData? activeIcon;
+  final bool isActive;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  const _CommentActionButton({
+    required this.icon,
+    this.activeIcon,
+    this.isActive = false,
+    this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Icon(
+          isActive && activeIcon != null ? activeIcon! : icon,
+          size: 18,
+          color: color ?? theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }
