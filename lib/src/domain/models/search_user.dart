@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-class SearchUser with EquatableMixin {
+class SearchUser with Equatable {
   final String name;
   final int linkKarma;
   final int commentKarma;

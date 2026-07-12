@@ -5,7 +5,7 @@ import 'user_flair.dart';
 
 enum PostType { link, self_, image, gallery, video, crosspost, poll }
 
-class Post with EquatableMixin {
+class Post with Equatable {
   final String id;
   final String title;
   final String? selftext;

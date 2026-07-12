@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-class SessionCookie with EquatableMixin {
+class SessionCookie with Equatable {
   final String value;
   final DateTime expiresAt;
   final String? rawCookie;

@@ -7,7 +7,7 @@ import '../domain/models/account.dart';
 import 'inbox_repository.dart';
 import 'paginated_notifier.dart';
 
-class InboxState with EquatableMixin {
+class InboxState with Equatable {
   final InboxTab tab;
   final List<InboxItem> messages;
   final bool isLoading;

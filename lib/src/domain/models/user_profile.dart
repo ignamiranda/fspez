@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-class UserProfile with EquatableMixin {
+class UserProfile with Equatable {
   final String id;
   final String username;
   final int linkKarma;

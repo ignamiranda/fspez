@@ -4,7 +4,7 @@ import 'package:equatable/equatable.dart';
 ///
 /// Maps to Reddit's `flair_template` objects returned by the post_flairs API.
 /// Colors are parsed to int for direct use as Material Color values.
-class FlairOption with EquatableMixin {
+class FlairOption with Equatable {
   final String flairTemplateId;
   final String text;
   final int? backgroundColor;

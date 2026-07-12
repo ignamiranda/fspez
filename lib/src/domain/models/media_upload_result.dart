@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Result of a completed media upload to Reddit.
-class MediaUploadResult with EquatableMixin {
+class MediaUploadResult with Equatable {
   final String assetId;
   final String assetUrl;
 

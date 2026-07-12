@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'session_cookie.dart';
 
-class Account with EquatableMixin {
+class Account with Equatable {
   final String id;
   final String username;
   final SessionCookie sessionCookie;

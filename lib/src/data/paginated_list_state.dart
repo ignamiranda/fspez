@@ -7,7 +7,7 @@ import 'package:equatable/equatable.dart';
 ///
 /// Use with [CursorPaginatedNotifier] (or directly) — see search_providers.dart
 /// for a migration example.
-class PaginatedListState<T> with EquatableMixin {
+class PaginatedListState<T> with Equatable {
   final List<T> items;
   final bool isLoading;
   final bool isLoadingMore;

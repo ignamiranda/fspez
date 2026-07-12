@@ -6,7 +6,7 @@ import 'package:equatable/equatable.dart';
 /// (`author_flair_background_color`, `author_flair_text_color`) and a richtext
 /// array (`author_flair_richtext`). This model holds the resolved display text
 /// and colors; richtext emoji/text parts are flattened into [text].
-class UserFlair with EquatableMixin {
+class UserFlair with Equatable {
   final String text;
 
   /// Hex color string (e.g. `#ff4500`) for the chip background, or null.

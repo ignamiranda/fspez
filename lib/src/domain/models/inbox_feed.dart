@@ -3,7 +3,7 @@ import 'inbox_item.dart';
 
 enum InboxTab { all, unread, sent }
 
-class InboxFeed with EquatableMixin {
+class InboxFeed with Equatable {
   final InboxTab tab;
   final List<InboxItem> items;
   final String? after;

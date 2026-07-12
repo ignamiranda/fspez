@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../domain/enums/vote_direction.dart';
 import 'user_flair.dart';
 
-class Comment with EquatableMixin {
+class Comment with Equatable {
   final String id;
   final String body;
   final String author;

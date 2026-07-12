@@ -5,7 +5,7 @@ import 'post.dart';
 // TODO: Remove 'saved' when OverviewNotifier replaces saved screen per ADR 0003
 enum FeedKind { home, popular, all_, multireddit, saved, user }
 
-class Feed with EquatableMixin {
+class Feed with Equatable {
   final FeedKind kind;
   final FeedSort sort;
   final List<Post> posts;

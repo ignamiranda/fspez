@@ -17,7 +17,7 @@ dependencies:
   riverpod: ^2.5.0
   flutter_riverpod: ^2.5.0
 
-  equatable: ^2.0.5
+  equatable: ^2.1.0
   collection: ^1.18.0
   universal_html: ^2.3.0
   video_player: ^2.11.1

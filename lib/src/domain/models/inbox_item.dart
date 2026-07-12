@@ -17,7 +17,7 @@ sealed class InboxItem {
   const InboxItem();
 }
 
-class DirectMessage extends InboxItem with EquatableMixin {
+class DirectMessage extends InboxItem with Equatable {
   @override
   final String id;
   @override
@@ -80,7 +80,7 @@ class DirectMessage extends InboxItem with EquatableMixin {
       ];
 }
 
-class CommentNotification extends InboxItem with EquatableMixin {
+class CommentNotification extends InboxItem with Equatable {
   @override
   final String id;
   @override

@@ -9,7 +9,7 @@ import 'feed_parser.dart';
 import 'paginated_notifier.dart';
 import 'paginated_list_state.dart';
 
-class FeedPageConfig with EquatableMixin {
+class FeedPageConfig with Equatable {
   final FeedPageKind kind;
   final FeedSort sort;
   final String? identifier;

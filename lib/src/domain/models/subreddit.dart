@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-class Subreddit with EquatableMixin {
+class Subreddit with Equatable {
   final String id;
   final String name;
   final String? description;
