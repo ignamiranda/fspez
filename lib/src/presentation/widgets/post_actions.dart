@@ -113,73 +113,73 @@ class PostHeader extends StatelessWidget {
               style: TextStyle(fontSize: 9, color: theme.colorScheme.error),
             ),
           ),
-          if (post.crosspostParent != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.tertiary),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(
-                post.crosspostParent!.subreddit.name.isNotEmpty
-                    ? 'Crosspost'
-                    : 'Crosspost',
-                style: TextStyle(fontSize: 9, color: theme.colorScheme.tertiary),
-              ),
+        if (post.crosspostParent != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.tertiary),
+              borderRadius: BorderRadius.circular(3),
             ),
-          if (onBlock != null) ...[
-            const SizedBox(width: 4),
-            InkWell(
-              borderRadius: BorderRadius.circular(4),
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
+            child: Text(
+              post.crosspostParent!.subreddit.name.isNotEmpty
+                  ? 'Crosspost'
+                  : 'Crosspost',
+              style: TextStyle(fontSize: 9, color: theme.colorScheme.tertiary),
+            ),
+          ),
+        if (onBlock != null) ...[
+          const SizedBox(width: 4),
+          InkWell(
+            borderRadius: BorderRadius.circular(4),
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(16),
                   ),
-                  builder: (ctx) => SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Theme.of(ctx)
-                                  .colorScheme
-                                  .onSurfaceVariant
-                                  .withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.block),
-                            title: Text('Block u/${post.author}'),
-                            onTap: () {
-                              Navigator.of(ctx).pop();
-                              onBlock!();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.more_horiz,
-                  size: 20,
-                  color: theme.colorScheme.onSurfaceVariant,
                 ),
+                builder: (ctx) => SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(ctx)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.block),
+                          title: Text('Block u/${post.author}'),
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                            onBlock!();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                Icons.more_horiz,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-          ],
+          ),
+        ],
         ],
       );
     }
