@@ -31,7 +31,7 @@ class FeedMediaTile extends StatelessWidget {
               imageUrl,
               width: double.infinity,
               height: double.infinity,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
             if (badgeText != null)
