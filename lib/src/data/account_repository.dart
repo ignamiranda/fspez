@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
@@ -11,9 +12,24 @@ class AccountRepository {
 
   AccountRepository(this._storage);
 
+  Future<String?> _tryRead(String key) async {
+    try {
+      return await _storage.read(key: key);
+    } on PlatformException {
+      return null;
+    }
+  }
+
   Future<List<Account>> loadAll() async {
-    final json = await _storage.read(key: _accountsKey);
-    if (json == null) return [];
+    final json = await _tryRead(_accountsKey);
+    if (json == null) {
+      try {
+        await _storage.delete(key: _accountsKey);
+      } on PlatformException {
+        // both read and delete failed — nothing more we can do
+      }
+      return [];
+    }
 
     final list = jsonDecode(json) as List<dynamic>;
     return list.map((item) {
@@ -66,7 +82,8 @@ class AccountRepository {
     final remaining = accounts.where((a) => a.id != accountId).toList();
     await _persistAll(remaining);
 
-    final activeId = await _storage.read(key: _activeAccountIdKey);
+    final activeId = await _tryRead(_activeAccountIdKey);
+    if (activeId == null) return;
     if (activeId == accountId) {
       await _storage.delete(key: _activeAccountIdKey);
     }
@@ -77,7 +94,7 @@ class AccountRepository {
   }
 
   Future<Account?> loadActive() async {
-    final activeId = await _storage.read(key: _activeAccountIdKey);
+    final activeId = await _tryRead(_activeAccountIdKey);
     if (activeId == null) return null;
     final all = await loadAll();
     return all.where((a) => a.id == activeId).firstOrNull;

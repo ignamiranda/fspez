@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/account_repository.dart';
@@ -49,6 +50,21 @@ class FakeSecureStorage extends FlutterSecureStorage {
     WindowsOptions? wOptions,
   }) async {
     _store.remove(key);
+  }
+}
+
+class ThrowingSecureStorage extends FakeSecureStorage {
+  @override
+  Future<String?> read({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    throw PlatformException(code: 'read', message: 'BadPaddingException: error:1e000065');
   }
 }
 
@@ -364,6 +380,25 @@ void main() {
       final accounts = await repository.loadAll();
 
       expect(accounts, isEmpty);
+    });
+  });
+
+  group('corrupted storage', () {
+    test('loadAll returns empty list when storage throws', () async {
+      final repo = AccountRepository(ThrowingSecureStorage());
+      final accounts = await repo.loadAll();
+      expect(accounts, isEmpty);
+    });
+
+    test('loadActive returns null when storage throws', () async {
+      final repo = AccountRepository(ThrowingSecureStorage());
+      final active = await repo.loadActive();
+      expect(active, isNull);
+    });
+
+    test('remove does not throw when storage throws', () async {
+      final repo = AccountRepository(ThrowingSecureStorage());
+      await expectLater(repo.remove('a1'), completes);
     });
   });
 }

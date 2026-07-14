@@ -419,17 +419,16 @@ class _CommentActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        child: Icon(
-          isActive && activeIcon != null ? activeIcon! : icon,
-          size: 18,
-          color: color ?? theme.colorScheme.onSurfaceVariant,
-        ),
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(
+        isActive && activeIcon != null ? activeIcon! : icon,
+        size: 18,
+        color: color ?? theme.colorScheme.onSurfaceVariant,
       ),
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      splashRadius: 24,
+      padding: EdgeInsets.zero,
     );
   }
 }

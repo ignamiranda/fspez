@@ -45,6 +45,27 @@ class _AppGateState extends ConsumerState<_AppGate> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(corruptedSessionProvider, (prev, next) {
+      if (next == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Saved session data was corrupted. Please sign in again.',
+              ),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Dismiss',
+                onPressed: () =>
+                    ref.read(corruptedSessionProvider.notifier).state = false,
+              ),
+            ),
+          );
+        });
+      }
+    });
+
     final account = ref.watch(activeAccountProvider);
     final isGuest = ref.watch(guestModeProvider);
     final isLoggedIn = account != null;

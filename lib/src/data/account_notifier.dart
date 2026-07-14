@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
@@ -14,15 +15,25 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
   final AccountRepository _repository;
   final AccountListVersionNotifier _listVersion;
   final FeedCache _feedCache;
+  final StateController<bool> _corruptedSession;
 
-  ActiveAccountNotifier(this._repository, this._listVersion, this._feedCache)
-      : super(null) {
+  ActiveAccountNotifier(
+    this._repository,
+    this._listVersion,
+    this._feedCache,
+    this._corruptedSession,
+  ) : super(null) {
     Future.microtask(_init);
   }
 
   Future<void> _init() async {
-    state = await _repository.loadActive();
-    await _deduplicate();
+    try {
+      state = await _repository.loadActive();
+      await _deduplicate();
+    } catch (e) {
+      _corruptedSession.state = true;
+      debugPrint('Failed to load active account: $e');
+    }
   }
 
   Future<void> _deduplicate() async {
