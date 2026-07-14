@@ -159,14 +159,14 @@ class _PostCardState extends ConsumerState<PostCard> {
                   onBlock: widget.onBlock,
                 ),
                 const SizedBox(height: 6),
-                _buildMediaSection(theme, cs, density: density),
-                const SizedBox(height: 8),
                 PostTitleWithThumbnail(
                   post: widget.post,
                   thumbnailUrl: null,
                   theme: theme,
                   maxLines: titleMaxLines,
                 ),
+                const SizedBox(height: 8),
+                _buildMediaSection(theme, cs, density: density),
                 if (showSelftext &&
                     widget.post.type == PostType.self_ &&
                     widget.post.selftext != null &&
