@@ -71,3 +71,17 @@ Conditional keystore signing step (requires `KEYSTORE_BASE64` secret). Release t
 ## Domain vocabulary
 
 Use terms from `CONTEXT.md`: **User** (physical human), **Account** (Reddit identity with cookie), **InboxItem** (DM or CommentNotification union), **Feed** (any paginated post card list), **Subreddit** (code) / community (UI text), **Draft** (local unsubmitted content). Avoid: Person, Message (for inbox items), Thing, Community (in code), Listing.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked on GitHub. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five state labels with defaults. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout — one CONTEXT.md + docs/adr/ at root. See `docs/agents/domain.md`.
