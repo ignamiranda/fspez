@@ -94,7 +94,6 @@ class _PostCardState extends ConsumerState<PostCard> {
         widget.post.videoUrl != null ||
         widget.post.mediaUrls.isNotEmpty ||
         (widget.post.type == PostType.image && widget.post.url != null);
-    final titleMaxLines = compact ? 1 : 2;
     final showSelftext = density == FeedDensity.comfortable;
     final vote = widget.effectiveVote ?? widget.post.vote;
 
@@ -140,7 +139,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   post: widget.post,
                   thumbnailUrl: _compactThumbnailUrl,
                   theme: theme,
-                  maxLines: titleMaxLines,
+                  isCompact: true,
                 ),
               ] else if (hasFeedMedia) ...[
                 PostMetadataRow(
@@ -163,7 +162,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   post: widget.post,
                   thumbnailUrl: null,
                   theme: theme,
-                  maxLines: titleMaxLines,
+                  isCompact: false,
                 ),
                 const SizedBox(height: 8),
                 _buildMediaSection(theme, cs, density: density),
@@ -203,7 +202,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   post: widget.post,
                   thumbnailUrl: _compactThumbnailUrl,
                   theme: theme,
-                  maxLines: titleMaxLines,
+                  isCompact: false,
                 ),
                 if (showSelftext &&
                     widget.post.type == PostType.self_ &&

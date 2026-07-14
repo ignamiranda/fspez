@@ -5,22 +5,21 @@ class PostTitleWithThumbnail extends StatelessWidget {
   final Post post;
   final String? thumbnailUrl;
   final ThemeData theme;
-  final int maxLines;
+  final bool isCompact;
 
   const PostTitleWithThumbnail({
     super.key,
     required this.post,
     required this.thumbnailUrl,
     required this.theme,
-    required this.maxLines,
+    required this.isCompact,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isCompactTitle = maxLines == 1;
-    final thumbnailSize = isCompactTitle ? 48.0 : 56.0;
-    final thumbnailPadding = isCompactTitle ? 2.0 : 3.0;
-    if (isCompactTitle && thumbnailUrl != null) {
+    final thumbnailSize = isCompact ? 48.0 : 56.0;
+    final thumbnailPadding = isCompact ? 2.0 : 3.0;
+    if (isCompact && thumbnailUrl != null) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -41,8 +40,6 @@ class PostTitleWithThumbnail extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.2,
                 ),
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -60,19 +57,17 @@ class PostTitleWithThumbnail extends StatelessWidget {
               fontWeight: FontWeight.w600,
               letterSpacing: -0.2,
             ),
-            maxLines: maxLines,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
         if (thumbnailUrl != null)
           Padding(
-            padding: EdgeInsets.only(left: 8, top: isCompactTitle ? 1 : 0),
+            padding: EdgeInsets.only(left: 8, top: isCompact ? 1 : 0),
             child: PostThumbnailFrame(
               theme: theme,
               thumbnailUrl: thumbnailUrl!,
               size: thumbnailSize,
               padding: thumbnailPadding,
-              iconSize: isCompactTitle ? 18 : 16,
+              iconSize: isCompact ? 18 : 16,
             ),
           ),
       ],
