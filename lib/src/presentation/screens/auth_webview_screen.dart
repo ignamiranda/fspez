@@ -87,8 +87,17 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
             ),
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
-              mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+              mixedContentMode: MixedContentMode.MIXED_CONTENT_NEVER_ALLOW,
             ),
+            shouldOverrideUrlLoading: (controller, navigationAction) async {
+              final url = navigationAction.request.url;
+              if (url != null &&
+                  (url.host.endsWith('.reddit.com') ||
+                      url.host == 'reddit.com')) {
+                return NavigationActionPolicy.ALLOW;
+              }
+              return NavigationActionPolicy.CANCEL;
+            },
             onWebViewCreated: (controller) {
               _controller = controller;
             },

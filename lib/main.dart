@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +10,45 @@ import 'src/presentation/screens/compose_autotest_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Global error boundaries ──────────────────────────────────────────────
+  // Prevent red-screen-of-death on build errors.
+  ErrorWidget.builder = (details) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 48),
+                  const SizedBox(height: 12),
+                  const Text('Something went wrong',
+                      style: TextStyle(fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Text(details.exception.toString(),
+                      style: const TextStyle(fontSize: 12),
+                      textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  // Log framework errors (widget build, layout, painting) to console.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('${details.exception}');
+  };
+
+  // Capture unhandled async errors outside the Flutter framework.
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Unhandled error: $error\n$stack');
+    return true;
+  };
+  // ──────────────────────────────────────────────────────────────────────────
 
   if (Platform.environment['FSPEZ_AUTOTEST_COMPOSE'] == '1') {
     final sessionValue = Platform.environment['REDDIT_SESSION'];

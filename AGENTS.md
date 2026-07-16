@@ -72,6 +72,23 @@ Conditional keystore signing step (requires `KEYSTORE_BASE64` secret). Release t
 
 Use terms from `CONTEXT.md`: **User** (physical human), **Account** (Reddit identity with cookie), **InboxItem** (DM or CommentNotification union), **Feed** (any paginated post card list), **Subreddit** (code) / community (UI text), **Draft** (local unsubmitted content). Avoid: Person, Message (for inbox items), Thing, Community (in code), Listing.
 
+## Session postmortem: hardened patterns
+
+### No silent deferral — verification step
+
+The global AGENTS.md already prohibits silent deferral ("state the estimate and trade-off, then ask"). If you violated it once, more text on the same rule won't help — the problem is compliance, not presence.
+
+**Before proposing to defer or skip any item** (especially from a critique or review outcome):
+1. Search the global AGENTS.md for the phrase "No silent deferral"
+2. Quote it verbatim to the user
+3. Then state: effort estimate + trade-off + explicit ask
+
+### Read before edit
+
+Before calling `edit()` with an `oldString` parameter for changes to existing code: Read the target file, capture the exact current text for the `oldString` parameter. Do not reconstruct it from memory or from a prior read.
+
+If edit() fails with "oldString not found": Read the file again to verify current content before retrying.
+
 ## Agent skills
 
 ### Issue tracker

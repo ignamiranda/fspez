@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'session_acquirer.dart';
 
@@ -24,7 +25,9 @@ class CdpCookieProvider implements CookieProvider {
       for (final c in cookies) {
         if (c.name == 'reddit_session') return c.value;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CdpCookieProvider._tryCookieManager failed: $e');
+    }
     return null;
   }
 
@@ -40,7 +43,9 @@ class CdpCookieProvider implements CookieProvider {
           return ck['value'] as String;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CdpCookieProvider._tryCdp failed: $e');
+    }
     return null;
   }
 
@@ -61,7 +66,9 @@ class CdpCookieProvider implements CookieProvider {
           .getCookies(url: WebUri('https://www.reddit.com'));
       if (cookies.isEmpty) return null;
       return cookies.map((c) => '${c.name}=${c.value}').join('; ');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CdpCookieProvider._tryCookieManagerString failed: $e');
+    }
     return null;
   }
 
@@ -74,7 +81,9 @@ class CdpCookieProvider implements CookieProvider {
       if (r is! Map || r['cookies'] is! List) return null;
       final cookies = (r['cookies'] as List).cast<Map>();
       return cookies.map((c) => '${c['name']}=${c['value']}').join('; ');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CdpCookieProvider._tryCdpString failed: $e');
+    }
     return null;
   }
 }

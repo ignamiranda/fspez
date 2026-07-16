@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../domain/models/session_cookie.dart';
-import 'reddit_client.dart';
+import 'api_types.dart';
 
 class HttpTransport {
   static const baseUrl = 'https://www.reddit.com';
@@ -12,10 +12,16 @@ class HttpTransport {
   static const _browserUA =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
+  static const _requestTimeout = Duration(seconds: 15);
+
   final http.Client _httpClient;
 
   HttpTransport({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
+
+  Future<T> _withTimeout<T>(Future<T> future) {
+    return future.timeout(_requestTimeout);
+  }
 
   Uri readJsonUri(String path, {Map<String, String>? queryParams}) {
     return Uri.parse('$readBaseUrl$path.json')
@@ -36,7 +42,8 @@ class HttpTransport {
     ApiEndpoint endpoint,
     SessionCookie? cookie,
   ) {
-    return _httpClient.get(uri, headers: _headersFor(endpoint, cookie));
+    return _withTimeout(
+        _httpClient.get(uri, headers: _headersFor(endpoint, cookie)));
   }
 
   Future<http.Response> post(
@@ -45,8 +52,24 @@ class HttpTransport {
     SessionCookie? cookie, {
     String? body,
   }) {
-    return _httpClient.post(uri,
-        headers: _headersFor(endpoint, cookie), body: body);
+    return _withTimeout(_httpClient.post(uri,
+        headers: _headersFor(endpoint, cookie), body: body));
+  }
+
+  /// Form-encoded POST that constructs the URI from [path] and encodes
+  /// [fields] as `application/x-www-form-urlencoded`. Defaults to
+  /// [ApiEndpoint.form] — override [endpoint] for submit/comment/compose
+  /// endpoints which use browser-like headers.
+  Future<http.Response> postForm(
+    String path,
+    Map<String, String> fields,
+    SessionCookie? cookie, {
+    ApiEndpoint endpoint = ApiEndpoint.form,
+    bool useOldReddit = false,
+  }) {
+    final uri = useOldReddit ? oldRedditUri(path) : webUri(path);
+    return post(uri, endpoint, cookie,
+        body: Uri(queryParameters: fields).query);
   }
 
   Future<http.Response> postJson(
@@ -55,24 +78,24 @@ class HttpTransport {
     SessionCookie? cookie, {
     Map<String, dynamic>? body,
   }) {
-    return _httpClient.post(
+    return _withTimeout(_httpClient.post(
       uri,
       headers: _headersFor(endpoint, cookie),
       body: body != null ? jsonEncode(body) : null,
-    );
+    ));
   }
 
   Future<http.Response> getHtml(Uri uri, SessionCookie? cookie) {
-    return _httpClient.get(uri, headers: _headersForHtml(cookie));
+    return _withTimeout(_httpClient.get(uri, headers: _headersForHtml(cookie)));
   }
 
   Future<void> putBytes(Uri uri, Uint8List bytes,
       {Map<String, String>? headers}) async {
-    final response = await _httpClient.put(
+    final response = await _withTimeout(_httpClient.put(
       uri,
       headers: headers,
       body: bytes,
-    );
+    ));
     if (response.statusCode >= 200 && response.statusCode < 300) return;
     throw RedditApiException(
       statusCode: response.statusCode,
@@ -120,6 +143,7 @@ class HttpTransport {
           'User-Agent': 'fspez/0.1.0',
           'Content-Type': 'application/x-www-form-urlencoded',
           if (cookie != null) 'Cookie': 'reddit_session=${cookie.value}',
+          if (cookie?.modhash != null) 'X-Modhash': cookie!.modhash!,
         };
       case ApiEndpoint.oldReddit:
       case ApiEndpoint.submit:

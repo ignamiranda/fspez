@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
@@ -103,8 +104,9 @@ class CommentRepository {
               .toList(),
         );
       }
-    } catch (_) {
+    } catch (e) {
       // Keep the JSON-derived detail when HTML award extraction fails.
+      debugPrint('CommentRepository._applyAwards HTML parsing failed: $e');
     }
 
     return PostDetail(post: post, comments: comments);

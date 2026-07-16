@@ -16,7 +16,7 @@ final searchRepositoryProvider = Provider<SearchRepository>((ref) {
 
 // ── Query-based family providers ──────────────────────────────────────────────
 
-final searchPostsProvider = StateNotifierProvider.family<
+final searchPostsProvider = StateNotifierProvider.autoDispose.family<
     PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
   ref,
   request,
@@ -33,7 +33,7 @@ final searchPostsProvider = StateNotifierProvider.family<
   );
 });
 
-final searchCommunitiesProvider = StateNotifierProvider.family<
+final searchCommunitiesProvider = StateNotifierProvider.autoDispose.family<
     PaginatedNotifier<Subreddit>,
     PaginatedListState<Subreddit>,
     SearchRequest>((ref, request) {
@@ -49,7 +49,7 @@ final searchCommunitiesProvider = StateNotifierProvider.family<
   );
 });
 
-final searchUsersProvider = StateNotifierProvider.family<
+final searchUsersProvider = StateNotifierProvider.autoDispose.family<
     PaginatedNotifier<SearchUser>,
     PaginatedListState<SearchUser>,
     SearchRequest>((ref, request) {
@@ -65,7 +65,7 @@ final searchUsersProvider = StateNotifierProvider.family<
   );
 });
 
-final searchCommentsProvider = StateNotifierProvider.family<
+final searchCommentsProvider = StateNotifierProvider.autoDispose.family<
     PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
   ref,
   request,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../domain/models/flair_option.dart';
 import '../domain/models/session_cookie.dart';
 import 'http_transport.dart';
@@ -14,12 +15,12 @@ class SubmitClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final uri = _transport.oldRedditUri('/api/submit');
-    final response = await _transport.post(
-      uri,
-      ApiEndpoint.submit,
+    final response = await _transport.postForm(
+      '/api/submit',
+      fields,
       sessionCookie,
-      body: Uri(queryParameters: fields).query,
+      endpoint: ApiEndpoint.submit,
+      useOldReddit: true,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final ct = (response.headers['content-type'] ?? '').toLowerCase();
@@ -35,12 +36,11 @@ class SubmitClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final uri = _transport.webUri('/api/submit_gallery_post.json');
-    final response = await _transport.post(
-      uri,
-      ApiEndpoint.submit,
+    final response = await _transport.postForm(
+      '/api/submit_gallery_post.json',
+      fields,
       sessionCookie,
-      body: Uri(queryParameters: fields).query,
+      endpoint: ApiEndpoint.submit,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) return;
     throw RedditApiException(
@@ -94,7 +94,8 @@ class SubmitClient {
         }
       }
       return [];
-    } catch (_) {
+    } catch (e) {
+      debugPrint('SubmitClient.fetchFlairOptions failed: $e');
       return [];
     }
   }

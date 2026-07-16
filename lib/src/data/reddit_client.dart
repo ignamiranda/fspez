@@ -1,21 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../domain/models/session_cookie.dart';
+import 'api_types.dart';
+export 'api_types.dart';
 import 'http_transport.dart';
 
 /// Generic read API client for repositories and infrastructure.
 ///
 /// Domain-specific write operations have been moved to focused clients:
 /// [InteractionClient], [SubmitClient], [MessageClient], [AccountClient].
-enum ApiEndpoint {
-  json,
-  form,
-  oldReddit,
-  comment,
-  submit,
-  compose,
-  mediaUpload
-}
 
 class RedditClient {
   final HttpTransport _transport;
@@ -92,14 +85,4 @@ class RedditClient {
   void dispose() {
     _transport.dispose();
   }
-}
-
-class RedditApiException implements Exception {
-  final int statusCode;
-  final String message;
-
-  const RedditApiException({required this.statusCode, required this.message});
-
-  @override
-  String toString() => 'RedditApiException($statusCode): $message';
 }

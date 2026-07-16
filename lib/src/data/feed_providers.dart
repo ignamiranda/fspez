@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
@@ -12,8 +13,11 @@ import 'paginated_notifier.dart';
 
 final feedParserProvider = Provider<FeedParser>((ref) => FeedParser());
 
-final feedPageProvider = StateNotifierProvider.family<FeedPageNotifier,
-    PaginatedListState<Post>, FeedPageConfig>((ref, config) {
+final feedPageProvider = StateNotifierProvider.autoDispose
+    .family<FeedPageNotifier, PaginatedListState<Post>, FeedPageConfig>((
+  ref,
+  config,
+) {
   final client = ref.watch(redditClientProvider);
   final parser = ref.watch(feedParserProvider);
   final account = ref.watch(activeAccountProvider);
@@ -30,7 +34,8 @@ final feedPageProvider = StateNotifierProvider.family<FeedPageNotifier,
       final kind = feedKindForConfig(config);
       cachedFeed = parser.parseFeed(cachedEntry.data, kind, config.sort);
       isCachedStale = cachedEntry.isOlderThan(FeedCache.staleAfter);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('FeedPageProvider cache deserialization failed: $e');
       // Corrupt cache entry — remove silently.
       cache.remove(accountId, config);
     }

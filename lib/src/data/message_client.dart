@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import '../domain/models/session_cookie.dart';
 import 'http_transport.dart';
 import 'reddit_client.dart';
@@ -14,12 +15,11 @@ class MessageClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final uri = _transport.webUri('/api/compose');
-    final response = await _transport.post(
-      uri,
-      ApiEndpoint.compose,
+    final response = await _transport.postForm(
+      '/api/compose',
+      fields,
       sessionCookie,
-      body: Uri(queryParameters: fields).query,
+      endpoint: ApiEndpoint.compose,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       try {
@@ -42,7 +42,9 @@ class MessageClient {
             );
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('MessageClient.compose JSON error parsing failed: $e');
+      }
       return;
     }
     throw RedditApiException(
@@ -55,12 +57,11 @@ class MessageClient {
     required Map<String, String> fields,
     required SessionCookie sessionCookie,
   }) async {
-    final uri = _transport.webUri('/api/comment');
-    final response = await _transport.post(
-      uri,
-      ApiEndpoint.comment,
+    final response = await _transport.postForm(
+      '/api/comment',
+      fields,
       sessionCookie,
-      body: Uri(queryParameters: fields).query,
+      endpoint: ApiEndpoint.comment,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) return;
     throw RedditApiException(

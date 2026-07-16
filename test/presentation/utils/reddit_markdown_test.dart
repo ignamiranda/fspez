@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/presentation/utils/reddit_markdown.dart';
 
+/// Helper to build the expected spoiler-marker output from raw text.
+String _spoilerWrap(String content) => '$spoilerStart$content$spoilerEnd';
+
 void main() {
   group('normalizeRedditMarkdown', () {
     test('adds missing space after reddit-style heading markers', () {
@@ -90,6 +93,63 @@ void main() {
           '![img](https://example.com/pic.png)',
         );
       });
+    });
+  });
+
+  group('spoiler syntax', () {
+    test('replaces inline spoiler with non-character delimiters', () {
+      expect(
+        normalizeRedditMarkdown('some >!hidden text!< here'),
+        'some ${_spoilerWrap('hidden text')} here',
+      );
+    });
+
+    test('replaces spoiler at line start to prevent blockquote parsing', () {
+      expect(
+        normalizeRedditMarkdown('>!spoiler content!<'),
+        _spoilerWrap('spoiler content'),
+      );
+    });
+
+    test('handles multiline spoilers', () {
+      final input = '>!first line\nsecond line!<';
+      final result = normalizeRedditMarkdown(input);
+      expect(result, _spoilerWrap('first line\nsecond line'));
+    });
+
+    test('handles multiple spoilers in the same text', () {
+      expect(
+        normalizeRedditMarkdown('>!a!< and >!b!<'),
+        '${_spoilerWrap('a')} and ${_spoilerWrap('b')}',
+      );
+    });
+
+    test('does nothing to plain text without spoiler syntax', () {
+      expect(normalizeRedditMarkdown('hello world'), 'hello world');
+    });
+
+    test('does nothing to lone >! without closing marker', () {
+      expect(normalizeRedditMarkdown('>! not closed'), '>! not closed');
+    });
+
+    test('does nothing to lone !< without opening marker', () {
+      expect(normalizeRedditMarkdown('not opened !<'), 'not opened !<');
+    });
+
+    test('preserves heading normalization alongside spoilers', () {
+      final result = normalizeRedditMarkdown('###Title\n>!spoil!<');
+      expect(result, '### Title\n${_spoilerWrap('spoil')}');
+    });
+
+    test('preserves giphy embeds alongside spoilers', () {
+      final result = normalizeRedditMarkdown(
+        '>!hidden!< ![gif](giphy|abc|downsized)',
+      );
+      expect(
+        result,
+        '${_spoilerWrap('hidden')} '
+            '![gif](https://media.giphy.com/media/abc/giphy.gif)',
+      );
     });
   });
 }

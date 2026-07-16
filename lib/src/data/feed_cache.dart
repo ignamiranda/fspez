@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'feed_pagination.dart';
@@ -56,7 +57,8 @@ class FeedCache {
         data: decoded,
         cachedAt: DateTime.fromMillisecondsSinceEpoch(timestamp),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('FeedCache.get failed: $e');
       return null;
     }
   }

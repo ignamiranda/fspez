@@ -19,7 +19,7 @@ final commentRepositoryProvider = Provider<CommentRepository>((ref) {
   );
 });
 
-final postDetailProvider = FutureProvider.family<PostDetail,
+final postDetailProvider = FutureProvider.autoDispose.family<PostDetail,
     ({String subreddit, String postId, CommentSort sort})>((ref, params) async {
   final repo = ref.watch(commentRepositoryProvider);
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
@@ -28,14 +28,14 @@ final postDetailProvider = FutureProvider.family<PostDetail,
 });
 
 final subredditInfoProvider =
-    FutureProvider.family<Subreddit, String>((ref, name) async {
+    FutureProvider.autoDispose.family<Subreddit, String>((ref, name) async {
   final repo = ref.watch(subredditRepositoryProvider);
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetch(name, sessionCookie: sessionCookie);
 });
 
 final subredditRulesProvider =
-    FutureProvider.family<List<SubredditRule>, String>((ref, name) async {
+    FutureProvider.autoDispose.family<List<SubredditRule>, String>((ref, name) async {
   final repo = ref.watch(subredditRepositoryProvider);
   final sessionCookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return repo.fetchRules(name, sessionCookie: sessionCookie);

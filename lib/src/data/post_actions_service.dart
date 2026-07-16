@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../domain/enums/vote_direction.dart';
 import '../domain/models/session_cookie.dart';
 import 'action_notifier.dart';
@@ -44,7 +45,9 @@ class PostActionsService {
         sessionCookie: sc,
       ),
       onError: WriteErrorPolicy.keepOptimistic,
-    ).catchError((_) {}); // Vote failure is non-critical — swallow.
+    ).catchError((e) {
+      debugPrint('PostActionsService.toggleVote failed: $e');
+    }); // Vote failure is non-critical — swallow.
   }
 
   Future<void> toggleSave(String fullname) async {

@@ -52,13 +52,8 @@ class AccountClient {
     Map<String, String> fields,
     SessionCookie sessionCookie,
   ) async {
-    final uri = _transport.webUri(path);
-    final response = await _transport.post(
-      uri,
-      ApiEndpoint.form,
-      sessionCookie,
-      body: Uri(queryParameters: fields).query,
-    );
+    final response =
+        await _transport.postForm(path, fields, sessionCookie);
     if (response.statusCode >= 200 && response.statusCode < 300) return;
     throw RedditApiException(
       statusCode: response.statusCode,

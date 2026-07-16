@@ -110,10 +110,9 @@ class _PostCardState extends ConsumerState<PostCard> {
           horizontal: 0,
         ),
         child: Padding(
-          padding: EdgeInsets.only(
-            left: 12,
-            top: compact ? 4 : 10,
-            bottom: compact ? 4 : 10,
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: compact ? 4 : 10,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

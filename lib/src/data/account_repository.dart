@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../domain/models/account.dart';
@@ -23,28 +24,34 @@ class AccountRepository {
   Future<List<Account>> loadAll() async {
     final json = await _tryRead(_accountsKey);
     if (json == null) {
-      try {
-        await _storage.delete(key: _accountsKey);
-      } on PlatformException {
-        // both read and delete failed — nothing more we can do
-      }
       return [];
     }
 
-    final list = jsonDecode(json) as List<dynamic>;
-    return list.map((item) {
-      final map = item as Map<String, dynamic>;
-      return Account(
-        id: map['id'] as String,
-        username: map['username'] as String,
-        sessionCookie: SessionCookie(
-          value: map['cookieValue'] as String,
-          expiresAt: DateTime.parse(map['cookieExpires'] as String),
-          rawCookie: map['cookieRaw'] as String?,
-          modhash: map['cookieModhash'] as String?,
-        ),
-      );
-    }).toList();
+    try {
+      final list = jsonDecode(json) as List<dynamic>;
+      return list.map((item) {
+        final map = item as Map<String, dynamic>;
+        return Account(
+          id: map['id'] as String,
+          username: map['username'] as String,
+          sessionCookie: SessionCookie(
+            value: map['cookieValue'] as String,
+            expiresAt: DateTime.parse(map['cookieExpires'] as String),
+            rawCookie: map['cookieRaw'] as String?,
+            modhash: map['cookieModhash'] as String?,
+          ),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('AccountRepository.loadAll JSON deserialization failed: $e');
+      // Corrupted data — clear and return empty.
+      try {
+        await _storage.delete(key: _accountsKey);
+      } on PlatformException {
+        // Best-effort cleanup.
+      }
+      return [];
+    }
   }
 
   Future<void> save(Account account) async {

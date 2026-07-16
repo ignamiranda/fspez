@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
 
@@ -13,7 +14,9 @@ class ModhashFetcher {
       final data = me['data'] as Map<String, dynamic>?;
       final mh = data?['modhash'] as String?;
       if (mh != null && mh.isNotEmpty) return mh;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('ModhashFetcher.fetch failed: $e');
+    }
     return null;
   }
 }

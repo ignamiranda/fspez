@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/flair_option.dart';
 import '../domain/models/session_cookie.dart';
@@ -130,7 +130,8 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
       final options = await _client.fetchFlairOptions(subreddit, null);
       _flairCache[subreddit] = options;
       state = state.copyWith(flairOptions: options, isFetchingFlairs: false);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('SubmitNotifier._fetchFlairs failed: $e');
       state = state.copyWith(isFetchingFlairs: false, clearFlairOptions: true);
     }
   }
@@ -163,6 +164,40 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
       state = SubmitState(error: e.toString());
       return false;
     }
+  }
+
+  Future<bool> submitText({
+    required String title,
+    required String subreddit,
+    required String text,
+    required SessionCookie sessionCookie,
+  }) async {
+    final modhash = sessionCookie.modhash ?? '';
+    final fields = <String, String>{
+      'kind': 'self',
+      'sr': subreddit,
+      'title': title,
+      'uh': modhash,
+    };
+    if (text.isNotEmpty) fields['text'] = text;
+    return submit(fields: fields, sessionCookie: sessionCookie);
+  }
+
+  Future<bool> submitLink({
+    required String title,
+    required String subreddit,
+    required String url,
+    required SessionCookie sessionCookie,
+  }) async {
+    final modhash = sessionCookie.modhash ?? '';
+    final fields = <String, String>{
+      'kind': 'link',
+      'sr': subreddit,
+      'title': title,
+      'uh': modhash,
+    };
+    if (url.isNotEmpty) fields['url'] = url;
+    return submit(fields: fields, sessionCookie: sessionCookie);
   }
 
   void reset() => state = const SubmitState();

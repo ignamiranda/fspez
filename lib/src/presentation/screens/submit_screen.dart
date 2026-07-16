@@ -87,32 +87,18 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
     bool success;
     switch (_tabController.index) {
       case 0: // Text
-        final fields = <String, String>{
-          'kind': 'self',
-          'sr': subreddit,
-          'title': title,
-          'uh': account.sessionCookie.modhash ?? '',
-        };
-        if (_textController.text.trim().isNotEmpty) {
-          fields['text'] = _textController.text.trim();
-        }
-        success = await notifier.submit(
-          fields: fields,
+        success = await notifier.submitText(
+          title: title,
+          subreddit: subreddit,
+          text: _textController.text.trim(),
           sessionCookie: account.sessionCookie,
         );
         break;
       case 1: // Link
-        final fields = <String, String>{
-          'kind': 'link',
-          'sr': subreddit,
-          'title': title,
-          'uh': account.sessionCookie.modhash ?? '',
-        };
-        if (_urlController.text.trim().isNotEmpty) {
-          fields['url'] = _urlController.text.trim();
-        }
-        success = await notifier.submit(
-          fields: fields,
+        success = await notifier.submitLink(
+          title: title,
+          subreddit: subreddit,
+          url: _urlController.text.trim(),
           sessionCookie: account.sessionCookie,
         );
         break;

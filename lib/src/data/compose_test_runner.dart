@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import '../domain/models/session_cookie.dart';
 import 'http_transport.dart';
 import 'message_client.dart';
@@ -20,7 +21,9 @@ class ComposeTestRunner {
         '[${DateTime.now().toIso8601String()}] TEST $message\n',
         mode: FileMode.append,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('ComposeTestRunner._log failed: $e');
+    }
   }
 
   Future<bool> run({required String sessionValue}) async {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
@@ -32,11 +33,14 @@ String? extractUsernameFromCookieValue(String cookieValue) {
               return map[key] as String;
             }
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('extractUsernameFromCookieValue inner failed: $e');
+        }
       }
     }
     return 'user_${cookieValue.hashCode.abs().toString().substring(0, 6)}';
-  } catch (_) {
+  } catch (e) {
+    debugPrint('extractUsernameFromCookieValue outer failed: $e');
     return 'unknown';
   }
 }
@@ -81,7 +85,9 @@ class UsernameExtractor {
         })()
       ''');
       if (js is String && js.isNotEmpty && js != 'null') return js;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('UsernameExtractor._tryJsEval failed: $e');
+    }
     return null;
   }
 
@@ -91,7 +97,9 @@ class UsernameExtractor {
       final data = me['data'] as Map<String, dynamic>?;
       final name = data?['name'] as String?;
       if (name != null && name.isNotEmpty) return name;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('UsernameExtractor._tryApiCall failed: $e');
+    }
     return null;
   }
 

@@ -159,7 +159,8 @@ class InboxNotifier extends StateNotifier<InboxState> {
 
     try {
       await _repository.markAsRead(message.fullname, cookie);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('InboxNotifier.markAsRead failed: $e');
       state = previousState;
       await refresh();
       await refreshUnreadCount();
