@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../domain/repositories/i_inbox_repository.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'inbox_repository.dart';
 import 'inbox_notifier.dart';
 import 'write_providers.dart';
 
-final inboxRepositoryProvider = Provider<InboxRepository>((ref) {
+final inboxRepositoryProvider = Provider<IInboxRepository>((ref) {
   return InboxRepository(
     ref.watch(redditClientProvider),
     ref.watch(messageClientProvider),

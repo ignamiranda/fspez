@@ -2,10 +2,11 @@ import '../domain/models/session_cookie.dart';
 import '../domain/models/user_profile.dart';
 import '../domain/models/comment.dart';
 import '../domain/enums/comment_sort.dart';
+import '../domain/repositories/i_user_repository.dart';
 import 'reddit_client.dart';
 import 'parsers/shared_parsers.dart';
 
-class UserRepository {
+class UserRepository implements IUserRepository {
   final RedditClient _client;
 
   UserRepository(this._client);

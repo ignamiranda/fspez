@@ -111,7 +111,6 @@ class _PostCardState extends ConsumerState<PostCard> {
         ),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: 12,
             vertical: compact ? 4 : 10,
           ),
           child: Column(

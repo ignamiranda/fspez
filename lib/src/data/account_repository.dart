@@ -4,8 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
+import '../domain/repositories/i_account_repository.dart';
 
-class AccountRepository {
+class AccountRepository implements IAccountRepository {
   static const _accountsKey = 'fspez_accounts';
   static const _activeAccountIdKey = 'fspez_active_account_id';
 

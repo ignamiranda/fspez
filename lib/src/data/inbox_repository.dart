@@ -1,10 +1,11 @@
 import '../domain/models/inbox_feed.dart';
 import '../domain/models/session_cookie.dart';
+import '../domain/repositories/i_inbox_repository.dart';
 import 'reddit_client.dart';
 import 'inbox_parser.dart';
 import 'message_client.dart';
 
-class InboxRepository {
+class InboxRepository implements IInboxRepository {
   final RedditClient _client;
   final MessageClient _messageClient;
   final InboxParser _parser;
@@ -12,6 +13,7 @@ class InboxRepository {
   InboxRepository(this._client, this._messageClient, {InboxParser? parser})
       : _parser = parser ?? InboxParser();
 
+  @override
   Future<InboxFeed> fetchInbox({
     String? after,
     SessionCookie? sessionCookie,
@@ -20,6 +22,7 @@ class InboxRepository {
         sessionCookie: sessionCookie);
   }
 
+  @override
   Future<InboxFeed> fetchUnread({
     String? after,
     SessionCookie? sessionCookie,
@@ -28,6 +31,7 @@ class InboxRepository {
         sessionCookie: sessionCookie);
   }
 
+  @override
   Future<InboxFeed> fetchSent({
     String? after,
     SessionCookie? sessionCookie,
@@ -62,6 +66,7 @@ class InboxRepository {
     );
   }
 
+  @override
   Future<void> markAsRead(
     String fullname,
     SessionCookie sessionCookie,
@@ -74,6 +79,7 @@ class InboxRepository {
         sessionCookie: sessionCookie);
   }
 
+  @override
   Future<void> reply({
     required String fullname,
     required String text,

@@ -3,6 +3,7 @@ import '../../domain/enums/feed_density.dart';
 import '../../domain/models/post.dart';
 import '../utils/format_utils.dart';
 import 'award_badge.dart';
+import 'subreddit_icon.dart';
 import 'user_flair_chip.dart';
 import 'post_overflow_menu.dart';
 
@@ -105,21 +106,10 @@ class ComfortablePostMetadata extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconUrl = post.subreddit.iconUrl;
     return Row(
       children: [
-        if (iconUrl != null && iconUrl.isNotEmpty) ...[
-          ClipOval(
-            child: Image.network(
-              iconUrl,
-              width: 20,
-              height: 20,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
-          const SizedBox(width: 6),
-        ],
+        SubredditIcon(subreddit: post.subreddit, size: 20),
+        const SizedBox(width: 6),
         InkWell(
           onTap: onSubredditTap,
           child: Text(
@@ -266,22 +256,12 @@ class CompactPostMetadata extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconUrl = post.subreddit.iconUrl;
     return Wrap(
       spacing: 6,
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (iconUrl != null && iconUrl.isNotEmpty)
-          ClipOval(
-            child: Image.network(
-              iconUrl,
-              width: 18,
-              height: 18,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
+        SubredditIcon(subreddit: post.subreddit, size: 18),
         InkWell(
           onTap: onSubredditTap,
           child: Text(

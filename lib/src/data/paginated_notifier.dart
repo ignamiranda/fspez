@@ -1,21 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'paginated_list_state.dart';
-
-/// Result of fetching a single page from a paginated API.
-///
-/// Carries the page items, the cursor for the next page, and whether more
-/// pages exist. Used as the page type for [PaginatedNotifier].
-class PaginatedResult<T> {
-  final List<T> items;
-  final String? after;
-  final bool hasMore;
-
-  const PaginatedResult({
-    required this.items,
-    this.after,
-    this.hasMore = false,
-  });
-}
+import '../domain/models/paginated_result.dart';
 
 /// Concrete cursor-paginated notifier that uses [PaginatedListState] as state
 /// and [PaginatedResult] as the page type.

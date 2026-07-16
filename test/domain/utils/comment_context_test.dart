@@ -76,5 +76,51 @@ void main() {
       expect(result.postId, 'postId');
       expect(result.commentId, 'commentId');
     });
+
+    test('strips t3_ prefix from postId', () {
+      final result = parseCommentContext(
+        '/r/subreddit/comments/t3_abc123/title/def456/',
+      );
+      expect(result, isNotNull);
+      expect(result!.postId, 'abc123');
+      expect(result.commentId, 'def456');
+    });
+
+    test('strips t1_ prefix from commentId', () {
+      final result = parseCommentContext(
+        '/r/subreddit/comments/abc123/title/t1_def456/',
+      );
+      expect(result, isNotNull);
+      expect(result!.postId, 'abc123');
+      expect(result.commentId, 'def456');
+    });
+
+    test('strips both t3_ and t1_ prefixes', () {
+      final result = parseCommentContext(
+        '/r/subreddit/comments/t3_abc123/title/t1_def456/',
+      );
+      expect(result, isNotNull);
+      expect(result!.postId, 'abc123');
+      expect(result.commentId, 'def456');
+    });
+
+    test('parses Reddit example with t3_ prefix', () {
+      final result = parseCommentContext(
+        'https://www.reddit.com/comments/t3_1uy0q6u/_/oxvhgzd/',
+      );
+      expect(result, isNotNull);
+      expect(result!.postId, '1uy0q6u');
+      expect(result.commentId, 'oxvhgzd');
+      expect(result.subreddit, '');
+    });
+
+    test('parses context URL with query parameter', () {
+      final result = parseCommentContext(
+        '/r/subreddit/comments/abc123/title/def456/?context=3',
+      );
+      expect(result, isNotNull);
+      expect(result!.postId, 'abc123');
+      expect(result.commentId, 'def456');
+    });
   });
 }

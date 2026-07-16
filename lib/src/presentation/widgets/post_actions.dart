@@ -4,6 +4,7 @@ import '../../domain/enums/vote_direction.dart';
 import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
 import 'award_badge.dart';
+import 'subreddit_icon.dart';
 import 'user_flair_chip.dart';
 
 class PostHeader extends StatelessWidget {
@@ -28,20 +29,7 @@ class PostHeader extends StatelessWidget {
 
     return Row(
       children: [
-        ClipOval(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: post.subreddit.iconUrl != null
-                ? Image.network(
-                    post.subreddit.iconUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        _LetterAvatar(name: post.subreddit.name, theme: theme),
-                  )
-                : _LetterAvatar(name: post.subreddit.name, theme: theme),
-          ),
-        ),
+        SubredditIcon(subreddit: post.subreddit, size: 24),
         const SizedBox(width: 8),
         Expanded(
           child: Row(
@@ -184,28 +172,6 @@ class PostHeader extends StatelessWidget {
       );
     }
   }
-
-class _LetterAvatar extends StatelessWidget {
-  final String name;
-  final ThemeData theme;
-
-  const _LetterAvatar({required this.name, required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: theme.colorScheme.primaryContainer,
-      alignment: Alignment.center,
-      child: Text(
-        name.isNotEmpty ? name[0].toUpperCase() : 'r',
-        style: TextStyle(
-          fontSize: 12,
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
-      ),
-    );
-  }
-}
 
 class PostActions extends StatelessWidget {
   final Post post;

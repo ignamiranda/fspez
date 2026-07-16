@@ -29,8 +29,10 @@ ParsedCommentContext? parseCommentContext(String? context) {
   final afterComments = segments.length - commentsIdx - 1;
   if (afterComments < 2) return null;
 
-  final postId = segments[commentsIdx + 1];
-  final commentId = segments.last;
+  var postId = segments[commentsIdx + 1];
+  postId = postId.replaceFirst('t3_', '');
+  var commentId = segments.last;
+  commentId = commentId.replaceFirst('t1_', '');
 
   var subreddit = '';
   for (var i = 0; i < commentsIdx && i < segments.length; i++) {

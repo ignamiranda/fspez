@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/inbox_item.dart';
 import '../domain/models/inbox_feed.dart';
 import '../domain/models/account.dart';
-import 'inbox_repository.dart';
+import '../domain/models/paginated_result.dart';
+import '../domain/repositories/i_inbox_repository.dart';
 import 'paginated_notifier.dart';
 
 class InboxState with Equatable {
@@ -53,7 +54,7 @@ class InboxState with Equatable {
 }
 
 class InboxNotifier extends StateNotifier<InboxState> {
-  final InboxRepository _repository;
+  final IInboxRepository _repository;
   final Account? _account;
   PaginatedNotifier<InboxItem>? _paginated;
 

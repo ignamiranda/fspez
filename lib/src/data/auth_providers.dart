@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/models/account.dart';
+import '../domain/repositories/i_account_repository.dart';
 import 'account_repository.dart';
 import 'account_notifier.dart';
 import 'cache_providers.dart';
@@ -14,7 +15,7 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   throw UnimplementedError('FlutterSecureStorage must be overridden in main');
 });
 
-final accountRepositoryProvider = Provider<AccountRepository>((ref) {
+final accountRepositoryProvider = Provider<IAccountRepository>((ref) {
   return AccountRepository(ref.watch(secureStorageProvider));
 });
 

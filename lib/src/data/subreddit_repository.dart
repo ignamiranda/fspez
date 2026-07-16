@@ -1,10 +1,11 @@
 import '../domain/models/subreddit.dart';
 import '../domain/models/subreddit_rule.dart';
 import '../domain/models/session_cookie.dart';
+import '../domain/repositories/i_subreddit_repository.dart';
 import 'reddit_client.dart';
 import 'api_responses/api_responses.dart';
 
-class SubredditRepository {
+class SubredditRepository implements ISubredditRepository {
   final RedditClient _client;
 
   SubredditRepository(this._client);

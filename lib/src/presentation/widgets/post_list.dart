@@ -66,6 +66,7 @@ class PostList extends StatelessWidget {
     final listView = ListView.builder(
       controller: scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       itemCount: visiblePosts.length + (footer != null ? 1 : 0),
       itemBuilder: (context, index) {
         if (footer != null && index == visiblePosts.length) {

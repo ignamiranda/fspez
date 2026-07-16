@@ -5,7 +5,7 @@ import '../../data/auth_providers.dart';
 import '../../data/app_settings.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
-import '../../data/comment_repository.dart';
+import '../../domain/models/post_detail.dart';
 import '../../domain/enums/comment_sort.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';

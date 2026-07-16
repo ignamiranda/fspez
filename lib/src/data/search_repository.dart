@@ -7,7 +7,7 @@ import '../domain/enums/feed_sort.dart';
 import 'reddit_client.dart';
 import 'feed_parser.dart';
 import 'api_responses/api_responses.dart';
-import 'paginated_notifier.dart';
+import '../domain/models/paginated_result.dart';
 
 class SearchRepository {
   final RedditClient _client;

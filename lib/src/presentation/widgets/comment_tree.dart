@@ -261,7 +261,13 @@ class _CommentTreeState extends State<CommentTree> {
                                     onSelected: (value) {
                                       switch (value) {
                                         case 'copy_link':
-                                          final link = 'https://www.reddit.com/comments/${widget.comment.postId}/_/${widget.comment.id}/';
+                                          final postId = widget.comment.postId.replaceFirst('t3_', '');
+                                          String link;
+                                          if (widget.comment.subreddit != null) {
+                                            link = 'https://www.reddit.com/r/${widget.comment.subreddit}/comments/$postId/_/${widget.comment.id}/';
+                                          } else {
+                                            link = 'https://www.reddit.com/comments/$postId/_/${widget.comment.id}/';
+                                          }
                                           Clipboard.setData(ClipboardData(text: link));
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             const SnackBar(content: Text('Copied')),

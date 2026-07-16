@@ -1,18 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/enums/comment_sort.dart';
+import '../domain/models/post_detail.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/subreddit_rule.dart';
+import '../domain/repositories/i_comment_repository.dart';
+import '../domain/repositories/i_subreddit_repository.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'subreddit_repository.dart';
 import 'comment_repository.dart';
 import 'write_providers.dart';
 
-final subredditRepositoryProvider = Provider<SubredditRepository>((ref) {
+final subredditRepositoryProvider = Provider<ISubredditRepository>((ref) {
   return SubredditRepository(ref.watch(redditClientProvider));
 });
 
-final commentRepositoryProvider = Provider<CommentRepository>((ref) {
+final commentRepositoryProvider = Provider<ICommentRepository>((ref) {
   return CommentRepository(
     ref.watch(redditClientProvider),
     ref.watch(messageClientProvider),
