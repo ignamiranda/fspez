@@ -112,7 +112,7 @@ void main() {
     });
 
     test('handles multiline spoilers', () {
-      final input = '>!first line\nsecond line!<';
+      const input = '>!first line\nsecond line!<';
       final result = normalizeRedditMarkdown(input);
       expect(result, _spoilerWrap('first line\nsecond line'));
     });

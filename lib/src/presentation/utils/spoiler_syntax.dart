@@ -11,7 +11,7 @@ import 'reddit_markdown.dart';
 /// Uses `[\s\S]*?` instead of `.*` because [InlineSyntax] creates regexes
 /// without `dotAll`, so `.` would not match newlines. This pattern ensures
 /// spoilers spanning multiple lines are matched correctly.
-const _spoilerPatternString = '${spoilerStart}[\\s\\S]*?$spoilerEnd';
+const _spoilerPatternString = '$spoilerStart[\\s\\S]*?$spoilerEnd';
 
 /// Custom inline syntax that matches pre-processed spoiler markers inserted
 /// by [normalizeRedditMarkdown].
