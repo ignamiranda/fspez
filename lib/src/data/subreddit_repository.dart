@@ -10,6 +10,7 @@ class SubredditRepository implements ISubredditRepository {
 
   SubredditRepository(this._client);
 
+  @override
   Future<Subreddit> fetch(String subredditName,
       {SessionCookie? sessionCookie}) async {
     final data = await _client.get('/r/$subredditName/about',
@@ -18,6 +19,7 @@ class SubredditRepository implements ISubredditRepository {
     return api.toDomain(subredditName);
   }
 
+  @override
   Future<List<SubredditRule>> fetchRules(
     String subredditName, {
     SessionCookie? sessionCookie,
@@ -27,6 +29,7 @@ class SubredditRepository implements ISubredditRepository {
     return ApiSubredditRules.fromJson(data).toDomain();
   }
 
+  @override
   Future<void> subscribe(String subredditName,
       {SessionCookie? sessionCookie}) async {
     await _client.post('/api/subscribe',
@@ -34,6 +37,7 @@ class SubredditRepository implements ISubredditRepository {
         sessionCookie: sessionCookie);
   }
 
+  @override
   Future<void> unsubscribe(String subredditName,
       {SessionCookie? sessionCookie}) async {
     await _client.post('/api/subscribe',

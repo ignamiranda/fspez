@@ -11,6 +11,7 @@ class UserRepository implements IUserRepository {
 
   UserRepository(this._client);
 
+  @override
   Future<UserProfile> fetchProfile(
     String username, {
     SessionCookie? sessionCookie,
@@ -35,6 +36,7 @@ class UserRepository implements IUserRepository {
     );
   }
 
+  @override
   Future<List<Comment>> fetchComments(
     String username, {
     String? after,
@@ -65,6 +67,7 @@ class UserRepository implements IUserRepository {
   ///
   /// Requires a valid session cookie. Returns display names only
   /// (e.g., ["flutter", "dartlang"]).
+  @override
   Future<List<String>> fetchModeratedSubreddits({
     required SessionCookie sessionCookie,
   }) async {
