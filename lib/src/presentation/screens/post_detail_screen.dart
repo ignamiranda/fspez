@@ -5,7 +5,7 @@ import '../../data/auth_providers.dart';
 import '../../data/app_settings.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
-import '../../domain/models/post_detail.dart';
+import '../../data/comment_repository.dart';
 import '../../domain/enums/comment_sort.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
@@ -17,12 +17,15 @@ import '../widgets/comment_composer_sheet.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
 import '../widgets/media_viewer.dart';
-import '../widgets/post_actions.dart';
+import '../widgets/post_action_bar.dart';
 import '../widgets/post_media_tile.dart';
+import '../widgets/post_metadata.dart';
 import '../widgets/reddit_body.dart';
+import '../widgets/title_with_thumbnail.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
 import '../widgets/report_sheet.dart';
+import '../../domain/enums/feed_density.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final Post? post;
@@ -37,9 +40,9 @@ class PostDetailScreen extends ConsumerStatefulWidget {
     this.postId,
     this.initialCommentId,
   }) : assert(
-    (post != null) ^ (subreddit != null && postId != null),
-    'Either post or (subreddit and postId) must be provided',
-  );
+          (post != null) ^ (subreddit != null && postId != null),
+          'Either post or (subreddit and postId) must be provided',
+        );
 
   @override
   ConsumerState<PostDetailScreen> createState() => _PostDetailScreenState();
@@ -87,12 +90,24 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     Post? post,
   ]) {
     if (post != null) {
-      return (subreddit: post.subreddit.name, postId: post.id, sort: _commentSort);
+      return (
+        subreddit: post.subreddit.name,
+        postId: post.id,
+        sort: _commentSort
+      );
     }
     if (widget.post != null) {
-      return (subreddit: widget.post!.subreddit.name, postId: widget.post!.id, sort: _commentSort);
+      return (
+        subreddit: widget.post!.subreddit.name,
+        postId: widget.post!.id,
+        sort: _commentSort
+      );
     }
-    return (subreddit: widget.subreddit!, postId: widget.postId!, sort: _commentSort);
+    return (
+      subreddit: widget.subreddit!,
+      postId: widget.postId!,
+      sort: _commentSort
+    );
   }
 
   String get _postFullname {
@@ -135,10 +150,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final postFullname = _postFullname;
     // Scope post-level watches to this post's key so the header doesn't
     // rebuild on every comment vote across the app.
-    final postVote =
-        ref.watch(voteProvider.select((m) => m[postFullname]));
-    final postSave =
-        ref.watch(saveProvider.select((m) => m[postFullname]));
+    final postVote = ref.watch(voteProvider.select((m) => m[postFullname]));
+    final postSave = ref.watch(saveProvider.select((m) => m[postFullname]));
 
     final appBarTitle = widget.post != null
         ? 'r/${widget.post!.subreddit.name}'
@@ -211,17 +224,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final actions = ref.read(postActionsServiceProvider);
     final username = ref.read(activeAccountProvider)?.username;
     final settings = ref.watch(appSettingsProvider);
-    final shouldBlur =
-        !_sensitiveRevealed &&
+    final shouldBlur = !_sensitiveRevealed &&
         ((post.isNsfw && settings.nsfwBlur) ||
             (post.isSpoiler && settings.spoilerBlur));
     final showAwards = settings.showAwards;
-
-    void onReportPost() => showReportSheet(
-      context,
-      thingId: post.fullname,
-      subreddit: post.subreddit.name,
-    );
 
     void onReportComment(String fullname, String? subreddit) =>
         showReportSheet(context, thingId: fullname, subreddit: subreddit);
@@ -231,61 +237,106 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         Expanded(
           child: ListView(
             children: [
-              _PostDetailHeader(
-                post: post,
-                theme: theme,
-                showAwards: showAwards,
-                effectiveVote: effectiveVote,
-                onVote: actions != null
-                    ? (dir) => handleVote(actions, postFullname, dir)
-                    : (dir) => requireLoginForAction(context, action: 'vote'),
-                effectiveSaved: effectiveSaved,
-                onSave: actions != null
-                    ? () {
-                        final wasSaved =
-                            effectiveSaved ?? post.isSaved;
-                        handleSave(
-                          actions,
-                          postFullname,
-                          context,
-                          wasSaved: wasSaved,
-                        );
-                      }
-                    : () => requireLoginForAction(context, action: 'save'),
-                onEdit: username != null && post.author == username
-                    ? () {
-                        showEditSheet(
-                          context,
-                          currentText: post.selftext ?? '',
-                          readOnlyTitle: post.title,
-                          thingId: postFullname,
-                        ).then((saved) {
-                          if (saved == true && context.mounted) {
-                            ref.invalidate(
-                              postDetailProvider(_postDetailParams(post)),
-                            );
-                          }
-                        });
-                      }
-                    : null,
-                onDelete: actions != null &&
-                        username != null &&
-                        post.author == username
-                    ? () => handleDelete(context, actions, postFullname)
-                    : actions == null
-                        ? () => requireLoginForAction(context, action: 'delete')
-                        : null,
-                onBlock:
-                    username != null &&
-                        post.author != '[deleted]' &&
-                        post.author != username
-                    ? () => handleBlockUser(
-                        context: context,
-                        notifier: ref.read(blockActionProvider.notifier),
-                        username: post.author,
-                      )
-                    : null,
-                onReport: onReportPost,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PostMetadataRow(
+                      post: post,
+                      theme: theme,
+                      cs: theme.colorScheme,
+                      density: FeedDensity.comfortable,
+                      showAwards: showAwards,
+                      showStickiedIndicator: true,
+                      onSubredditTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => SubredditFeedScreen(
+                            subredditName: post.subreddit.name,
+                          ),
+                        ),
+                      ),
+                      onAuthorTap: post.author != '[deleted]'
+                          ? () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      UserProfileScreen(username: post.author),
+                                ),
+                              )
+                          : null,
+                      onEdit: username != null && post.author == username
+                          ? () {
+                              showEditSheet(
+                                context,
+                                currentText: post.selftext ?? '',
+                                readOnlyTitle: post.title,
+                                thingId: postFullname,
+                              ).then((saved) {
+                                if (saved == true && context.mounted) {
+                                  ref.invalidate(
+                                    postDetailProvider(
+                                      _postDetailParams(post),
+                                    ),
+                                  );
+                                }
+                              });
+                            }
+                          : null,
+                      onDelete: actions != null &&
+                              username != null &&
+                              post.author == username
+                          ? () => handleDelete(context, actions, postFullname)
+                          : actions == null
+                              ? () => requireLoginForAction(context,
+                                  action: 'delete')
+                              : null,
+                      onBlock: username != null &&
+                              post.author != '[deleted]' &&
+                              post.author != username
+                          ? () => handleBlockUser(
+                                context: context,
+                                notifier:
+                                    ref.read(blockActionProvider.notifier),
+                                username: post.author,
+                              )
+                          : null,
+                    ),
+                    const SizedBox(height: 6),
+                    PostTitleWithThumbnail(
+                      post: post,
+                      thumbnailUrl: null,
+                      theme: theme,
+                      isCompact: false,
+                    ),
+                    const SizedBox(height: 6),
+                    PostActionBar(
+                      post: post,
+                      theme: theme,
+                      cs: theme.colorScheme,
+                      density: FeedDensity.comfortable,
+                      vote: effectiveVote ?? post.vote,
+                      score: post.score,
+                      commentCount: post.commentCount,
+                      isSaved: effectiveSaved ?? post.isSaved,
+                      onVote: actions != null
+                          ? (dir) => handleVote(actions, postFullname, dir)
+                          : (dir) =>
+                              requireLoginForAction(context, action: 'vote'),
+                      onSave: actions != null
+                          ? () {
+                              final wasSaved = effectiveSaved ?? post.isSaved;
+                              handleSave(
+                                actions,
+                                postFullname,
+                                context,
+                                wasSaved: wasSaved,
+                              );
+                            }
+                          : () =>
+                              requireLoginForAction(context, action: 'save'),
+                    ),
+                  ],
+                ),
               ),
               if (post.selftext != null && post.selftext!.isNotEmpty)
                 Padding(
@@ -299,8 +350,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   isSpoiler: post.isSpoiler,
                   onReveal: () => setState(() => _sensitiveRevealed = true),
                   child: PostMediaTile(
-                    imageUrl:
-                        post.thumbnailUrl ??
+                    imageUrl: post.thumbnailUrl ??
                         (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
                     isVideo: true,
                     onTap: () => MediaViewer.show(
@@ -464,15 +514,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               requireLoginForAction(context, action: 'vote'),
                       saveOverrides: saveOverrides,
                       onSave: actions != null
-                          ? (fullname) =>
-                              handleSave(actions, fullname, context)
+                          ? (fullname) => handleSave(actions, fullname, context)
                           : (fullname) =>
                               requireLoginForAction(context, action: 'save'),
                       onReply: loggedIn
                           ? _replyToComment
-                          : (id, author, body) =>
-                              requireLoginForAction(
-                                  context, action: 'reply to this'),
+                          : (id, author, body) => requireLoginForAction(context,
+                              action: 'reply to this'),
                       onReport: onReportComment,
                       onAuthorTap: (author) {
                         if (author != '[deleted]') {
@@ -487,8 +535,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onEdit: username != null && c.author == username
                           ? (fullname) {
                               showEditSheet(context,
-                                      currentText: c.body,
-                                      thingId: fullname)
+                                      currentText: c.body, thingId: fullname)
                                   .then((saved) {
                                 if (saved == true && context.mounted) {
                                   ref.invalidate(postDetailProvider(
@@ -510,19 +557,18 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               });
                             }
                           : actions == null
-                              ? (fullname) =>
-                                  requireLoginForAction(
-                                      context, action: 'delete')
+                              ? (fullname) => requireLoginForAction(context,
+                                  action: 'delete')
                               : null,
                       onBlock: username != null &&
                               c.author != '[deleted]' &&
                               c.author != username
                           ? (author) => handleBlockUser(
-                              context: context,
-                              notifier:
-                                  ref.read(blockActionProvider.notifier),
-                              username: author,
-                            )
+                                context: context,
+                                notifier:
+                                    ref.read(blockActionProvider.notifier),
+                                username: author,
+                              )
                           : null,
                     );
                   }).toList(),
@@ -568,82 +614,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PostDetailHeader extends StatelessWidget {
-  final Post post;
-  final ThemeData theme;
-  final bool showAwards;
-  final VoteDirection? effectiveVote;
-  final ValueChanged<VoteDirection>? onVote;
-  final bool? effectiveSaved;
-  final VoidCallback? onSave;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-  final VoidCallback? onBlock;
-  final VoidCallback? onReport;
-
-  const _PostDetailHeader({
-    required this.post,
-    required this.theme,
-    required this.showAwards,
-    this.effectiveVote,
-    this.onVote,
-    this.effectiveSaved,
-    this.onSave,
-    this.onEdit,
-    this.onDelete,
-    this.onBlock,
-    this.onReport,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PostHeader(
-            post: post,
-            showAwards: showAwards,
-            onSubredditTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    SubredditFeedScreen(subredditName: post.subreddit.name),
-              ),
-            ),
-            onAuthorTap: post.author != '[deleted]'
-                ? () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => UserProfileScreen(username: post.author),
-                    ),
-                  )
-                : null,
-            onBlock: onBlock,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            post.title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          PostActions(
-            post: post,
-            effectiveVote: effectiveVote,
-            onVote: onVote,
-            effectiveSaved: effectiveSaved,
-            onSave: onSave,
-            onEdit: onEdit,
-            onDelete: onDelete,
-            onReport: onReport,
-          ),
-        ],
       ),
     );
   }

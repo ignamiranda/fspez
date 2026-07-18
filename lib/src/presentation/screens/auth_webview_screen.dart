@@ -88,6 +88,8 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
               mixedContentMode: MixedContentMode.MIXED_CONTENT_NEVER_ALLOW,
+              userAgent:
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
             ),
             shouldOverrideUrlLoading: (controller, navigationAction) async {
               final url = navigationAction.request.url;
@@ -116,8 +118,7 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
               child: Center(
                 child: Card(
                   child: Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
