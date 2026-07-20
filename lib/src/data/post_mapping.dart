@@ -47,6 +47,9 @@ String? parseVideoUrl(Map<String, dynamic> data) {
   if (media == null) return null;
   final redditVideo = media['reddit_video'] as Map<String, dynamic>?;
   if (redditVideo == null) return null;
+  // Prefer HLS URL which includes audio tracks (fallback_url is video-only DASH)
+  final hlsUrl = redditVideo['hls_url'] as String?;
+  if (hlsUrl != null) return cleanUrl(hlsUrl);
   final fallbackUrl = redditVideo['fallback_url'] as String?;
   if (fallbackUrl == null) return null;
   return cleanUrl(fallbackUrl);
