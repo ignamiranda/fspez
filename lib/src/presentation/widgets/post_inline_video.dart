@@ -50,8 +50,6 @@ class _InlineVideoPlayerState extends State<InlineVideoPlayer> {
     try {
       await controller.initialize();
       if (!mounted) return;
-      // Start muted
-      await controller.setVolume(0);
       controller.addListener(_onControllerUpdate);
       setState(() {
         _controller = controller;
@@ -107,6 +105,7 @@ class _InlineVideoPlayerState extends State<InlineVideoPlayer> {
       _controller!.seekTo(Duration.zero);
     }
     widget.videoPlaybackCoordinator.activate(_controller!);
+    _controller!.setVolume(_isMuted ? 0 : 1);
     if (mounted) setState(() => _isPlaying = true);
   }
 
@@ -245,7 +244,8 @@ class ControlCircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const ControlCircleButton({super.key, required this.icon, required this.onTap});
+  const ControlCircleButton(
+      {super.key, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
