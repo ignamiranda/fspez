@@ -27,7 +27,7 @@ Future<FlairOption?> showFlairPickerSheet(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DragHandle(),
+                const DragHandle(),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),

@@ -44,7 +44,7 @@ Future<void> handleHide(
             } catch (_) {}
           },
         ),
-        duration: Duration(seconds: 4),
+        duration: const Duration(seconds: 4),
       ));
     }
   } catch (e) {
@@ -52,7 +52,7 @@ Future<void> handleHide(
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Hide failed: ${userFriendlyErrorMessage(e)}'),
-          duration: Duration(seconds: 8),
+          duration: const Duration(seconds: 8),
         ),
       );
     }

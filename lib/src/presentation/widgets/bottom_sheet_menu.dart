@@ -49,7 +49,7 @@ Future<void> showPostActionSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DragHandle(),
+            const DragHandle(),
             const SizedBox(height: 8),
             for (var i = 0; i < sections.length; i++) ...[
               if (sections[i].title != null)
@@ -155,7 +155,7 @@ Future<T?> showRadioBottomSheet<T>(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DragHandle(),
+                const DragHandle(),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/app_settings.dart';
 import 'package:fspez/src/data/auth_providers.dart';
 import 'package:fspez/src/presentation/utils/reddit_markdown.dart';
 import 'package:fspez/src/presentation/utils/spoiler_syntax.dart';
@@ -12,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   group('SpoilerInlineSyntax', () {
     test('parses spoiler-wrapped text into a spoiler element', () {
-      const input = 'text before ${spoilerStart}secret${spoilerEnd} text after';
+      const input = 'text before ${spoilerStart}secret$spoilerEnd text after';
       final document = md.Document(
         inlineSyntaxes: [SpoilerInlineSyntax()],
       );
@@ -23,10 +22,8 @@ void main() {
         for (final node in nodes) {
           if (node is md.Element && node.tag == 'spoiler') {
             foundSpoiler = true;
-            final text = node.children
-                ?.whereType<md.Text>()
-                .map((t) => t.text)
-                .join();
+            final text =
+                node.children?.whereType<md.Text>().map((t) => t.text).join();
             expect(text, 'secret');
           }
           if (node is md.Element && node.children != null) {
@@ -34,6 +31,7 @@ void main() {
           }
         }
       }
+
       walk(nodes);
       expect(foundSpoiler, isTrue, reason: 'Expected a spoiler element in AST');
     });
@@ -53,10 +51,8 @@ void main() {
         for (final node in nodes) {
           if (node is md.Element && node.tag == 'spoiler') {
             foundSpoiler = true;
-            final text = node.children
-                ?.whereType<md.Text>()
-                .map((t) => t.text)
-                .join();
+            final text =
+                node.children?.whereType<md.Text>().map((t) => t.text).join();
             expect(text, 'first line\nsecond line');
           }
           if (node is md.Element && node.children != null) {
@@ -64,6 +60,7 @@ void main() {
           }
         }
       }
+
       walk(nodes);
       expect(foundSpoiler, isTrue,
           reason: 'Expected spoiler element for multiline content');
@@ -71,7 +68,7 @@ void main() {
   });
 
   group('SpoilerElementBuilder', () {
-    Future<SharedPreferences> _setupPrefs(bool spoilerBlur) async {
+    Future<SharedPreferences> setupPrefs(bool spoilerBlur) async {
       SharedPreferences.setMockInitialValues({
         'settings.spoilerBlur': spoilerBlur,
       });
@@ -80,7 +77,7 @@ void main() {
 
     testWidgets('renders hidden spoiler widget initially',
         (WidgetTester tester) async {
-      final prefs = await _setupPrefs(true);
+      final prefs = await setupPrefs(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -106,7 +103,7 @@ void main() {
     });
 
     testWidgets('reveals spoiler on tap', (WidgetTester tester) async {
-      final prefs = await _setupPrefs(true);
+      final prefs = await setupPrefs(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -136,7 +133,7 @@ void main() {
 
     testWidgets('shows spoiler immediately when blur is disabled',
         (WidgetTester tester) async {
-      final prefs = await _setupPrefs(false);
+      final prefs = await setupPrefs(false);
 
       await tester.pumpWidget(
         ProviderScope(

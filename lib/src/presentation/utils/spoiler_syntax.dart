@@ -11,7 +11,7 @@ import 'reddit_markdown.dart';
 /// Uses `[\s\S]*?` instead of `.*` because [InlineSyntax] creates regexes
 /// without `dotAll`, so `.` would not match newlines. This pattern ensures
 /// spoilers spanning multiple lines are matched correctly.
-const _spoilerPatternString = '${spoilerStart}[\\s\\S]*?$spoilerEnd';
+const _spoilerPatternString = '$spoilerStart[\\s\\S]*?$spoilerEnd';
 
 /// Custom inline syntax that matches pre-processed spoiler markers inserted
 /// by [normalizeRedditMarkdown].
@@ -19,10 +19,11 @@ const _spoilerPatternString = '${spoilerStart}[\\s\\S]*?$spoilerEnd';
 /// The pattern matches `\uFFFF...\uFFFE` pairs which are Unicode non-characters
 /// guaranteed to never appear in valid Reddit text content.
 class SpoilerInlineSyntax extends md.InlineSyntax {
-  SpoilerInlineSyntax() : super(
-    _spoilerPatternString,
-    startCharacter: 0xFFFF, // \uFFFF
-  );
+  SpoilerInlineSyntax()
+      : super(
+          _spoilerPatternString,
+          startCharacter: 0xFFFF, // \uFFFF
+        );
 
   @override
   bool onMatch(md.InlineParser parser, Match match) {
@@ -50,10 +51,8 @@ class SpoilerElementBuilder extends MarkdownElementBuilder {
     TextStyle? preferredStyle,
     TextStyle? parentStyle,
   ) {
-    final text = element.children
-        ?.whereType<md.Text>()
-        .map((t) => t.text)
-        .join();
+    final text =
+        element.children?.whereType<md.Text>().map((t) => t.text).join();
     if (text == null || text.isEmpty) return null;
 
     // Respect the user's spoiler blur setting.

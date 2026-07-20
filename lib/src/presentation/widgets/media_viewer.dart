@@ -309,11 +309,12 @@ class _VideoPageState extends State<_VideoPage> {
       _controller.play();
       _controller.addListener(_onControllerUpdate);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errored = true;
           _videoError = e;
         });
+      }
     }
   }
 

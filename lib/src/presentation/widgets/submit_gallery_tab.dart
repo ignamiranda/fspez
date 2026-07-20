@@ -33,6 +33,7 @@ class SubmitGalleryTab extends ConsumerWidget {
 
     return ReorderableListView(
       padding: const EdgeInsets.all(16),
+      // ignore: deprecated_member_use
       onReorder: (oldIndex, newIndex) =>
           notifier.reorderGallery(oldIndex, newIndex),
       footer: Padding(

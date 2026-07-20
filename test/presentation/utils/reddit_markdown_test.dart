@@ -28,8 +28,8 @@ void main() {
 
     group('giphy embeds', () {
       test('rewrites giphy shorthand to a real Giphy URL', () {
-        final result =
-            normalizeRedditMarkdown('![gif](giphy|z1QODTjvAwtXzf1q0M|downsized)');
+        final result = normalizeRedditMarkdown(
+            '![gif](giphy|z1QODTjvAwtXzf1q0M|downsized)');
         expect(
           result,
           '![gif](https://media.giphy.com/media/z1QODTjvAwtXzf1q0M/giphy.gif)',
@@ -61,7 +61,7 @@ void main() {
         expect(
           result,
           'First ![gif](https://media.giphy.com/media/aaa/giphy.gif) '
-              'and second ![gif](https://media.giphy.com/media/bbb/giphy.gif)',
+          'and second ![gif](https://media.giphy.com/media/bbb/giphy.gif)',
         );
       });
 
@@ -112,7 +112,7 @@ void main() {
     });
 
     test('handles multiline spoilers', () {
-      final input = '>!first line\nsecond line!<';
+      const input = '>!first line\nsecond line!<';
       final result = normalizeRedditMarkdown(input);
       expect(result, _spoilerWrap('first line\nsecond line'));
     });
@@ -148,7 +148,7 @@ void main() {
       expect(
         result,
         '${_spoilerWrap('hidden')} '
-            '![gif](https://media.giphy.com/media/abc/giphy.gif)',
+        '![gif](https://media.giphy.com/media/abc/giphy.gif)',
       );
     });
   });
