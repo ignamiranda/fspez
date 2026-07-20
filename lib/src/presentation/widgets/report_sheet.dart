@@ -4,6 +4,7 @@ import '../../data/auth_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
 import '../../domain/models/subreddit_rule.dart';
+import '../utils/error_messages.dart';
 
 class _ReportCategory {
   final String id;
@@ -71,7 +72,6 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
   int _step = 1;
   bool _isSubmitting = false;
   String? _error;
-  String? _selectedRuleId;
 
   void _submitReport(String reason) async {
     final account = ref.read(activeAccountProvider);
@@ -80,12 +80,11 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
       _error = null;
     });
     try {
-      await ref
-          .read(interactionClientProvider)
-          .reportContent(
+      await ref.read(interactionClientProvider).reportContent(
             thingId: widget.thingId,
             reason: reason,
-            sessionCookie: account?.sessionCookie ?? (throw Exception('No session')),
+            sessionCookie:
+                account?.sessionCookie ?? (throw Exception('No session')),
           );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -96,7 +95,7 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
-        _error = e.toString();
+        _error = userFriendlyErrorMessage(e);
       });
     }
   }
@@ -105,7 +104,6 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
     if (category.isSubredditRule) {
       setState(() {
         _step = 2;
-        _selectedRuleId = null;
         _error = null;
       });
     } else {
@@ -196,29 +194,22 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
-          child: RadioGroup<String>(
-            groupValue: _selectedRuleId,
-            onChanged: _isSubmitting
-                ? (_) {}
-                : (value) {
-                    if (value != null) {
-                      final category =
-                          categories.firstWhere((c) => c.id == value);
-                      _onCategoryTapped(category);
-                    }
-                  },
-            child: ListView(
-              shrinkWrap: true,
-              children: categories
-                  .map(
-                    (category) => RadioListTile<String>(
-                      value: category.id,
-                      title: Text(category.label),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  )
-                  .toList(),
-            ),
+          child: ListView(
+            shrinkWrap: true,
+            children: categories
+                .map(
+                  (category) => ListTile(
+                    title: Text(category.label),
+                    trailing: category.isSubredditRule
+                        ? const Icon(Icons.chevron_right)
+                        : null,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: _isSubmitting
+                        ? null
+                        : () => _onCategoryTapped(category),
+                  ),
+                )
+                .toList(),
           ),
         ),
         const SizedBox(height: 8),
@@ -262,34 +253,19 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Flexible(
-            child: RadioGroup<String>(
-              groupValue: _selectedRuleId,
-              onChanged: _isSubmitting
-                  ? (_) {}
-                  : (value) {
-                      if (value != null) {
-                        final rule = rules.firstWhere(
-                          (r) => (r.violationReason ?? r.shortName) == value,
-                        );
-                        _onRuleTapped(rule);
-                      }
-                    },
-              child: ListView(
-                shrinkWrap: true,
-                children: rules
-                    .map(
-                      (rule) => RadioListTile<String>(
-                        value: rule.violationReason ?? rule.shortName,
-                        title: Text(
-                          rule.shortName.isEmpty
-                              ? '(untitled)'
-                              : rule.shortName,
-                        ),
-                        contentPadding: EdgeInsets.zero,
+            child: ListView(
+              shrinkWrap: true,
+              children: rules
+                  .map(
+                    (rule) => ListTile(
+                      title: Text(
+                        rule.shortName.isEmpty ? '(untitled)' : rule.shortName,
                       ),
-                    )
-                    .toList(),
-              ),
+                      contentPadding: EdgeInsets.zero,
+                      onTap: _isSubmitting ? null : () => _onRuleTapped(rule),
+                    ),
+                  )
+                  .toList(),
             ),
           ),
           const SizedBox(height: 8),

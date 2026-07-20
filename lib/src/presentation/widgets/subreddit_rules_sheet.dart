@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/comment_providers.dart';
 import '../../domain/models/subreddit_rule.dart';
+import '../utils/error_messages.dart';
 import '../utils/reddit_markdown.dart';
 
 final _lastFetchTimes = <String, DateTime>{};
@@ -88,7 +89,7 @@ class _SubredditRulesSheetState extends ConsumerState<_SubredditRulesSheet> {
                     child: _RulesMessage(
                       icon: Icons.error_outline,
                       title: 'Could not load rules',
-                      body: error.toString(),
+                      body: userFriendlyErrorMessage(error),
                     ),
                   ),
                 ),

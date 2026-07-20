@@ -14,18 +14,30 @@ class SubmitVideoTab extends ConsumerWidget {
 
     if (selected == null) {
       return Center(
-        child: OutlinedButton.icon(
-          onPressed: () async {
-            final result = await FilePicker.pickFiles(
-              type: FileType.video,
-              allowMultiple: false,
-            );
-            if (result != null && result.files.isNotEmpty) {
-              notifier.setVideo(result.files.first);
-            }
-          },
-          icon: const Icon(Icons.videocam_outlined),
-          label: const Text('Pick Video'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () async {
+                final result = await FilePicker.pickFiles(
+                  type: FileType.video,
+                  allowMultiple: false,
+                );
+                if (result != null && result.files.isNotEmpty) {
+                  notifier.setVideo(result.files.first);
+                }
+              },
+              icon: const Icon(Icons.videocam_outlined),
+              label: const Text('Pick Video'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Max 1GB, 15 minutes',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
         ),
       );
     }

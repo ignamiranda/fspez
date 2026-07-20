@@ -5,6 +5,8 @@ import '../../data/write_providers.dart';
 import '../../domain/models/post.dart';
 import '../providers/search_providers.dart';
 import '../utils/block_user_helpers.dart';
+import '../utils/error_messages.dart';
+import '../widgets/shared/error_retry_widget.dart';
 import '../widgets/post_card.dart';
 import '../widgets/subreddit_card.dart';
 import '../widgets/user_search_card.dart';
@@ -210,7 +212,10 @@ class _PostsTab extends ConsumerWidget {
     }
 
     if (state.error != null) {
-      return Center(child: Text('Error: ${state.error}'));
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: () => notifier.refresh(),
+      );
     }
 
     if (state.items.isEmpty) {
@@ -244,19 +249,19 @@ class _PostsTab extends ConsumerWidget {
             ),
             onAuthorTap: post.author != '[deleted]'
                 ? () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => UserProfileScreen(username: post.author),
-                    ),
-                  )
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            UserProfileScreen(username: post.author),
+                      ),
+                    )
                 : null,
-            onBlock:
-                ref.read(activeAccountProvider) != null &&
+            onBlock: ref.read(activeAccountProvider) != null &&
                     post.author != '[deleted]'
                 ? () => handleBlockUser(
-                    context: context,
-                    notifier: ref.read(blockActionProvider.notifier),
-                    username: post.author,
-                  )
+                      context: context,
+                      notifier: ref.read(blockActionProvider.notifier),
+                      username: post.author,
+                    )
                 : null,
           );
         },
@@ -286,7 +291,10 @@ class _CommunitiesTab extends ConsumerWidget {
     }
 
     if (state.error != null) {
-      return Center(child: Text('Error: ${state.error}'));
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: () => notifier.refresh(),
+      );
     }
 
     if (state.items.isEmpty) {
@@ -340,7 +348,10 @@ class _CommentsTab extends ConsumerWidget {
     }
 
     if (state.error != null) {
-      return Center(child: Text('Error: ${state.error}'));
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: () => notifier.refresh(),
+      );
     }
 
     if (state.items.isEmpty) {
@@ -490,7 +501,10 @@ class _MediaTab extends ConsumerWidget {
     }
 
     if (state.error != null) {
-      return Center(child: Text('Error: ${state.error}'));
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: () => notifier.refresh(),
+      );
     }
 
     // Client-side filter for image/video/gallery posts
@@ -534,19 +548,19 @@ class _MediaTab extends ConsumerWidget {
             ),
             onAuthorTap: post.author != '[deleted]'
                 ? () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => UserProfileScreen(username: post.author),
-                    ),
-                  )
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            UserProfileScreen(username: post.author),
+                      ),
+                    )
                 : null,
-            onBlock:
-                ref.read(activeAccountProvider) != null &&
+            onBlock: ref.read(activeAccountProvider) != null &&
                     post.author != '[deleted]'
                 ? () => handleBlockUser(
-                    context: context,
-                    notifier: ref.read(blockActionProvider.notifier),
-                    username: post.author,
-                  )
+                      context: context,
+                      notifier: ref.read(blockActionProvider.notifier),
+                      username: post.author,
+                    )
                 : null,
           );
         },
@@ -573,7 +587,10 @@ class _ProfilesTab extends ConsumerWidget {
     }
 
     if (state.error != null) {
-      return Center(child: Text('Error: ${state.error}'));
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: () => notifier.refresh(),
+      );
     }
 
     if (state.items.isEmpty) {

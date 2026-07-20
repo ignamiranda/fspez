@@ -1,9 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/write_providers.dart';
 import '../../domain/models/flair_option.dart';
+import '../utils/error_messages.dart';
 import '../widgets/flair_picker_sheet.dart';
 import '../widgets/subreddit_rules_sheet.dart';
 import '../widgets/submit_image_tab.dart';
@@ -77,6 +79,37 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
     }
   }
 
+  bool get _hasInput {
+    final state = ref.read(submitProvider);
+    return _titleController.text.trim().isNotEmpty ||
+        _textController.text.trim().isNotEmpty ||
+        _urlController.text.trim().isNotEmpty ||
+        _subredditController.text.trim().isNotEmpty ||
+        state.selectedImage != null ||
+        state.galleryFiles.isNotEmpty ||
+        state.selectedVideo != null;
+  }
+
+  Future<bool?> _confirmDiscard() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard draft?'),
+        content: const Text('You have unsent changes. Discard them?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     final title = _titleController.text.trim();
     final subreddit = _subredditController.text.trim();
@@ -148,7 +181,9 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
     } else {
       final state = ref.read(submitProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit: ${state.error}')),
+        SnackBar(
+            content: Text(
+                'Failed to submit: ${userFriendlyErrorMessage(state.error!)}')),
       );
     }
   }
@@ -181,162 +216,175 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
     final submitState = ref.watch(submitProvider);
     final canSubmit = submitState.canSubmit;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Post'),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Text'),
-            Tab(text: 'Link'),
-            Tab(text: 'Image'),
-            Tab(text: 'Gallery'),
-            Tab(text: 'Video'),
+    return PopScope(
+      canPop: !_hasInput,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final discard = await _confirmDiscard();
+        if (discard == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Create Post'),
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabs: const [
+              Tab(text: 'Text'),
+              Tab(text: 'Link'),
+              Tab(text: 'Image'),
+              Tab(text: 'Gallery'),
+              Tab(text: 'Video'),
+            ],
+          ),
+          actions: [
+            if (submitState.isSubmitting)
+              const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              TextButton(
+                onPressed: _canSubmit && canSubmit ? _submit : null,
+                child: const Text('Submit'),
+              ),
           ],
         ),
-        actions: [
-          if (submitState.isSubmitting)
-            const Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          else
-            TextButton(
-              onPressed: _canSubmit && canSubmit ? _submit : null,
-              child: const Text('Submit'),
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _subredditController,
-                  decoration: const InputDecoration(
-                    labelText: 'Subreddit',
-                    hintText: 'subreddit_name',
-                    border: OutlineInputBorder(),
-                    prefixText: 'r/',
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _subredditController,
+                    decoration: const InputDecoration(
+                      labelText: 'Subreddit',
+                      hintText: 'subreddit_name',
+                      border: OutlineInputBorder(),
+                      prefixText: 'r/',
+                    ),
                   ),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _hasSubreddit ? _showRules : null,
-                    icon: const Icon(Icons.rule_outlined),
-                    label: const Text('View community rules'),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _hasSubreddit ? _showRules : null,
+                      icon: const Icon(Icons.rule_outlined),
+                      label: const Text('View community rules'),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Title',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                ),
-                // Flair section — visible when flair options exist for the target subreddit.
-                if (submitState.flairOptions.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  InkWell(
-                    onTap: _showFlairPicker,
-                    borderRadius: BorderRadius.circular(8),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: 'Flair',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: submitState.isFetchingFlairs
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: Padding(
-                                  padding: EdgeInsets.all(12),
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2),
-                                ),
-                              )
-                            : const Icon(Icons.arrow_drop_down),
-                      ),
-                      child: submitState.selectedFlair != null
-                          ? _FlairChip(flair: submitState.selectedFlair!)
-                          : Text(
-                              submitState.isFetchingFlairs
-                                  ? 'Loading…'
-                                  : 'Select a flair',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                  TextField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Title',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                    maxLength: 300,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                  ),
+                  // Flair section — visible when flair options exist for the target subreddit.
+                  if (submitState.flairOptions.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: _showFlairPicker,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Flair',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: submitState.isFetchingFlairs
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   ),
-                            ),
-                    ),
-                  ),
-                  if (submitState.isFlairRequired &&
-                      submitState.selectedFlair == null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 12),
-                      child: Text(
-                        'This community requires flair',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
+                                )
+                              : const Icon(Icons.arrow_drop_down),
+                        ),
+                        child: submitState.selectedFlair != null
+                            ? _FlairChip(flair: submitState.selectedFlair!)
+                            : Text(
+                                submitState.isFetchingFlairs
+                                    ? 'Loading…'
+                                    : 'Select a flair',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              ),
                       ),
                     ),
+                    if (submitState.isFlairRequired &&
+                        submitState.selectedFlair == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 12),
+                        child: Text(
+                          'This community requires flair',
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                        ),
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // Text tab
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: _textController,
-                    decoration: const InputDecoration(
-                      labelText: 'Text (optional)',
-                      border: OutlineInputBorder(),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Text tab
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: _textController,
+                      decoration: const InputDecoration(
+                        labelText: 'Text (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 8,
                     ),
-                    maxLines: 8,
                   ),
-                ),
-                // Link tab
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: _urlController,
-                    decoration: const InputDecoration(
-                      labelText: 'URL',
-                      hintText: 'https://...',
-                      border: OutlineInputBorder(),
+                  // Link tab
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: _urlController,
+                      decoration: const InputDecoration(
+                        labelText: 'URL',
+                        hintText: 'https://...',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.url,
                     ),
-                    keyboardType: TextInputType.url,
                   ),
-                ),
-                // Image tab
-                const SubmitImageTab(),
-                // Gallery tab
-                const SubmitGalleryTab(),
-                // Video tab
-                const SubmitVideoTab(),
-              ],
+                  // Image tab
+                  const SubmitImageTab(),
+                  // Gallery tab
+                  const SubmitGalleryTab(),
+                  // Video tab
+                  const SubmitVideoTab(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/write_providers.dart';
 import '../../data/auth_providers.dart';
+import '../utils/error_messages.dart';
 
 Future<bool?> showEditSheet(
   BuildContext context, {
@@ -68,7 +69,7 @@ class _EditSheetContentState extends ConsumerState<_EditSheetContent> {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Edit failed: ${e.toString()}'),
+          content: Text('Edit failed: ${userFriendlyErrorMessage(e)}'),
         ),
       );
     }

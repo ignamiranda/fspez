@@ -8,12 +8,14 @@ import '../../data/feed_providers.dart';
 import '../../data/write_providers.dart';
 import '../../domain/models/post.dart';
 import '../utils/block_user_helpers.dart';
+import '../utils/error_messages.dart';
 import '../utils/interaction_helpers.dart';
 import 'feed_media_prefetcher.dart';
 import 'post_list.dart';
 import '../screens/post_detail_screen.dart';
 import '../screens/subreddit_feed_screen.dart';
 import '../screens/user_profile_screen.dart';
+import 'shared/error_retry_widget.dart';
 
 class FeedScreenScaffold extends ConsumerWidget {
   final FeedPageConfig config;
@@ -39,36 +41,16 @@ class FeedScreenScaffold extends ConsumerWidget {
     final saveOverrides = ref.watch(saveProvider);
     final hiddenMap = ref.watch(hideProvider);
     final actions = ref.read(postActionsServiceProvider);
-    final hidden = hiddenMap.entries
-        .where((e) => e.value)
-        .map((e) => e.key)
-        .toSet();
+    final hidden =
+        hiddenMap.entries.where((e) => e.value).map((e) => e.key).toSet();
     final account = ref.watch(activeAccountProvider);
     Widget? statusBanner;
 
     if (state.error != null && state.items.isNotEmpty) {
-      statusBanner = Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        color: Colors.orange.shade100,
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline, size: 16),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                state.error!,
-                style: const TextStyle(fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            TextButton(
-              onPressed: () => notifier.refresh(),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      statusBanner = ErrorRetryWidget(
+        variant: ErrorRetryVariant.banner,
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: () => notifier.refresh(),
       );
     } else if (state.isStale && state.items.isNotEmpty) {
       statusBanner = Container(
@@ -88,6 +70,13 @@ class FeedScreenScaffold extends ConsumerWidget {
     // Full-screen spinner only when loading with no cached items.
     if (state.isLoading && state.items.isEmpty) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.error != null && state.items.isEmpty) {
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: () => notifier.refresh(),
+      );
     }
 
     final postList = PostList(
@@ -188,14 +177,14 @@ class FeedScreenScaffold extends ConsumerWidget {
       voteOverrides: voteOverrides,
       saveOverrides: saveOverrides,
       onPostVote: actions != null
-          ? (fullname, dir) => handleVote(actions, fullname, dir)
+          ? (fullname, dir) => handleVote(actions, context, fullname, dir)
           : (fullname, dir) => requireLoginForAction(context, action: 'vote'),
       onPostSave: actions != null
           ? (fullname) {
               final post = state.items.cast<Post?>().firstWhere(
-                (p) => p?.fullname == fullname,
-                orElse: () => null,
-              );
+                    (p) => p?.fullname == fullname,
+                    orElse: () => null,
+                  );
               final wasSaved = post != null
                   ? (saveOverrides[fullname] ?? post.isSaved)
                   : saveOverrides[fullname] ?? false;
@@ -257,24 +246,7 @@ class FeedScreenScaffold extends ConsumerWidget {
       hiddenFullnames: filterHidden ? hidden : const {},
       onPostHide: actions != null && filterHidden
           ? (post) async {
-              try {
-                await actions.hide(post.fullname);
-              } catch (_) {
-                return;
-              }
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(
-                    content: const Text('Post hidden'),
-                    action: SnackBarAction(
-                      label: 'Undo',
-                      onPressed: () => actions.unhide(post.fullname),
-                    ),
-                    duration: const Duration(seconds: 4),
-                  ),
-                );
+              await handleHide(actions, post.fullname, context);
             }
           : actions == null
               ? (post) async => requireLoginForAction(context, action: 'hide')
@@ -297,22 +269,21 @@ class FeedScreenScaffold extends ConsumerWidget {
               : null,
       onPostBlock: account != null
           ? (post) => handleBlockUser(
-              context: context,
-              notifier: ref.read(blockActionProvider.notifier),
-              username: post.author,
-            )
+                context: context,
+                notifier: ref.read(blockActionProvider.notifier),
+                username: post.author,
+              )
           : (post) => requireLoginForAction(context, action: 'block'),
       onPostTap: (post) => Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => PostDetailScreen(post: post))),
-      onSubredditTap:
-          onSubredditTapOverride ??
+      onSubredditTap: onSubredditTapOverride ??
           (post) => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) =>
-                  SubredditFeedScreen(subredditName: post.subreddit.name),
-            ),
-          ),
+                MaterialPageRoute(
+                  builder: (_) =>
+                      SubredditFeedScreen(subredditName: post.subreddit.name),
+                ),
+              ),
       onAuthorTap: (post) {
         if (post.author != '[deleted]') {
           Navigator.of(context).push(

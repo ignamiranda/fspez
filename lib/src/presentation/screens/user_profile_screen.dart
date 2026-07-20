@@ -20,6 +20,8 @@ import '../widgets/feed_screen_scaffold.dart';
 import 'post_detail_screen.dart';
 import 'subreddit_feed_screen.dart';
 import '../widgets/report_sheet.dart';
+import '../utils/error_messages.dart';
+import '../widgets/shared/error_retry_widget.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   final String username;
@@ -150,9 +152,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
           if (_tabController.index != 2)
             IconButton(
               icon: const Icon(Icons.sort),
-              tooltip: _tabController.index == 0
-                  ? 'Sort posts'
-                  : 'Sort comments',
+              tooltip:
+                  _tabController.index == 0 ? 'Sort posts' : 'Sort comments',
               onPressed: _showSortMenu,
             ),
           IconButton(
@@ -213,17 +214,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     }
 
     if (_commentsError != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 40, color: theme.colorScheme.error),
-            const SizedBox(height: 8),
-            Text('Failed to load comments', style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
-            TextButton(onPressed: _loadComments, child: const Text('Retry')),
-          ],
-        ),
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(_commentsError!),
+        onRetry: _loadComments,
       );
     }
 
@@ -445,24 +438,29 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 child: Wrap(
                   spacing: 6,
                   runSpacing: 4,
-                  children: profile.moderatedSubreddits.map((sub) =>
-                    ActionChip(
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                      label: Text('r/$sub',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => SubredditFeedScreen(subredditName: sub),
+                  children: profile.moderatedSubreddits
+                      .map(
+                        (sub) => ActionChip(
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                          label: Text(
+                            'r/$sub',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        );
-                      },
-                    ),
-                  ).toList(),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    SubredditFeedScreen(subredditName: sub),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ],
@@ -472,19 +470,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         ],
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.person_off_outlined,
-              size: 48,
-              color: theme.colorScheme.error,
-            ),
-            const SizedBox(height: 8),
-            Text('Could not load profile.', style: theme.textTheme.bodySmall),
-          ],
-        ),
+      error: (err, _) => ErrorRetryWidget(
+        message: userFriendlyErrorMessage(err),
+        onRetry: () => ref.invalidate(userProfileProvider(widget.username)),
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../domain/enums/vote_direction.dart';
 import '../domain/models/session_cookie.dart';
 import 'action_notifier.dart';
@@ -31,23 +30,23 @@ class PostActionsService {
         _client = client,
         _sessionCookie = sessionCookie;
 
-  void vote(String fullname, VoteDirection direction) {
+  Future<void> vote(String fullname, VoteDirection direction) {
     final current = _voteNotifier.effective(fullname, VoteDirection.none);
     final next = current == direction ? VoteDirection.none : direction;
     final sc = _sessionCookie;
-    _voteNotifier.write(
-      fullname,
-      next,
-      current,
-      () => _client.vote(
-        fullname: fullname,
-        direction: next.value,
-        sessionCookie: sc,
-      ),
-      onError: WriteErrorPolicy.keepOptimistic,
-    ).catchError((e) {
-      debugPrint('PostActionsService.toggleVote failed: $e');
-    }); // Vote failure is non-critical — swallow.
+    return _voteNotifier
+        .write(
+          fullname,
+          next,
+          current,
+          () => _client.vote(
+            fullname: fullname,
+            direction: next.value,
+            sessionCookie: sc,
+          ),
+          onError: WriteErrorPolicy.keepOptimistic,
+        )
+        .catchError((_) {});
   }
 
   Future<void> toggleSave(String fullname) async {
@@ -70,7 +69,7 @@ class PostActionsService {
   Future<void> hide(String fullname) async {
     final sc = _sessionCookie;
     await _hideNotifier.write(fullname, true, _hideNotifier.peek(fullname),
-      () => _client.hide(fullname, sc));
+        () => _client.hide(fullname, sc));
   }
 
   Future<void> unhide(String fullname) async {
@@ -80,8 +79,8 @@ class PostActionsService {
 
   Future<void> delete(String fullname) async {
     final sc = _sessionCookie;
-    await _deleteNotifier.write(fullname, null, null,
-      () => _client.deleteContent(fullname, sc));
+    await _deleteNotifier.write(
+        fullname, null, null, () => _client.deleteContent(fullname, sc));
   }
 
   Future<void> edit(String thingId, String text) async {

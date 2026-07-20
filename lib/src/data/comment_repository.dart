@@ -1,24 +1,28 @@
 import 'package:flutter/foundation.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
-import '../domain/models/post_detail.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/enums/comment_sort.dart';
-import '../domain/repositories/i_comment_repository.dart';
 import 'reddit_client.dart';
 import 'api_responses/api_responses.dart';
 import 'reddit_award_html_parser.dart';
 import 'message_client.dart';
 import 'parsers/shared_parsers.dart';
 
-class CommentRepository implements ICommentRepository {
+class PostDetail {
+  final Post post;
+  final List<Comment> comments;
+
+  const PostDetail({required this.post, required this.comments});
+}
+
+class CommentRepository {
   final RedditClient _client;
   final MessageClient _messageClient;
 
   CommentRepository(this._client, this._messageClient);
 
-  @override
   Future<PostDetail> fetchComments(
     String subreddit,
     String postId, {
@@ -125,7 +129,6 @@ class CommentRepository implements ICommentRepository {
     );
   }
 
-  @override
   Future<void> reply({
     required String thingId,
     required String text,
@@ -141,7 +144,6 @@ class CommentRepository implements ICommentRepository {
     );
   }
 
-  @override
   Future<void> edit({
     required String thingId,
     required String text,

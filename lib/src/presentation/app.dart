@@ -10,10 +10,12 @@ import 'screens/auth_webview_screen.dart';
 import '../data/app_settings.dart';
 import '../data/auth_providers.dart';
 import '../data/inbox_providers.dart';
+import '../data/notifiers/connectivity_notifier.dart';
 import 'providers/guest_mode_provider.dart';
 import '../data/session_health.dart';
 import '../domain/enums/app_theme_mode.dart';
 import '../domain/models/session_cookie.dart';
+import 'widgets/shared/offline_banner.dart';
 
 class FspezApp extends ConsumerWidget {
   const FspezApp({super.key});
@@ -159,10 +161,19 @@ class _MainShellState extends ConsumerState<_MainShell> {
       });
     });
 
+    final isOffline = ref.watch(connectivityProvider);
+
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
+      body: Column(
+        children: [
+          if (isOffline) const OfflineBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: _screens,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,

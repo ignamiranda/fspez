@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/comment_providers.dart';
 import '../../data/auth_providers.dart';
+import '../utils/error_messages.dart';
 import 'reddit_body.dart';
 
 Future<bool?> showCommentComposerSheet(
@@ -76,7 +77,6 @@ class _CommentComposerSheetContentState
 
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
     final account = ref.read(activeAccountProvider);
     if (account == null) return;
 
@@ -107,7 +107,7 @@ class _CommentComposerSheetContentState
       if (mounted) {
         setState(() {
           _isSending = false;
-          _error = e.toString();
+          _error = userFriendlyErrorMessage(e);
         });
       }
     }
@@ -373,7 +373,7 @@ class _CommentComposerSheetContentState
                   )
                 else
                   FilledButton.icon(
-                    onPressed: _send,
+                    onPressed: _controller.text.trim().isEmpty ? null : _send,
                     icon: const Icon(Icons.send, size: 18),
                     label: Text(widget.isEdit ? 'Save' : 'Send'),
                   ),

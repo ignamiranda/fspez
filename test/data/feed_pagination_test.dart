@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/feed_pagination.dart';
-import 'package:fspez/src/domain/models/paginated_result.dart';
+import 'package:fspez/src/data/paginated_notifier.dart';
 
 import 'package:fspez/src/domain/models/feed.dart';
 import 'package:fspez/src/domain/models/post.dart';

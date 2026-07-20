@@ -37,8 +37,6 @@ dev_dependencies:
 dependency_overrides:
   flutter_inappwebview_windows:
     path: third_party/flutter_inappwebview_windows
-  flutter_secure_storage_windows:
-    path: third_party/flutter_secure_storage_windows
 
 flutter:
   uses-material-design: true

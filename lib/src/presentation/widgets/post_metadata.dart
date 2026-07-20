@@ -162,7 +162,7 @@ class ComfortablePostMetadata extends StatelessWidget {
             child: Text(
               'PINNED',
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 11,
                 color: cs.tertiary,
                 fontWeight: FontWeight.w700,
               ),
@@ -180,7 +180,7 @@ class ComfortablePostMetadata extends StatelessWidget {
             child: Text(
               'NSFW',
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 11,
                 color: cs.error,
                 fontWeight: FontWeight.w700,
               ),
@@ -198,7 +198,7 @@ class ComfortablePostMetadata extends StatelessWidget {
             child: Text(
               'SPOILER',
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 11,
                 color: cs.tertiary,
                 fontWeight: FontWeight.w700,
               ),
@@ -219,7 +219,7 @@ class ComfortablePostMetadata extends StatelessWidget {
                     ? 'Crossposted from r/${post.crosspostParent!.subreddit.name}'
                     : 'Crossposted post',
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 11,
                   color: cs.tertiary,
                   fontWeight: FontWeight.w700,
                 ),
@@ -292,7 +292,8 @@ class CompactPostMetadata extends StatelessWidget {
         if (showStickiedIndicator && post.isStickied)
           PostCompactTag(label: 'PINNED', color: cs.tertiary),
         if (post.isNsfw) PostCompactTag(label: 'NSFW', color: cs.error),
-        if (post.isSpoiler) PostCompactTag(label: 'SPOILER', color: cs.tertiary),
+        if (post.isSpoiler)
+          PostCompactTag(label: 'SPOILER', color: cs.tertiary),
         if (post.crosspostParent != null)
           PostCompactTag(
             label: post.crosspostParent!.subreddit.name.isNotEmpty

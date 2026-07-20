@@ -2,13 +2,61 @@ import 'package:flutter/material.dart';
 import '../../data/post_actions_service.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../screens/auth_webview_screen.dart';
+import 'error_messages.dart';
 
-void handleVote(
+Future<void> handleVote(
   PostActionsService actions,
+  BuildContext context,
   String fullname,
   VoteDirection direction,
-) {
-  actions.vote(fullname, direction);
+) async {
+  try {
+    await actions.vote(fullname, direction);
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vote failed. Try again.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+}
+
+Future<void> handleHide(
+  PostActionsService actions,
+  String fullname,
+  BuildContext context,
+) async {
+  try {
+    await actions.hide(fullname);
+    if (context.mounted) {
+      final scaffold = ScaffoldMessenger.of(context);
+      scaffold.hideCurrentSnackBar();
+      scaffold.showSnackBar(SnackBar(
+        content: const Text('Post hidden'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            try {
+              actions.unhide(fullname);
+            } catch (_) {}
+          },
+        ),
+        duration: Duration(seconds: 4),
+      ));
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hide failed: ${userFriendlyErrorMessage(e)}'),
+          duration: Duration(seconds: 8),
+        ),
+      );
+    }
+  }
 }
 
 Future<void> handleUnhide(
@@ -43,7 +91,7 @@ Future<void> handleUnhide(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unhide failed: $e'),
+          content: Text('Unhide failed: ${userFriendlyErrorMessage(e)}'),
           duration: const Duration(seconds: 8),
         ),
       );
@@ -83,7 +131,7 @@ Future<void> handleSave(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Save failed: $e'),
+          content: Text('Save failed: ${userFriendlyErrorMessage(e)}'),
           duration: const Duration(seconds: 8),
         ),
       );
@@ -133,14 +181,16 @@ Future<bool> handleDelete(
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e')),
+        SnackBar(
+            content: Text('Delete failed: ${userFriendlyErrorMessage(e)}')),
       );
     }
     return false;
   }
 }
 
-void requireLoginForAction(BuildContext context, {String action = 'perform that action'}) {
+void requireLoginForAction(BuildContext context,
+    {String action = 'perform that action'}) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(

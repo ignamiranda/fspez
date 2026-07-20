@@ -26,7 +26,7 @@ class AwardBadge extends StatelessWidget {
           Text(
             formatCount(awardCount),
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 11,
               color: cs.tertiary,
               fontWeight: FontWeight.w700,
             ),

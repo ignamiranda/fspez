@@ -73,8 +73,10 @@ class SubmitState {
       isFlairRequired: isFlairRequired ?? this.isFlairRequired,
       isFetchingFlairs: isFetchingFlairs ?? this.isFetchingFlairs,
       selectedImage: clearImage ? null : (selectedImage ?? this.selectedImage),
-      galleryFiles: clearGallery ? const [] : (galleryFiles ?? this.galleryFiles),
-      galleryCaptions: clearGallery ? const [] : (galleryCaptions ?? this.galleryCaptions),
+      galleryFiles:
+          clearGallery ? const [] : (galleryFiles ?? this.galleryFiles),
+      galleryCaptions:
+          clearGallery ? const [] : (galleryCaptions ?? this.galleryCaptions),
       selectedVideo: clearVideo ? null : (selectedVideo ?? this.selectedVideo),
     );
   }
@@ -231,10 +233,20 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
     );
   }
 
+  void reorderGallery(int oldIndex, int newIndex) {
+    final files = List<PlatformFile>.from(state.galleryFiles);
+    final captions = List<String>.from(state.galleryCaptions);
+    if (newIndex > oldIndex) newIndex -= 1;
+    final file = files.removeAt(oldIndex);
+    final caption = captions.removeAt(oldIndex);
+    files.insert(newIndex, file);
+    captions.insert(newIndex, caption);
+    state = state.copyWith(galleryFiles: files, galleryCaptions: captions);
+  }
+
   void removeGalleryItem(int index) {
     final files = List<PlatformFile>.from(state.galleryFiles)..removeAt(index);
-    final captions = List<String>.from(state.galleryCaptions)
-      ..removeAt(index);
+    final captions = List<String>.from(state.galleryCaptions)..removeAt(index);
     state = state.copyWith(galleryFiles: files, galleryCaptions: captions);
   }
 

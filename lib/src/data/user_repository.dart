@@ -2,16 +2,14 @@ import '../domain/models/session_cookie.dart';
 import '../domain/models/user_profile.dart';
 import '../domain/models/comment.dart';
 import '../domain/enums/comment_sort.dart';
-import '../domain/repositories/i_user_repository.dart';
 import 'reddit_client.dart';
 import 'parsers/shared_parsers.dart';
 
-class UserRepository implements IUserRepository {
+class UserRepository {
   final RedditClient _client;
 
   UserRepository(this._client);
 
-  @override
   Future<UserProfile> fetchProfile(
     String username, {
     SessionCookie? sessionCookie,
@@ -36,7 +34,6 @@ class UserRepository implements IUserRepository {
     );
   }
 
-  @override
   Future<List<Comment>> fetchComments(
     String username, {
     String? after,
@@ -67,7 +64,6 @@ class UserRepository implements IUserRepository {
   ///
   /// Requires a valid session cookie. Returns display names only
   /// (e.g., ["flutter", "dartlang"]).
-  @override
   Future<List<String>> fetchModeratedSubreddits({
     required SessionCookie sessionCookie,
   }) async {

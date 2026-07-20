@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/write_providers.dart';
+import '../utils/error_messages.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyTo;
@@ -82,9 +83,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     } else {
       final state = ref.read(composeProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Compose failed: ${state.error}')),
+        SnackBar(
+            content: Text(
+                'Compose failed: ${userFriendlyErrorMessage(state.error!)}')),
       );
     }
+  }
+
+  bool get _hasInput {
+    return _toController.text.trim().isNotEmpty ||
+        _subjectController.text.trim().isNotEmpty ||
+        _textController.text.trim().isNotEmpty;
+  }
+
+  Future<bool?> _confirmDiscard() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard draft?'),
+        content: const Text('You have unsent changes. Discard them?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -99,59 +128,69 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     final composeState = ref.watch(composeProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('New Message'),
-        actions: [
-          if (composeState.isProcessing)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+    return PopScope(
+      canPop: !_hasInput,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final discard = await _confirmDiscard();
+        if (discard == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('New Message'),
+          actions: [
+            if (composeState.isProcessing)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              TextButton(
+                onPressed: _send,
+                child: const Text('Send'),
               ),
-            )
-          else
-            TextButton(
-              onPressed: _send,
-              child: const Text('Send'),
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            TextField(
+              controller: _toController,
+              decoration: const InputDecoration(
+                labelText: 'To',
+                hintText: 'username',
+                border: OutlineInputBorder(),
+                prefixText: 'u/',
+              ),
+              textInputAction: TextInputAction.next,
             ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: _toController,
-            decoration: const InputDecoration(
-              labelText: 'To',
-              hintText: 'username',
-              border: OutlineInputBorder(),
-              prefixText: 'u/',
+            const SizedBox(height: 12),
+            TextField(
+              controller: _subjectController,
+              decoration: const InputDecoration(
+                labelText: 'Subject',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.next,
             ),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _subjectController,
-            decoration: const InputDecoration(
-              labelText: 'Subject',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _textController,
+              decoration: const InputDecoration(
+                labelText: 'Message',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 10,
+              minLines: 5,
             ),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _textController,
-            decoration: const InputDecoration(
-              labelText: 'Message',
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 10,
-            minLines: 5,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

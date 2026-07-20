@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../domain/models/comment.dart';
@@ -67,111 +68,112 @@ class _CommentTreeState extends State<CommentTree> {
       children: [
         SizedBox(
           width: double.infinity,
-          child: GestureDetector(
-            onTap: _toggleCollapse,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 36),
-              decoration: widget.comment.depth > 0
-                  ? BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: theme.colorScheme.outlineVariant,
-                          width: widget.comment.depth * 16.0,
-                        ),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 36),
+            decoration: widget.comment.depth > 0
+                ? BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: theme.colorScheme.outlineVariant,
+                        width: min(widget.comment.depth, 5) * 12.0,
                       ),
-                    )
-                  : null,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          _toggleCollapse();
-                          widget.onAuthorTap?.call(widget.comment.author);
-                        },
-                        child: Text(
-                          'u/${widget.comment.author}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      if (widget.comment.authorFlair != null) ...[
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: UserFlairChip(
-                            flair: widget.comment.authorFlair!,
-                          ),
-                        ),
-                      ],
-                      if (widget.comment.isSubmitter) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: Text(
-                            'OP',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: theme.colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (widget.comment.isModerator) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.shield,
-                          size: 14,
-                          color: theme.colorScheme.tertiary,
-                        ),
-                      ],
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          '·',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        timeAgo(widget.comment.createdAt),
+                    ),
+                  )
+                : null,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        _toggleCollapse();
+                        widget.onAuthorTap?.call(widget.comment.author);
+                      },
+                      child: Text(
+                        'u/${widget.comment.author}',
                         style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (widget.comment.authorFlair != null) ...[
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: UserFlairChip(
+                          flair: widget.comment.authorFlair!,
+                        ),
+                      ),
+                    ],
+                    if (widget.comment.isSubmitter) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          'OP',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (widget.comment.isModerator) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.shield,
+                        size: 14,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        '·',
+                        style: TextStyle(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const Spacer(),
-                      if (_isCollapsed)
-                        Icon(
+                    ),
+                    Text(
+                      timeAgo(widget.comment.createdAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_isCollapsed)
+                      GestureDetector(
+                        onTap: _toggleCollapse,
+                        child: Icon(
                           Icons.unfold_more,
                           size: 14,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      Text(
-                        '${widget.comment.score} pts',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
                       ),
-                      if (widget.showAwards &&
-                          widget.comment.awardCount > 0) ...[
-                        const SizedBox(width: 8),
-                        AwardBadge(awardCount: widget.comment.awardCount),
-                      ],
+                    Text(
+                      '${widget.comment.score} pts',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (widget.showAwards && widget.comment.awardCount > 0) ...[
+                      const SizedBox(width: 8),
+                      AwardBadge(awardCount: widget.comment.awardCount),
                     ],
-                  ),
-                  AnimatedSize(
+                  ],
+                ),
+                GestureDetector(
+                  onTap: _toggleCollapse,
+                  child: AnimatedSize(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOut,
                     alignment: Alignment.topCenter,
@@ -190,8 +192,7 @@ class _CommentTreeState extends State<CommentTree> {
                                     activeIcon: Icons.arrow_upward,
                                     isActive:
                                         effectiveVote == VoteDirection.upvote,
-                                    color:
-                                        effectiveVote == VoteDirection.upvote
+                                    color: effectiveVote == VoteDirection.upvote
                                         ? theme.colorScheme.primary
                                         : null,
                                     onTap: () => widget.onVote?.call(
@@ -204,13 +205,11 @@ class _CommentTreeState extends State<CommentTree> {
                                     icon: Icons.arrow_downward_outlined,
                                     activeIcon: Icons.arrow_downward,
                                     isActive:
-                                        effectiveVote ==
-                                        VoteDirection.downvote,
+                                        effectiveVote == VoteDirection.downvote,
                                     color:
-                                        effectiveVote ==
-                                            VoteDirection.downvote
-                                        ? theme.colorScheme.secondary
-                                        : null,
+                                        effectiveVote == VoteDirection.downvote
+                                            ? theme.colorScheme.secondary
+                                            : null,
                                     onTap: () => widget.onVote?.call(
                                       fullname,
                                       VoteDirection.downvote,
@@ -235,9 +234,8 @@ class _CommentTreeState extends State<CommentTree> {
                                       child: Icon(
                                         Icons.reply_outlined,
                                         size: 18,
-                                        color: theme
-                                            .colorScheme
-                                            .onSurfaceVariant,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   const SizedBox(width: 8),
@@ -248,8 +246,7 @@ class _CommentTreeState extends State<CommentTree> {
                                     color: effectiveSaved
                                         ? theme.colorScheme.tertiary
                                         : null,
-                                    onTap: () =>
-                                        widget.onSave?.call(fullname),
+                                    onTap: () => widget.onSave?.call(fullname),
                                   ),
                                   const SizedBox(width: 16),
                                   PopupMenuButton<String>(
@@ -261,30 +258,43 @@ class _CommentTreeState extends State<CommentTree> {
                                     onSelected: (value) {
                                       switch (value) {
                                         case 'copy_link':
-                                          final postId = widget.comment.postId.replaceFirst('t3_', '');
+                                          final postId = widget.comment.postId
+                                              .replaceFirst('t3_', '');
                                           String link;
-                                          if (widget.comment.subreddit != null) {
-                                            link = 'https://www.reddit.com/r/${widget.comment.subreddit}/comments/$postId/_/${widget.comment.id}/';
+                                          if (widget.comment.subreddit !=
+                                              null) {
+                                            link =
+                                                'https://www.reddit.com/r/${widget.comment.subreddit}/comments/$postId/_/${widget.comment.id}/';
                                           } else {
-                                            link = 'https://www.reddit.com/comments/$postId/_/${widget.comment.id}/';
+                                            link =
+                                                'https://www.reddit.com/comments/$postId/_/${widget.comment.id}/';
                                           }
-                                          Clipboard.setData(ClipboardData(text: link));
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Copied')),
+                                          Clipboard.setData(
+                                              ClipboardData(text: link));
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text('Copied')),
                                           );
                                         case 'copy_body':
-                                          Clipboard.setData(ClipboardData(text: widget.comment.body));
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Copied')),
+                                          Clipboard.setData(ClipboardData(
+                                              text: widget.comment.body));
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text('Copied')),
                                           );
                                         case 'report':
-                                          widget.onReport?.call(widget.comment.fullname, widget.comment.subreddit);
+                                          widget.onReport?.call(
+                                              widget.comment.fullname,
+                                              widget.comment.subreddit);
                                         case 'edit':
                                           widget.onEdit?.call(fullname);
                                         case 'delete':
                                           widget.onDelete?.call(fullname);
                                         case 'block':
-                                          widget.onBlock?.call(widget.comment.author);
+                                          widget.onBlock
+                                              ?.call(widget.comment.author);
                                       }
                                     },
                                     itemBuilder: (context) {
@@ -302,7 +312,8 @@ class _CommentTreeState extends State<CommentTree> {
                                         const PopupMenuItem(
                                           value: 'copy_body',
                                           child: ListTile(
-                                            leading: Icon(Icons.content_copy, size: 16),
+                                            leading: Icon(Icons.content_copy,
+                                                size: 16),
                                             title: Text('Copy Body'),
                                           ),
                                         ),
@@ -312,7 +323,8 @@ class _CommentTreeState extends State<CommentTree> {
                                           const PopupMenuItem(
                                             value: 'report',
                                             child: ListTile(
-                                              leading: Icon(Icons.flag_outlined, size: 16),
+                                              leading: Icon(Icons.flag_outlined,
+                                                  size: 16),
                                               title: Text('Report'),
                                             ),
                                           ),
@@ -323,7 +335,8 @@ class _CommentTreeState extends State<CommentTree> {
                                           const PopupMenuItem(
                                             value: 'edit',
                                             child: ListTile(
-                                              leading: Icon(Icons.edit_outlined, size: 16),
+                                              leading: Icon(Icons.edit_outlined,
+                                                  size: 16),
                                               title: Text('Edit'),
                                             ),
                                           ),
@@ -334,7 +347,9 @@ class _CommentTreeState extends State<CommentTree> {
                                           const PopupMenuItem(
                                             value: 'delete',
                                             child: ListTile(
-                                              leading: Icon(Icons.delete_outline, size: 16),
+                                              leading: Icon(
+                                                  Icons.delete_outline,
+                                                  size: 16),
                                               title: Text('Delete'),
                                             ),
                                           ),
@@ -345,7 +360,8 @@ class _CommentTreeState extends State<CommentTree> {
                                           const PopupMenuItem(
                                             value: 'block',
                                             child: ListTile(
-                                              leading: Icon(Icons.block, size: 16),
+                                              leading:
+                                                  Icon(Icons.block, size: 16),
                                               title: Text('Block'),
                                             ),
                                           ),
@@ -359,48 +375,47 @@ class _CommentTreeState extends State<CommentTree> {
                             ],
                           ),
                   ),
-                ],
-              ),
+                ),
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: theme.colorScheme.outlineVariant,
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _isCollapsed
+                      ? const SizedBox.shrink()
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: widget.comment.replies.map(
+                            (reply) {
+                              widget.commentKeys
+                                  ?.putIfAbsent(reply.id, () => GlobalKey());
+                              return CommentTree(
+                                key: widget.commentKeys?[reply.id],
+                                commentKeys: widget.commentKeys,
+                                comment: reply,
+                                voteOverrides: widget.voteOverrides,
+                                onVote: widget.onVote,
+                                saveOverrides: widget.saveOverrides,
+                                onSave: widget.onSave,
+                                onReply: widget.onReply,
+                                onAuthorTap: widget.onAuthorTap,
+                                onDelete: widget.onDelete,
+                                onEdit: widget.onEdit,
+                                onBlock: widget.onBlock,
+                                onReport: widget.onReport,
+                                showAwards: widget.showAwards,
+                              );
+                            },
+                          ).toList(),
+                        ),
+                ),
+              ],
             ),
           ),
-        ),
-        Divider(
-          height: 1,
-          thickness: 0.5,
-          color: theme.colorScheme.outlineVariant,
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: _isCollapsed
-              ? const SizedBox.shrink()
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: widget.comment.replies
-                      .map(
-                        (reply) {
-                          widget.commentKeys?.putIfAbsent(reply.id, () => GlobalKey());
-                          return CommentTree(
-                          key: widget.commentKeys?[reply.id],
-                          commentKeys: widget.commentKeys,
-                          comment: reply,
-                          voteOverrides: widget.voteOverrides,
-                          onVote: widget.onVote,
-                          saveOverrides: widget.saveOverrides,
-                          onSave: widget.onSave,
-                          onReply: widget.onReply,
-                          onAuthorTap: widget.onAuthorTap,
-                          onDelete: widget.onDelete,
-                          onEdit: widget.onEdit,
-                          onBlock: widget.onBlock,
-                          onReport: widget.onReport,
-                          showAwards: widget.showAwards,
-                        );
-                      },
-                    )
-                    .toList(),
-                ),
         ),
       ],
     );

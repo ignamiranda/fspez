@@ -5,6 +5,8 @@ import '../../data/inbox_providers.dart';
 import '../../data/inbox_notifier.dart';
 import '../../data/write_providers.dart';
 import '../utils/block_user_helpers.dart';
+import '../utils/error_messages.dart';
+import '../widgets/shared/error_retry_widget.dart';
 import '../../domain/models/inbox_item.dart';
 import '../../domain/models/inbox_feed.dart';
 import '../../domain/utils/comment_context.dart';
@@ -79,7 +81,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               FilledButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const AuthWebViewScreen()),
                   );
                 },
                 icon: const Icon(Icons.login),
@@ -97,6 +100,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh inbox',
             onPressed: notifier.refresh,
           ),
         ],
@@ -136,26 +140,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     }
 
     if (state.error != null && state.messages.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                state.error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-            ],
-          ),
-        ),
+      return ErrorRetryWidget(
+        message: userFriendlyErrorMessage(state.error!),
+        onRetry: notifier.refresh,
       );
     }
 
@@ -182,7 +169,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     return RefreshIndicator(
       onRefresh: () async {
         _expandedIds.clear();
-        notifier.refresh();
+        return notifier.refresh();
       },
       child: ListView.builder(
         controller: _inboxScrollController,
@@ -245,10 +232,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 : null,
             onBlock: account != null && msg.author != '[deleted]'
                 ? () => handleBlockUser(
-                    context: context,
-                    notifier: ref.read(blockActionProvider.notifier),
-                    username: msg.author,
-                  )
+                      context: context,
+                      notifier: ref.read(blockActionProvider.notifier),
+                      username: msg.author,
+                    )
                 : null,
           );
         },

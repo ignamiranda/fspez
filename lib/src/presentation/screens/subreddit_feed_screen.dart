@@ -7,6 +7,7 @@ import '../../data/feed_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../../domain/models/subreddit.dart';
+import '../tab_scroll_signal.dart';
 import '../utils/infinite_scroll.dart';
 import '../utils/format_utils.dart';
 import '../utils/reddit_markdown.dart';
@@ -85,6 +86,16 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(tabScrollSignalProvider, (_, __) {
+      final c = _scrollController;
+      if (c != null && c.hasClients && c.offset > 0) {
+        c.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
     final config = FeedPageConfig.subreddit(widget.subredditName, sort: _sort);
 
     return Scaffold(
@@ -152,7 +163,7 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
               config: config,
               scrollController: _scrollController!,
               onSubredditTapOverride: (post) {
-                Navigator.of(context).pushReplacement(
+                Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => SubredditFeedScreen(
                       subredditName: post.subreddit.name,

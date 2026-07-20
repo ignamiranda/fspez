@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../domain/models/flair_option.dart';
+import 'bottom_sheet_menu.dart';
 
 /// Opens a modal bottom sheet to pick a post flair for the current subreddit.
 ///
@@ -26,7 +27,7 @@ Future<FlairOption?> showFlairPickerSheet(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _DragHandle(),
+                DragHandle(),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -53,8 +54,7 @@ Future<FlairOption?> showFlairPickerSheet(
                       ...options.map(
                         (flair) => _FlairPickerTile(
                           flair: flair,
-                          isSelected:
-                              currentSelection?.flairTemplateId ==
+                          isSelected: currentSelection?.flairTemplateId ==
                               flair.flairTemplateId,
                           onTap: () => Navigator.of(ctx).pop(flair),
                         ),
@@ -69,24 +69,6 @@ Future<FlairOption?> showFlairPickerSheet(
       );
     },
   );
-}
-
-class _DragHandle extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 32,
-        height: 4,
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
 }
 
 class _FlairPickerTile extends StatelessWidget {

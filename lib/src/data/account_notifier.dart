@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
-import '../domain/repositories/i_account_repository.dart';
+import 'account_repository.dart';
 import 'feed_cache.dart';
 
 class AccountListVersionNotifier extends StateNotifier<int> {
@@ -12,7 +12,7 @@ class AccountListVersionNotifier extends StateNotifier<int> {
 }
 
 class ActiveAccountNotifier extends StateNotifier<Account?> {
-  final IAccountRepository _repository;
+  final AccountRepository _repository;
   final AccountListVersionNotifier _listVersion;
   final FeedCache _feedCache;
   final StateController<bool> _corruptedSession;

@@ -31,37 +31,38 @@ class SubmitGalleryTab extends ConsumerWidget {
       );
     }
 
-    return SingleChildScrollView(
+    return ReorderableListView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          for (var i = 0; i < state.galleryFiles.length; i++) ...[
-            if (i > 0) const SizedBox(height: 16),
-            _buildGalleryItem(context, i, state, notifier),
-          ],
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () async {
-              final result = await FilePicker.pickFiles(
-                type: FileType.image,
-                allowMultiple: true,
-              );
-              if (result != null && result.files.isNotEmpty) {
-                notifier.addGalleryImages(result.files);
-              }
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Add more'),
-          ),
-        ],
+      onReorder: (oldIndex, newIndex) =>
+          notifier.reorderGallery(oldIndex, newIndex),
+      footer: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: OutlinedButton.icon(
+          onPressed: () async {
+            final result = await FilePicker.pickFiles(
+              type: FileType.image,
+              allowMultiple: true,
+            );
+            if (result != null && result.files.isNotEmpty) {
+              notifier.addGalleryImages(result.files);
+            }
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Add more'),
+        ),
       ),
+      children: [
+        for (var i = 0; i < state.galleryFiles.length; i++)
+          _buildGalleryItem(context, i, state, notifier),
+      ],
     );
   }
 
-  Widget _buildGalleryItem(
-      BuildContext context, int index, SubmitState state, SubmitNotifier notifier) {
+  Widget _buildGalleryItem(BuildContext context, int index, SubmitState state,
+      SubmitNotifier notifier) {
     final file = state.galleryFiles[index];
     return Card(
+      key: ValueKey(file.path ?? file.name),
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Column(

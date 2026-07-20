@@ -3,6 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'shared/error_retry_widget.dart';
+import '../utils/error_messages.dart';
 
 /// Full-screen media overlay with pinch-to-zoom, gallery swipe, and video playback.
 ///
@@ -271,6 +273,7 @@ class _VideoPageState extends State<_VideoPage> {
   bool _initialized = false;
   bool _errored = false;
   bool _showControls = true;
+  Object? _videoError;
 
   @override
   void initState() {
@@ -305,8 +308,12 @@ class _VideoPageState extends State<_VideoPage> {
       setState(() => _initialized = true);
       _controller.play();
       _controller.addListener(_onControllerUpdate);
-    } catch (_) {
-      if (mounted) setState(() => _errored = true);
+    } catch (e) {
+      if (mounted)
+        setState(() {
+          _errored = true;
+          _videoError = e;
+        });
     }
   }
 
@@ -331,9 +338,19 @@ class _VideoPageState extends State<_VideoPage> {
   @override
   Widget build(BuildContext context) {
     if (_errored) {
-      return const Center(
-        child:
-            Icon(Icons.broken_image_outlined, color: Colors.white38, size: 48),
+      return Center(
+        child: ErrorRetryWidget(
+          message: _videoError != null
+              ? userFriendlyErrorMessage(_videoError!)
+              : 'Failed to load video',
+          onRetry: () {
+            setState(() {
+              _errored = false;
+              _videoError = null;
+            });
+            _initPlayer();
+          },
+        ),
       );
     }
 
@@ -599,9 +616,7 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
   void _onInteractionUpdate(ScaleUpdateDetails details) {
     _updateZoomState();
 
-    if (!_isLongImage &&
-        details.pointerCount == 1 &&
-        !_isZoomed) {
+    if (!_isLongImage && details.pointerCount == 1 && !_isZoomed) {
       final dy = details.focalPointDelta.dy;
       if (dy > 0) {
         widget.onDragUpdate?.call(dy);

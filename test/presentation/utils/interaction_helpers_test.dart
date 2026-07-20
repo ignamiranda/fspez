@@ -58,21 +58,36 @@ void main() {
 
   group('handleVote', () {
     testWidgets('toggles vote on notifier', (tester) async {
-      handleVote(actions, 't3_test', VoteDirection.upvote);
+      late BuildContext ctx;
+      await tester.pumpWidget(_app(Builder(builder: (c) {
+        ctx = c;
+        return const SizedBox.shrink();
+      })));
+      await handleVote(actions, ctx, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveValue('t3_test', VoteDirection.none),
           VoteDirection.upvote);
     });
 
     testWidgets('toggles from upvote to none', (tester) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(_app(Builder(builder: (c) {
+        ctx = c;
+        return const SizedBox.shrink();
+      })));
       voteNotifier.optimisticSet('t3_test', VoteDirection.upvote);
-      handleVote(actions, 't3_test', VoteDirection.upvote);
+      await handleVote(actions, ctx, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveValue('t3_test', VoteDirection.none),
           VoteDirection.none);
     });
 
     testWidgets('toggles from downvote to upvote', (tester) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(_app(Builder(builder: (c) {
+        ctx = c;
+        return const SizedBox.shrink();
+      })));
       voteNotifier.optimisticSet('t3_test', VoteDirection.downvote);
-      handleVote(actions, 't3_test', VoteDirection.upvote);
+      await handleVote(actions, ctx, 't3_test', VoteDirection.upvote);
       expect(voteNotifier.effectiveValue('t3_test', VoteDirection.upvote),
           VoteDirection.upvote);
     });

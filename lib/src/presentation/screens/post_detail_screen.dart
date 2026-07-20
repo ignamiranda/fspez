@@ -17,15 +17,14 @@ import '../widgets/comment_composer_sheet.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
 import '../widgets/media_viewer.dart';
-import '../widgets/post_action_bar.dart';
+import '../widgets/post_actions.dart';
 import '../widgets/post_media_tile.dart';
-import '../widgets/post_metadata.dart';
 import '../widgets/reddit_body.dart';
-import '../widgets/title_with_thumbnail.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
 import '../widgets/report_sheet.dart';
-import '../../domain/enums/feed_density.dart';
+import '../widgets/shared/error_retry_widget.dart';
+import '../utils/error_messages.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final Post? post;
@@ -188,21 +187,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           }
           return const Center(child: CircularProgressIndicator());
         },
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, size: 40),
-                const SizedBox(height: 8),
-                Text(
-                  'Failed to load post',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
+        error: (err, _) => ErrorRetryWidget(
+          message: userFriendlyErrorMessage(err),
+          onRetry: () => ref.invalidate(postDetailProvider(params)),
         ),
       ),
     );
@@ -229,6 +216,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             (post.isSpoiler && settings.spoilerBlur));
     final showAwards = settings.showAwards;
 
+    void onReportPost() => showReportSheet(
+          context,
+          thingId: post.fullname,
+          subreddit: post.subreddit.name,
+        );
+
     void onReportComment(String fullname, String? subreddit) =>
         showReportSheet(context, thingId: fullname, subreddit: subreddit);
 
@@ -237,106 +230,59 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         Expanded(
           child: ListView(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    PostMetadataRow(
-                      post: post,
-                      theme: theme,
-                      cs: theme.colorScheme,
-                      density: FeedDensity.comfortable,
-                      showAwards: showAwards,
-                      showStickiedIndicator: true,
-                      onSubredditTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => SubredditFeedScreen(
-                            subredditName: post.subreddit.name,
-                          ),
-                        ),
-                      ),
-                      onAuthorTap: post.author != '[deleted]'
-                          ? () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      UserProfileScreen(username: post.author),
-                                ),
-                              )
-                          : null,
-                      onEdit: username != null && post.author == username
-                          ? () {
-                              showEditSheet(
-                                context,
-                                currentText: post.selftext ?? '',
-                                readOnlyTitle: post.title,
-                                thingId: postFullname,
-                              ).then((saved) {
-                                if (saved == true && context.mounted) {
-                                  ref.invalidate(
-                                    postDetailProvider(
-                                      _postDetailParams(post),
-                                    ),
-                                  );
-                                }
-                              });
-                            }
-                          : null,
-                      onDelete: actions != null &&
-                              username != null &&
-                              post.author == username
-                          ? () => handleDelete(context, actions, postFullname)
-                          : actions == null
-                              ? () => requireLoginForAction(context,
-                                  action: 'delete')
-                              : null,
-                      onBlock: username != null &&
-                              post.author != '[deleted]' &&
-                              post.author != username
-                          ? () => handleBlockUser(
-                                context: context,
-                                notifier:
-                                    ref.read(blockActionProvider.notifier),
-                                username: post.author,
-                              )
-                          : null,
-                    ),
-                    const SizedBox(height: 6),
-                    PostTitleWithThumbnail(
-                      post: post,
-                      thumbnailUrl: null,
-                      theme: theme,
-                      isCompact: false,
-                    ),
-                    const SizedBox(height: 6),
-                    PostActionBar(
-                      post: post,
-                      theme: theme,
-                      cs: theme.colorScheme,
-                      density: FeedDensity.comfortable,
-                      vote: effectiveVote ?? post.vote,
-                      score: post.score,
-                      commentCount: post.commentCount,
-                      isSaved: effectiveSaved ?? post.isSaved,
-                      onVote: actions != null
-                          ? (dir) => handleVote(actions, postFullname, dir)
-                          : (dir) =>
-                              requireLoginForAction(context, action: 'vote'),
-                      onSave: actions != null
-                          ? () {
-                              final wasSaved = effectiveSaved ?? post.isSaved;
-                              handleSave(
-                                actions,
-                                postFullname,
-                                context,
-                                wasSaved: wasSaved,
-                              );
-                            }
-                          : () =>
-                              requireLoginForAction(context, action: 'save'),
-                    ),
-                  ],
-                ),
+              _PostDetailHeader(
+                post: post,
+                theme: theme,
+                showAwards: showAwards,
+                effectiveVote: effectiveVote,
+                onVote: actions != null
+                    ? (dir) => handleVote(actions, context, postFullname, dir)
+                    : (dir) => requireLoginForAction(context, action: 'vote'),
+                effectiveSaved: effectiveSaved,
+                onSave: actions != null
+                    ? () {
+                        final wasSaved = effectiveSaved ?? post.isSaved;
+                        handleSave(
+                          actions,
+                          postFullname,
+                          context,
+                          wasSaved: wasSaved,
+                        );
+                      }
+                    : () => requireLoginForAction(context, action: 'save'),
+                onEdit: username != null && post.author == username
+                    ? () {
+                        showEditSheet(
+                          context,
+                          currentText: post.selftext ?? '',
+                          readOnlyTitle: post.title,
+                          thingId: postFullname,
+                        ).then((saved) {
+                          if (saved == true && context.mounted) {
+                            ref.invalidate(
+                              postDetailProvider(_postDetailParams(post)),
+                            );
+                          }
+                        });
+                      }
+                    : null,
+                onDelete: actions != null &&
+                        username != null &&
+                        post.author == username
+                    ? () => handleDelete(context, actions, postFullname)
+                    : actions == null
+                        ? () => requireLoginForAction(context, action: 'delete')
+                        : null,
+                onBlock: username != null &&
+                        post.author != '[deleted]' &&
+                        post.author != username
+                    ? () => handleBlockUser(
+                          context: context,
+                          notifier: ref.read(blockActionProvider.notifier),
+                          username: post.author,
+                        )
+                    : null,
+                onReport: onReportPost,
               ),
               if (post.selftext != null && post.selftext!.isNotEmpty)
                 Padding(
@@ -509,7 +455,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       voteOverrides: voteOverrides,
                       onVote: actions != null
                           ? (fullname, dir) =>
-                              handleVote(actions, fullname, dir)
+                              handleVote(actions, context, fullname, dir)
                           : (fullname, dir) =>
                               requireLoginForAction(context, action: 'vote'),
                       saveOverrides: saveOverrides,
@@ -614,6 +560,83 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PostDetailHeader extends StatelessWidget {
+  final Post post;
+  final ThemeData theme;
+  final bool showAwards;
+  final VoteDirection? effectiveVote;
+  final ValueChanged<VoteDirection>? onVote;
+  final bool? effectiveSaved;
+  final VoidCallback? onSave;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onBlock;
+  final VoidCallback? onReport;
+
+  const _PostDetailHeader({
+    required this.post,
+    required this.theme,
+    required this.showAwards,
+    this.effectiveVote,
+    this.onVote,
+    this.effectiveSaved,
+    this.onSave,
+    this.onEdit,
+    this.onDelete,
+    this.onBlock,
+    this.onReport,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PostHeader(
+            post: post,
+            showAwards: showAwards,
+            onSubredditTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    SubredditFeedScreen(subredditName: post.subreddit.name),
+              ),
+            ),
+            onAuthorTap: post.author != '[deleted]'
+                ? () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            UserProfileScreen(username: post.author),
+                      ),
+                    )
+                : null,
+            onBlock: onBlock,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            post.title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          PostActions(
+            post: post,
+            effectiveVote: effectiveVote,
+            onVote: onVote,
+            effectiveSaved: effectiveSaved,
+            onSave: onSave,
+            onEdit: onEdit,
+            onDelete: onDelete,
+            onReport: onReport,
+          ),
+        ],
       ),
     );
   }

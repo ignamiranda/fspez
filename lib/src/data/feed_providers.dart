@@ -2,22 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
-import '../domain/models/paginated_result.dart';
-import '../domain/repositories/i_feed_repository.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'cache_providers.dart';
 import 'feed_parser.dart';
 import 'feed_pagination.dart';
 import 'feed_cache.dart';
-import 'feed_repository.dart';
 import 'paginated_list_state.dart';
+import 'paginated_notifier.dart';
 
 final feedParserProvider = Provider<FeedParser>((ref) => FeedParser());
-
-final feedRepositoryProvider = Provider<IFeedRepository>((ref) {
-  return FeedRepository(ref.watch(redditClientProvider));
-});
 
 final feedPageProvider = StateNotifierProvider.autoDispose
     .family<FeedPageNotifier, PaginatedListState<Post>, FeedPageConfig>((

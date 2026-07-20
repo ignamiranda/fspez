@@ -49,7 +49,7 @@ Future<void> showPostActionSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _DragHandle(),
+            DragHandle(),
             const SizedBox(height: 8),
             for (var i = 0; i < sections.length; i++) ...[
               if (sections[i].title != null)
@@ -92,8 +92,36 @@ Widget _buildActionTile(BuildContext ctx, BottomSheetAction action) {
       ),
     ),
     onTap: () {
-      Navigator.of(ctx).pop();
-      action.onTap();
+      if (action.isDestructive) {
+        Navigator.of(ctx).pop();
+        showDialog(
+          context: ctx,
+          builder: (dialogCtx) => AlertDialog(
+            title: const Text('Confirm'),
+            content: Text('${action.label}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogCtx).pop();
+                  action.onTap();
+                },
+                child: Text(
+                  action.label,
+                  style:
+                      TextStyle(color: Theme.of(dialogCtx).colorScheme.error),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        Navigator.of(ctx).pop();
+        action.onTap();
+      }
     },
     dense: true,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -127,7 +155,7 @@ Future<T?> showRadioBottomSheet<T>(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _DragHandle(),
+                DragHandle(),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -168,7 +196,9 @@ Future<T?> showRadioBottomSheet<T>(
   );
 }
 
-class _DragHandle extends StatelessWidget {
+class DragHandle extends StatelessWidget {
+  const DragHandle({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Center(

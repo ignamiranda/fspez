@@ -79,7 +79,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           _showAll
               ? 'Popular'
               : loggedIn
-                  ? 'fspez'
+                  ? 'Home'
                   : 'Popular',
         ),
         actions: [
@@ -98,7 +98,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           ),
           IconButton(
             icon: Icon(_showAll ? Icons.home : Icons.whatshot),
-            tooltip: _showAll ? 'Home' : 'Popular',
+            tooltip: _showAll ? 'Popular' : 'Home',
             onPressed: () {
               setState(() => _showAll = !_showAll);
             },

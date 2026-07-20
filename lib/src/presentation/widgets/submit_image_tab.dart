@@ -15,18 +15,30 @@ class SubmitImageTab extends ConsumerWidget {
 
     if (selected == null) {
       return Center(
-        child: OutlinedButton.icon(
-          onPressed: () async {
-            final result = await FilePicker.pickFiles(
-              type: FileType.image,
-              allowMultiple: false,
-            );
-            if (result != null && result.files.isNotEmpty) {
-              notifier.setImage(result.files.first);
-            }
-          },
-          icon: const Icon(Icons.image_outlined),
-          label: const Text('Pick Image'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () async {
+                final result = await FilePicker.pickFiles(
+                  type: FileType.image,
+                  allowMultiple: false,
+                );
+                if (result != null && result.files.isNotEmpty) {
+                  notifier.setImage(result.files.first);
+                }
+              },
+              icon: const Icon(Icons.image_outlined),
+              label: const Text('Pick Image'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Max 20MB per image',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
         ),
       );
     }

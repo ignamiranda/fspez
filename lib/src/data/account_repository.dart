@@ -4,9 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
-import '../domain/repositories/i_account_repository.dart';
 
-class AccountRepository implements IAccountRepository {
+class AccountRepository {
   static const _accountsKey = 'fspez_accounts';
   static const _activeAccountIdKey = 'fspez_active_account_id';
 
@@ -22,7 +21,6 @@ class AccountRepository implements IAccountRepository {
     }
   }
 
-  @override
   Future<List<Account>> loadAll() async {
     final json = await _tryRead(_accountsKey);
     if (json == null) {
@@ -56,7 +54,6 @@ class AccountRepository implements IAccountRepository {
     }
   }
 
-  @override
   Future<void> save(Account account) async {
     final accounts = await loadAll();
     final idIndex = accounts.indexWhere((a) => a.id == account.id);
@@ -77,19 +74,16 @@ class AccountRepository implements IAccountRepository {
     await _persistAll(accounts);
   }
 
-  @override
   Future<void> clearAllExcept(String accountId) async {
     final accounts = await loadAll();
     final active = accounts.where((a) => a.id == accountId).toList();
     await _persistAll(active);
   }
 
-  @override
   Future<void> replaceAll(List<Account> accounts) async {
     await _persistAll(accounts);
   }
 
-  @override
   Future<void> remove(String accountId) async {
     final accounts = await loadAll();
     final remaining = accounts.where((a) => a.id != accountId).toList();
@@ -102,12 +96,10 @@ class AccountRepository implements IAccountRepository {
     }
   }
 
-  @override
   Future<void> setActive(String accountId) async {
     await _storage.write(key: _activeAccountIdKey, value: accountId);
   }
 
-  @override
   Future<Account?> loadActive() async {
     final activeId = await _tryRead(_activeAccountIdKey);
     if (activeId == null) return null;

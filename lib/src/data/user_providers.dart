@@ -1,12 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/user_profile.dart';
-import '../domain/repositories/i_user_repository.dart';
 import 'reddit_client_provider.dart';
 import 'auth_providers.dart';
 import 'user_repository.dart';
 
-final userRepositoryProvider = Provider<IUserRepository>((ref) {
+final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository(ref.watch(redditClientProvider));
 });
 
