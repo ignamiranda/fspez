@@ -89,6 +89,12 @@ Before calling `edit()` with an `oldString` parameter for changes to existing co
 
 If edit() fails with "oldString not found": Read the file again to verify current content before retrying.
 
+### CI gate: flutter analyze must be zero-clean
+
+The CI pipeline (`flutter analyze --no-pub`) exits with code 1 on **any** issue — `info`, `warning`, or `error`. A "No issues found!" exit is required before landing.
+
+When running `flutter analyze` in verify or review tasks: the exit code and full issue count must be checked. All findings must be fixed before sign-off, regardless of severity level. If the analysis shows any issues, your task is incomplete — fix them and re-run until clean.
+
 ## Agent skills
 
 ### Issue tracker
