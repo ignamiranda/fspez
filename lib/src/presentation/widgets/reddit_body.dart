@@ -21,7 +21,7 @@ class RedditBody extends StatelessWidget {
 
     final styleSheet = MarkdownStyleSheet.fromTheme(theme).copyWith(
       p: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
-      a: theme.textTheme.bodyMedium?.copyWith(
+      a: TextStyle(
         color: colorScheme.primary,
         decoration: TextDecoration.underline,
       ),

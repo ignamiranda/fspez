@@ -88,14 +88,10 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
               mixedContentMode: MixedContentMode.MIXED_CONTENT_NEVER_ALLOW,
-              userAgent:
-                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
             ),
             shouldOverrideUrlLoading: (controller, navigationAction) async {
               final url = navigationAction.request.url;
-              if (url != null &&
-                  (url.host.endsWith('.reddit.com') ||
-                      url.host == 'reddit.com')) {
+              if (url != null && url.scheme == 'https') {
                 return NavigationActionPolicy.ALLOW;
               }
               return NavigationActionPolicy.CANCEL;
@@ -105,9 +101,12 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
             },
             onLoadStop: (controller, url) async {
               if (_done || url == null) return;
-              final s = url.toString();
-              if (s.contains('/login') || s.contains('/accounts/')) return;
-              _acquireSession();
+              if (url.host.endsWith('.reddit.com') ||
+                  url.host == 'reddit.com') {
+                final s = url.toString();
+                if (s.contains('/login') || s.contains('/accounts/')) return;
+                _acquireSession();
+              }
             },
           ),
           if (_loading)

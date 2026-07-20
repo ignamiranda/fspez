@@ -410,7 +410,7 @@ class _SubredditAboutSheet extends StatelessWidget {
                 data: normalizeRedditMarkdown(sub.sidebarDescription!.trim()),
                 styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
                   p: theme.textTheme.bodyMedium,
-                  a: theme.textTheme.bodyMedium?.copyWith(
+                  a: TextStyle(
                     color: colorScheme.primary,
                     decoration: TextDecoration.underline,
                   ),
