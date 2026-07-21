@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 import '../../data/auth_providers.dart';
 import '../../data/app_settings.dart';
 import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
 import '../../data/comment_repository.dart';
 import '../../domain/enums/comment_sort.dart';
+import '../../domain/enums/feed_density.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/block_user_helpers.dart';
@@ -17,8 +17,10 @@ import '../widgets/comment_composer_sheet.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
 import '../widgets/media_viewer.dart';
-import '../widgets/post_actions.dart';
-import '../widgets/post_media_tile.dart';
+import '../widgets/sensitive_media_overlay.dart';
+import '../widgets/post_action_bar.dart';
+import '../widgets/post_metadata.dart';
+import '../widgets/feed_media_tile.dart';
 import '../widgets/reddit_body.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
@@ -49,6 +51,7 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   CommentSort _commentSort = CommentSort.best;
+  // ignore: prefer_final_fields
   bool _sensitiveRevealed = false;
   final Map<String, GlobalKey> _commentKeys = {};
 
@@ -204,6 +207,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     bool commentsLoading = false,
   }) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final comments = detail?.comments ?? const [];
     final post = detail?.post ?? widget.post;
     if (post == null) return const SizedBox.shrink();
@@ -215,12 +219,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ((post.isNsfw && settings.nsfwBlur) ||
             (post.isSpoiler && settings.spoilerBlur));
     final showAwards = settings.showAwards;
-
-    void onReportPost() => showReportSheet(
-          context,
-          thingId: post.fullname,
-          subreddit: post.subreddit.name,
-        );
+    final vote = effectiveVote ?? post.vote;
+    final isSaved = effectiveSaved ?? post.isSaved;
 
     void onReportComment(String fullname, String? subreddit) =>
         showReportSheet(context, thingId: fullname, subreddit: subreddit);
@@ -233,23 +233,37 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               _PostDetailHeader(
                 post: post,
                 theme: theme,
+                cs: cs,
                 showAwards: showAwards,
-                effectiveVote: effectiveVote,
+                vote: vote,
                 onVote: actions != null
                     ? (dir) => handleVote(actions, context, postFullname, dir)
                     : (dir) => requireLoginForAction(context, action: 'vote'),
-                effectiveSaved: effectiveSaved,
+                isSaved: isSaved,
                 onSave: actions != null
                     ? () {
-                        final wasSaved = effectiveSaved ?? post.isSaved;
                         handleSave(
                           actions,
                           postFullname,
                           context,
-                          wasSaved: wasSaved,
+                          wasSaved: isSaved,
                         );
                       }
                     : () => requireLoginForAction(context, action: 'save'),
+                onSubredditTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SubredditFeedScreen(subredditName: post.subreddit.name),
+                  ),
+                ),
+                onAuthorTap: post.author != '[deleted]'
+                    ? () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                UserProfileScreen(username: post.author),
+                          ),
+                        )
+                    : null,
                 onEdit: username != null && post.author == username
                     ? () {
                         showEditSheet(
@@ -282,7 +296,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           username: post.author,
                         )
                     : null,
-                onReport: onReportPost,
               ),
               if (post.selftext != null && post.selftext!.isNotEmpty)
                 Padding(
@@ -290,75 +303,67 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   child: RedditBody(post.selftext!),
                 ),
               if (post.videoUrl != null)
-                _SensitiveMediaPreview(
-                  isSensitive: shouldBlur,
-                  isNsfw: post.isNsfw,
-                  isSpoiler: post.isSpoiler,
+                _buildMediaTile(
+                  context: context,
+                  post: post,
+                  imageUrl: post.thumbnailUrl ??
+                      (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
+                  shouldBlur: shouldBlur,
                   onReveal: () => setState(() => _sensitiveRevealed = true),
-                  child: PostMediaTile(
-                    imageUrl: post.thumbnailUrl ??
-                        (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
-                    isVideo: true,
-                    onTap: () => MediaViewer.show(
-                      context,
-                      imageUrls: post.mediaUrls,
-                      videoUrl: post.videoUrl,
-                      isNsfw: post.isNsfw,
-                      isSpoiler: post.isSpoiler,
-                      initiallyRevealed: _sensitiveRevealed,
-                    ),
+                  isVideo: true,
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: post.mediaUrls,
+                    videoUrl: post.videoUrl,
+                    isNsfw: post.isNsfw,
+                    isSpoiler: post.isSpoiler,
+                    initiallyRevealed: _sensitiveRevealed,
                   ),
                 )
               else if (post.mediaUrls.length >= 2)
-                _SensitiveMediaPreview(
-                  isSensitive: shouldBlur,
-                  isNsfw: post.isNsfw,
-                  isSpoiler: post.isSpoiler,
+                _buildMediaTile(
+                  context: context,
+                  post: post,
+                  imageUrl: post.mediaUrls.first,
+                  shouldBlur: shouldBlur,
                   onReveal: () => setState(() => _sensitiveRevealed = true),
-                  child: PostMediaTile(
-                    imageUrl: post.mediaUrls.first,
-                    badgeText: '${post.mediaUrls.length}',
-                    onTap: () => MediaViewer.show(
-                      context,
-                      imageUrls: post.mediaUrls,
-                      isNsfw: post.isNsfw,
-                      isSpoiler: post.isSpoiler,
-                      initiallyRevealed: _sensitiveRevealed,
-                    ),
+                  badgeText: '${post.mediaUrls.length}',
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: post.mediaUrls,
+                    isNsfw: post.isNsfw,
+                    isSpoiler: post.isSpoiler,
+                    initiallyRevealed: _sensitiveRevealed,
                   ),
                 )
               else if (post.mediaUrls.length == 1)
-                _SensitiveMediaPreview(
-                  isSensitive: shouldBlur,
-                  isNsfw: post.isNsfw,
-                  isSpoiler: post.isSpoiler,
+                _buildMediaTile(
+                  context: context,
+                  post: post,
+                  imageUrl: post.mediaUrls.first,
+                  shouldBlur: shouldBlur,
                   onReveal: () => setState(() => _sensitiveRevealed = true),
-                  child: PostMediaTile(
-                    imageUrl: post.mediaUrls.first,
-                    onTap: () => MediaViewer.show(
-                      context,
-                      imageUrls: post.mediaUrls,
-                      isNsfw: post.isNsfw,
-                      isSpoiler: post.isSpoiler,
-                      initiallyRevealed: _sensitiveRevealed,
-                    ),
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: post.mediaUrls,
+                    isNsfw: post.isNsfw,
+                    isSpoiler: post.isSpoiler,
+                    initiallyRevealed: _sensitiveRevealed,
                   ),
                 )
               else if (post.type == PostType.image && post.url != null)
-                _SensitiveMediaPreview(
-                  isSensitive: shouldBlur,
-                  isNsfw: post.isNsfw,
-                  isSpoiler: post.isSpoiler,
+                _buildMediaTile(
+                  context: context,
+                  post: post,
+                  imageUrl: post.url!,
+                  shouldBlur: shouldBlur,
                   onReveal: () => setState(() => _sensitiveRevealed = true),
-                  child: PostMediaTile(
-                    imageUrl: post.url!,
-                    onTap: () => MediaViewer.show(
-                      context,
-                      imageUrls: [post.url!],
-                      isNsfw: post.isNsfw,
-                      isSpoiler: post.isSpoiler,
-                      initiallyRevealed: _sensitiveRevealed,
-                    ),
+                  onTap: () => MediaViewer.show(
+                    context,
+                    imageUrls: [post.url!],
+                    isNsfw: post.isNsfw,
+                    isSpoiler: post.isSpoiler,
+                    initiallyRevealed: _sensitiveRevealed,
                   ),
                 )
               else if (post.type == PostType.link && post.url != null)
@@ -565,31 +570,71 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 }
 
+Widget _buildMediaTile({
+  required BuildContext context,
+  required Post post,
+  required String imageUrl,
+  required bool shouldBlur,
+  required VoidCallback onReveal,
+  bool isVideo = false,
+  String? badgeText,
+  required VoidCallback onTap,
+}) {
+  final tile = Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: FeedMediaTile(
+      imageUrl: imageUrl,
+      isVideo: isVideo,
+      badgeText: badgeText,
+      maxHeight: 340,
+      onTap: onTap,
+    ),
+  );
+
+  if (shouldBlur) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SensitiveMediaOverlay(
+        isNsfw: post.isNsfw,
+        isSpoiler: post.isSpoiler,
+        onReveal: onReveal,
+        child: tile,
+      ),
+    );
+  }
+
+  return tile;
+}
+
 class _PostDetailHeader extends StatelessWidget {
   final Post post;
   final ThemeData theme;
+  final ColorScheme cs;
   final bool showAwards;
-  final VoteDirection? effectiveVote;
+  final VoteDirection vote;
   final ValueChanged<VoteDirection>? onVote;
-  final bool? effectiveSaved;
+  final bool isSaved;
   final VoidCallback? onSave;
+  final VoidCallback? onSubredditTap;
+  final VoidCallback? onAuthorTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onBlock;
-  final VoidCallback? onReport;
 
   const _PostDetailHeader({
     required this.post,
     required this.theme,
+    required this.cs,
     required this.showAwards,
-    this.effectiveVote,
+    required this.vote,
     this.onVote,
-    this.effectiveSaved,
+    required this.isSaved,
     this.onSave,
+    this.onSubredditTap,
+    this.onAuthorTap,
     this.onEdit,
     this.onDelete,
     this.onBlock,
-    this.onReport,
   });
 
   @override
@@ -599,23 +644,17 @@ class _PostDetailHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PostHeader(
+          PostMetadataRow(
             post: post,
+            theme: theme,
+            cs: cs,
+            density: FeedDensity.comfortable,
             showAwards: showAwards,
-            onSubredditTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    SubredditFeedScreen(subredditName: post.subreddit.name),
-              ),
-            ),
-            onAuthorTap: post.author != '[deleted]'
-                ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            UserProfileScreen(username: post.author),
-                      ),
-                    )
-                : null,
+            showStickiedIndicator: post.isStickied,
+            onSubredditTap: onSubredditTap,
+            onAuthorTap: onAuthorTap,
+            onEdit: onEdit,
+            onDelete: onDelete,
             onBlock: onBlock,
           ),
           const SizedBox(height: 8),
@@ -626,104 +665,18 @@ class _PostDetailHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          PostActions(
+          PostActionBar(
             post: post,
-            effectiveVote: effectiveVote,
+            vote: vote,
+            score: post.score,
+            commentCount: post.commentCount,
+            isSaved: isSaved,
+            upvoteRatio: post.upvoteRatio,
+            compact: false,
             onVote: onVote,
-            effectiveSaved: effectiveSaved,
             onSave: onSave,
-            onEdit: onEdit,
-            onDelete: onDelete,
-            onReport: onReport,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SensitiveMediaPreview extends StatelessWidget {
-  final bool isSensitive;
-  final bool isNsfw;
-  final bool isSpoiler;
-  final VoidCallback onReveal;
-  final Widget child;
-
-  const _SensitiveMediaPreview({
-    required this.isSensitive,
-    required this.isNsfw,
-    required this.isSpoiler,
-    required this.onReveal,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isSensitive) return child;
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onReveal,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: child,
-          ),
-          Container(color: Colors.black54),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isNsfw)
-                    _SensitivePill(
-                      label: 'NSFW',
-                      color: theme.colorScheme.error,
-                    ),
-                  if (isNsfw && isSpoiler) const SizedBox(width: 6),
-                  if (isSpoiler)
-                    _SensitivePill(
-                      label: 'Spoiler',
-                      color: theme.colorScheme.tertiary,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Tap to reveal',
-                style: TextStyle(color: Colors.white70),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SensitivePill extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _SensitivePill({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

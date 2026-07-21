@@ -13,6 +13,7 @@ class FeedMediaTile extends StatefulWidget {
 
   /// Maximum height applied only when the image ratio exceeds 16:9 or 9:16.
   final double maxHeight;
+  final bool isVideo;
 
   const FeedMediaTile({
     super.key,
@@ -21,6 +22,7 @@ class FeedMediaTile extends StatefulWidget {
     this.badgeText,
     this.badgeIcon,
     this.maxHeight = 240,
+    this.isVideo = false,
   });
 
   @override
@@ -96,6 +98,19 @@ class _FeedMediaTileState extends State<FeedMediaTile> {
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
+                    if (widget.isVideo)
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black38,
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
                     if (widget.badgeText != null)
                       Positioned(
                         top: 8,

@@ -10,7 +10,7 @@ import 'post_metadata.dart';
 import 'post_action_bar.dart';
 import 'post_inline_video.dart';
 import 'feed_media_tile.dart';
-import 'post_card_overlay.dart';
+import 'sensitive_media_overlay.dart';
 import 'title_with_thumbnail.dart';
 
 class PostCard extends ConsumerStatefulWidget {
@@ -90,8 +90,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     final density = settings.feedDensity;
     final showAwards = settings.showAwards;
     final compact = density == FeedDensity.compact;
-    final hasFeedMedia =
-        widget.post.videoUrl != null ||
+    final hasFeedMedia = widget.post.videoUrl != null ||
         widget.post.mediaUrls.isNotEmpty ||
         (widget.post.type == PostType.image && widget.post.url != null);
     final showSelftext = density == FeedDensity.comfortable;
@@ -222,13 +221,11 @@ class _PostCardState extends ConsumerState<PostCard> {
               SizedBox(height: compact ? 4 : 6),
               PostActionBar(
                 post: widget.post,
-                theme: theme,
-                cs: cs,
-                density: density,
                 vote: vote,
                 score: widget.post.score,
                 commentCount: widget.post.commentCount,
                 isSaved: widget.effectiveSaved ?? widget.post.isSaved,
+                compact: compact,
                 onVote: widget.onVote,
                 onSave: widget.onSave,
                 onTap: widget.onTap,
@@ -256,8 +253,7 @@ class _PostCardState extends ConsumerState<PostCard> {
         postKey: post.fullname,
         videoUrl: post.videoUrl!,
         thumbnailUrl: post.thumbnailUrl,
-        videoPlaybackCoordinator:
-            widget.videoPlaybackCoordinator ??
+        videoPlaybackCoordinator: widget.videoPlaybackCoordinator ??
             GlobalVideoPlaybackCoordinator.instance,
         onTap: () => MediaViewer.show(
           context,
@@ -311,7 +307,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (mediaWidget == null) return const SizedBox.shrink();
 
     if (shouldBlur) {
-      return PostCardSensitiveOverlay(
+      return SensitiveMediaOverlay(
         isNsfw: post.isNsfw,
         isSpoiler: post.isSpoiler,
         onReveal: () => setState(() => _sensitiveRevealed = true),

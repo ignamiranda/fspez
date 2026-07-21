@@ -1,45 +1,50 @@
 import 'package:flutter/material.dart';
-import '../../domain/enums/feed_density.dart';
-import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
+import '../../domain/models/post.dart';
 import '../utils/format_utils.dart';
 import '../utils/open_url.dart';
 import 'vote_button.dart';
 
 class PostActionBar extends StatelessWidget {
   final Post post;
-  final ThemeData theme;
-  final ColorScheme cs;
-  final FeedDensity density;
   final VoteDirection vote;
   final int score;
   final int commentCount;
   final bool isSaved;
+  final double? upvoteRatio;
+  final bool compact;
   final ValueChanged<VoteDirection>? onVote;
   final VoidCallback? onSave;
   final VoidCallback? onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onHide;
+  final VoidCallback? onReport;
 
   const PostActionBar({
     super.key,
     required this.post,
-    required this.theme,
-    required this.cs,
-    required this.density,
     required this.vote,
     required this.score,
     required this.commentCount,
     required this.isSaved,
+    this.upvoteRatio,
+    this.compact = false,
     this.onVote,
     this.onSave,
     this.onTap,
+    this.onEdit,
+    this.onDelete,
+    this.onHide,
+    this.onReport,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final upActive = vote == VoteDirection.upvote;
     final downActive = vote == VoteDirection.downvote;
-    final compact = density == FeedDensity.compact;
-    final showLabel = density != FeedDensity.compact;
+    final showLabel = !compact;
 
     return Row(
       children: [
@@ -61,21 +66,30 @@ class PostActionBar extends StatelessWidget {
               color: upActive
                   ? cs.primary
                   : downActive
-                  ? cs.secondary
-                  : cs.onSurfaceVariant,
+                      ? cs.secondary
+                      : cs.onSurfaceVariant,
             ),
           ),
         ),
         PostVoteButton(
-          icon: downActive
-              ? Icons.arrow_downward
-              : Icons.arrow_downward_outlined,
+          icon:
+              downActive ? Icons.arrow_downward : Icons.arrow_downward_outlined,
           active: downActive,
           color: downActive ? cs.secondary : cs.onSurfaceVariant,
           activeColor: cs.secondary,
           semanticLabel: downActive ? 'Downvoted' : 'Downvote',
           onTap: () => onVote?.call(VoteDirection.downvote),
         ),
+        if (upvoteRatio != null) ...[
+          const SizedBox(width: 2),
+          Text(
+            '${(upvoteRatio! * 100).round()}%',
+            style: TextStyle(
+              fontSize: compact ? 10 : 12,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
         SizedBox(width: compact ? 10 : 16),
         PostActionItem(
           icon: Icons.chat_bubble_outline,
@@ -100,6 +114,46 @@ class PostActionBar extends StatelessWidget {
             semanticLabel: 'Open link',
             compact: compact,
             onTap: () => openUrl(post.url!),
+            color: cs.onSurfaceVariant,
+          ),
+        ],
+        if (onEdit != null) ...[
+          SizedBox(width: compact ? 10 : 16),
+          PostActionItem(
+            icon: Icons.edit_outlined,
+            semanticLabel: 'Edit',
+            compact: compact,
+            onTap: onEdit,
+            color: cs.onSurfaceVariant,
+          ),
+        ],
+        if (onDelete != null) ...[
+          SizedBox(width: compact ? 10 : 16),
+          PostActionItem(
+            icon: Icons.delete_outline,
+            semanticLabel: 'Delete',
+            compact: compact,
+            onTap: onDelete,
+            color: cs.onSurfaceVariant,
+          ),
+        ],
+        if (onHide != null) ...[
+          SizedBox(width: compact ? 10 : 16),
+          PostActionItem(
+            icon: Icons.visibility_off_outlined,
+            semanticLabel: 'Hide',
+            compact: compact,
+            onTap: onHide,
+            color: cs.onSurfaceVariant,
+          ),
+        ],
+        if (onReport != null) ...[
+          SizedBox(width: compact ? 10 : 16),
+          PostActionItem(
+            icon: Icons.flag_outlined,
+            semanticLabel: 'Report',
+            compact: compact,
+            onTap: onReport,
             color: cs.onSurfaceVariant,
           ),
         ],
