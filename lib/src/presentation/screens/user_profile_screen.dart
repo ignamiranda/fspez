@@ -21,7 +21,9 @@ import 'post_detail_screen.dart';
 import 'subreddit_feed_screen.dart';
 import '../widgets/report_sheet.dart';
 import '../utils/error_messages.dart';
+import '../widgets/shared/comment_list_item.dart';
 import '../widgets/shared/error_retry_widget.dart';
+import '../widgets/shared/label_value_row.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   final String username;
@@ -249,7 +251,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
             Divider(height: 1, color: theme.dividerColor),
         itemBuilder: (context, index) {
           final comment = _comments[index];
-          return InkWell(
+          return CommentListItem(
+            subreddit: comment.subreddit,
+            title: comment.linkTitle,
+            body: comment.body,
+            score: comment.score,
+            timestamp: timeAgo(comment.createdAt),
             onTap: () {
               final postId = comment.postId.replaceFirst('t3_', '');
               Navigator.of(context).push(
@@ -260,67 +267,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 ),
               );
             },
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'r/${comment.subreddit}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        timeAgo(comment.createdAt),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    comment.linkTitle ?? '',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    comment.body,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.arrow_upward,
-                        size: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${comment.score}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           );
         },
       ),
@@ -423,13 +369,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
           ),
           const SizedBox(height: 24),
           if (profile.isMod) ...[
-            _InfoRow(
+            LabelValueRow(
               label: 'Moderator',
               value: profile.moderatedSubreddits.isNotEmpty
                   ? '${profile.moderatedSubreddits.length} subreddit${profile.moderatedSubreddits.length == 1 ? '' : 's'}'
                   : 'Yes',
               icon: Icons.shield_outlined,
-              theme: theme,
             ),
             if (profile.moderatedSubreddits.isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -487,38 +432,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       permalink: comment.linkPermalink ?? '',
       type: PostType.link,
       score: comment.score,
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final ThemeData theme;
-
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 12),
-        Text(label, style: theme.textTheme.bodyMedium),
-        const Spacer(),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }

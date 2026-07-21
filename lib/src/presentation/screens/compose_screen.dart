@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/write_providers.dart';
 import '../utils/error_messages.dart';
+import '../widgets/shared/confirm_dialog.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyTo;
@@ -97,22 +98,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   Future<bool?> _confirmDiscard() {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Discard draft?'),
-        content: const Text('You have unsent changes. Discard them?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Keep editing'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Discard'),
-          ),
-        ],
-      ),
+    return showDiscardDraftDialog(
+      context,
+      content: 'You have unsent changes. Discard them?',
     );
   }
 

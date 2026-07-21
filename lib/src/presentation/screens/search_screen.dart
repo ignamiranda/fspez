@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/write_providers.dart';
 import '../../domain/models/post.dart';
+import '../../domain/models/search_user.dart';
+import '../../domain/models/subreddit.dart';
 import '../providers/search_providers.dart';
 import '../utils/block_user_helpers.dart';
-import '../utils/error_messages.dart';
-import '../widgets/shared/error_retry_widget.dart';
 import '../widgets/post_card.dart';
+import '../widgets/shared/comment_list_item.dart';
+import '../widgets/shared/search_tab.dart';
 import '../widgets/subreddit_card.dart';
 import '../widgets/user_search_card.dart';
 import 'post_detail_screen.dart';
@@ -194,7 +196,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   }
 }
 
-// ── Posts Tab ─────────────────────────────────────────────────────────────────
+// ── Tab Widgets ───────────────────────────────────────────────────────────────
+
+Widget _buildPostCard(BuildContext context, WidgetRef ref, Post post) {
+  return PostCard(
+    post: post,
+    onTap: () => Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
+    ),
+    onSubredditTap: () => Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SubredditFeedScreen(subredditName: post.subreddit.name),
+      ),
+    ),
+    onAuthorTap: post.author != '[deleted]'
+        ? () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => UserProfileScreen(username: post.author),
+              ),
+            )
+        : null,
+    onBlock:
+        ref.read(activeAccountProvider) != null && post.author != '[deleted]'
+            ? () => handleBlockUser(
+                  context: context,
+                  notifier: ref.read(blockActionProvider.notifier),
+                  username: post.author,
+                )
+            : null,
+  );
+}
 
 class _PostsTab extends ConsumerWidget {
   final SearchRequest request;
@@ -205,72 +236,14 @@ class _PostsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(searchPostsProvider(request));
-    final notifier = ref.read(searchPostsProvider(request).notifier);
-
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.error != null) {
-      return ErrorRetryWidget(
-        message: userFriendlyErrorMessage(state.error!),
-        onRetry: () => notifier.refresh(),
-      );
-    }
-
-    if (state.items.isEmpty) {
-      return const Center(child: Text('No results found.'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => notifier.refresh(),
-      child: ListView.builder(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (state.isLoadingMore && index == state.items.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final post = state.items[index];
-          return PostCard(
-            post: post,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
-            ),
-            onSubredditTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    SubredditFeedScreen(subredditName: post.subreddit.name),
-              ),
-            ),
-            onAuthorTap: post.author != '[deleted]'
-                ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            UserProfileScreen(username: post.author),
-                      ),
-                    )
-                : null,
-            onBlock: ref.read(activeAccountProvider) != null &&
-                    post.author != '[deleted]'
-                ? () => handleBlockUser(
-                      context: context,
-                      notifier: ref.read(blockActionProvider.notifier),
-                      username: post.author,
-                    )
-                : null,
-          );
-        },
-      ),
+    return SearchTab<Post>(
+      state: state,
+      notifier: ref.read(searchPostsProvider(request).notifier),
+      scrollController: scrollController,
+      itemBuilder: (post, _) => _buildPostCard(context, ref, post),
     );
   }
 }
-
-// ── Communities Tab ───────────────────────────────────────────────────────────
 
 class _CommunitiesTab extends ConsumerWidget {
   final SearchRequest request;
@@ -284,53 +257,21 @@ class _CommunitiesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(searchCommunitiesProvider(request));
-    final notifier = ref.read(searchCommunitiesProvider(request).notifier);
-
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.error != null) {
-      return ErrorRetryWidget(
-        message: userFriendlyErrorMessage(state.error!),
-        onRetry: () => notifier.refresh(),
-      );
-    }
-
-    if (state.items.isEmpty) {
-      return const Center(child: Text('No results found.'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => notifier.refresh(),
-      child: ListView.builder(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (state.isLoadingMore && index == state.items.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final subreddit = state.items[index];
-          return SubredditCard(
-            subreddit: subreddit,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    SubredditFeedScreen(subredditName: subreddit.name),
-              ),
-            ),
-          );
-        },
+    return SearchTab<Subreddit>(
+      state: state,
+      notifier: ref.read(searchCommunitiesProvider(request).notifier),
+      scrollController: scrollController,
+      itemBuilder: (subreddit, _) => SubredditCard(
+        subreddit: subreddit,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SubredditFeedScreen(subredditName: subreddit.name),
+          ),
+        ),
       ),
     );
   }
 }
-
-// ── Comments Tab ──────────────────────────────────────────────────────────────
 
 class _CommentsTab extends ConsumerWidget {
   final SearchRequest request;
@@ -341,149 +282,24 @@ class _CommentsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(searchCommentsProvider(request));
-    final notifier = ref.read(searchCommentsProvider(request).notifier);
-
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.error != null) {
-      return ErrorRetryWidget(
-        message: userFriendlyErrorMessage(state.error!),
-        onRetry: () => notifier.refresh(),
-      );
-    }
-
-    if (state.items.isEmpty) {
-      return const Center(child: Text('No results found.'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => notifier.refresh(),
-      child: ListView.builder(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (state.isLoadingMore && index == state.items.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final post = state.items[index];
-          return _CommentCard(
-            post: post,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// A comment-style card that shows post selftext as the "comment body".
-class _CommentCard extends StatelessWidget {
-  final Post post;
-  final VoidCallback? onTap;
-
-  const _CommentCard({required this.post, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'r/${post.subreddit.name}',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: cs.primary,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text('·'),
-                ),
-                Text(
-                  'u/${post.author}',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              post.title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (post.selftext != null && post.selftext!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  post.selftext!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.arrow_upward, size: 14, color: cs.onSurfaceVariant),
-                const SizedBox(width: 2),
-                Text(
-                  '${post.score}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 14,
-                  color: cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '${post.commentCount}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ],
+    return SearchTab<Post>(
+      state: state,
+      notifier: ref.read(searchCommentsProvider(request).notifier),
+      scrollController: scrollController,
+      itemBuilder: (post, _) => CommentListItem(
+        subreddit: post.subreddit.name,
+        author: post.author,
+        title: post.title,
+        body: post.selftext ?? '',
+        score: post.score,
+        commentCount: post.commentCount,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
         ),
       ),
     );
   }
 }
-
-// ── Media Tab ─────────────────────────────────────────────────────────────────
 
 class _MediaTab extends ConsumerWidget {
   final SearchRequest request;
@@ -494,82 +310,23 @@ class _MediaTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(searchPostsProvider(request));
-    final notifier = ref.read(searchPostsProvider(request).notifier);
-
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.error != null) {
-      return ErrorRetryWidget(
-        message: userFriendlyErrorMessage(state.error!),
-        onRetry: () => notifier.refresh(),
-      );
-    }
-
-    // Client-side filter for image/video/gallery posts
-    final mediaPosts = state.items
-        .where(
-          (p) =>
-              p.type == PostType.image ||
-              p.type == PostType.video ||
-              p.type == PostType.gallery,
-        )
-        .toList();
-
-    if (mediaPosts.isEmpty) {
-      return const Center(child: Text('No media results found.'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => notifier.refresh(),
-      child: ListView.builder(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: mediaPosts.length + (state.isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (state.isLoadingMore && index == mediaPosts.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final post = mediaPosts[index];
-          return PostCard(
-            post: post,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
-            ),
-            onSubredditTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    SubredditFeedScreen(subredditName: post.subreddit.name),
-              ),
-            ),
-            onAuthorTap: post.author != '[deleted]'
-                ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            UserProfileScreen(username: post.author),
-                      ),
-                    )
-                : null,
-            onBlock: ref.read(activeAccountProvider) != null &&
-                    post.author != '[deleted]'
-                ? () => handleBlockUser(
-                      context: context,
-                      notifier: ref.read(blockActionProvider.notifier),
-                      username: post.author,
-                    )
-                : null,
-          );
-        },
-      ),
+    return SearchTab<Post>(
+      state: state,
+      notifier: ref.read(searchPostsProvider(request).notifier),
+      scrollController: scrollController,
+      filter: (items) => items
+          .where(
+            (p) =>
+                p.type == PostType.image ||
+                p.type == PostType.video ||
+                p.type == PostType.gallery,
+          )
+          .toList(),
+      emptyMessage: 'No media results found.',
+      itemBuilder: (post, _) => _buildPostCard(context, ref, post),
     );
   }
 }
-
-// ── Profiles Tab ──────────────────────────────────────────────────────────────
 
 class _ProfilesTab extends ConsumerWidget {
   final SearchRequest request;
@@ -580,46 +337,17 @@ class _ProfilesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(searchUsersProvider(request));
-    final notifier = ref.read(searchUsersProvider(request).notifier);
-
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.error != null) {
-      return ErrorRetryWidget(
-        message: userFriendlyErrorMessage(state.error!),
-        onRetry: () => notifier.refresh(),
-      );
-    }
-
-    if (state.items.isEmpty) {
-      return const Center(child: Text('No results found.'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => notifier.refresh(),
-      child: ListView.builder(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (state.isLoadingMore && index == state.items.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final user = state.items[index];
-          return UserSearchCard(
-            user: user,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => UserProfileScreen(username: user.name),
-              ),
-            ),
-          );
-        },
+    return SearchTab<SearchUser>(
+      state: state,
+      notifier: ref.read(searchUsersProvider(request).notifier),
+      scrollController: scrollController,
+      itemBuilder: (user, _) => UserSearchCard(
+        user: user,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => UserProfileScreen(username: user.name),
+          ),
+        ),
       ),
     );
   }

@@ -13,6 +13,7 @@ import '../utils/format_utils.dart';
 import '../utils/reddit_markdown.dart';
 import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/feed_screen_scaffold.dart';
+import '../widgets/shared/label_value_row.dart';
 import '../widgets/subreddit_rules_sheet.dart';
 import 'search_screen.dart';
 import 'submit_screen.dart';
@@ -387,25 +388,28 @@ class _SubredditAboutSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _AboutInfoRow(
+            LabelValueRow(
               icon: Icons.group_outlined,
               label: 'Members',
               value: formatCount(sub.subscriberCount),
+              showZeroIfEmpty: true,
             ),
             if (sub.activeUserCount != null) ...[
               const SizedBox(height: 12),
-              _AboutInfoRow(
+              LabelValueRow(
                 icon: Icons.circle_outlined,
                 label: 'Online',
                 value: formatCount(sub.activeUserCount!),
+                showZeroIfEmpty: true,
               ),
             ],
             if (sub.createdAt != null) ...[
               const SizedBox(height: 12),
-              _AboutInfoRow(
+              LabelValueRow(
                 icon: Icons.calendar_today_outlined,
                 label: 'Created',
                 value: _formatCreatedDate(sub.createdAt!),
+                showZeroIfEmpty: true,
               ),
             ],
             if (_hasText(sub.sidebarDescription)) ...[
@@ -468,37 +472,6 @@ class _SubredditAboutSheet extends StatelessWidget {
       'Dec',
     ];
     return '${months[createdAt.month - 1]} ${createdAt.day}, ${createdAt.year}';
-  }
-}
-
-class _AboutInfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _AboutInfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 12),
-        Text(label, style: theme.textTheme.bodyMedium),
-        const Spacer(),
-        Text(
-          value.isEmpty ? '0' : value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
   }
 }
 

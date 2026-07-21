@@ -5,8 +5,9 @@ import '../../data/search_repository.dart';
 import '../../data/paginated_list_state.dart';
 import '../../data/paginated_notifier.dart';
 import '../../domain/models/post.dart';
-import '../../domain/models/subreddit.dart';
 import '../../domain/models/search_user.dart';
+import '../../domain/models/session_cookie.dart';
+import '../../domain/models/subreddit.dart';
 
 typedef SearchRequest = ({String query, String? subreddit});
 
@@ -14,70 +15,105 @@ final searchRepositoryProvider = Provider<SearchRepository>((ref) {
   return SearchRepository(ref.watch(redditClientProvider));
 });
 
-// ── Query-based family providers ──────────────────────────────────────────────
+typedef _SearchFetch<T> = Future<PaginatedResult<T>> Function(
+  SearchRepository repo, {
+  String? after,
+  SessionCookie? sessionCookie,
+});
 
-final searchPostsProvider = StateNotifierProvider.autoDispose.family<
-    PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
+PaginatedNotifier<T> _createSearchNotifier<T>(
+  Ref ref,
+  SearchRequest request,
+  _SearchFetch<T> fetch,
+) {
+  final repo = ref.watch(searchRepositoryProvider);
+  return PaginatedNotifier<T>(
+    fetchPage: ({after}) => fetch(
+      repo,
+      after: after,
+      sessionCookie: ref.read(activeAccountProvider)?.sessionCookie,
+    ),
+  );
+}
+
+final searchPostsProvider = StateNotifierProvider.autoDispose
+    .family<PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
   ref,
   request,
 ) {
-  final repo = ref.watch(searchRepositoryProvider);
-  final account = ref.watch(activeAccountProvider);
-  return PaginatedNotifier<Post>(
-    fetchPage: ({after}) => repo.searchPosts(
-      request.query,
-      after: after,
-      subreddit: request.subreddit,
-      sessionCookie: account?.sessionCookie,
-    ),
-  );
+  return _createSearchNotifier<Post>(
+      ref,
+      request,
+      (
+        repo, {
+        after,
+        sessionCookie,
+      }) =>
+          repo.searchPosts(
+            request.query,
+            after: after,
+            subreddit: request.subreddit,
+            sessionCookie: sessionCookie,
+          ));
 });
 
 final searchCommunitiesProvider = StateNotifierProvider.autoDispose.family<
     PaginatedNotifier<Subreddit>,
     PaginatedListState<Subreddit>,
     SearchRequest>((ref, request) {
-  final repo = ref.watch(searchRepositoryProvider);
-  final account = ref.watch(activeAccountProvider);
-  return PaginatedNotifier<Subreddit>(
-    fetchPage: ({after}) => repo.searchCommunities(
-      request.query,
-      after: after,
-      subreddit: request.subreddit,
-      sessionCookie: account?.sessionCookie,
-    ),
-  );
+  return _createSearchNotifier<Subreddit>(
+      ref,
+      request,
+      (
+        repo, {
+        after,
+        sessionCookie,
+      }) =>
+          repo.searchCommunities(
+            request.query,
+            after: after,
+            subreddit: request.subreddit,
+            sessionCookie: sessionCookie,
+          ));
 });
 
 final searchUsersProvider = StateNotifierProvider.autoDispose.family<
     PaginatedNotifier<SearchUser>,
     PaginatedListState<SearchUser>,
     SearchRequest>((ref, request) {
-  final repo = ref.watch(searchRepositoryProvider);
-  final account = ref.watch(activeAccountProvider);
-  return PaginatedNotifier<SearchUser>(
-    fetchPage: ({after}) => repo.searchUsers(
-      request.query,
-      after: after,
-      subreddit: request.subreddit,
-      sessionCookie: account?.sessionCookie,
-    ),
-  );
+  return _createSearchNotifier<SearchUser>(
+      ref,
+      request,
+      (
+        repo, {
+        after,
+        sessionCookie,
+      }) =>
+          repo.searchUsers(
+            request.query,
+            after: after,
+            subreddit: request.subreddit,
+            sessionCookie: sessionCookie,
+          ));
 });
 
-final searchCommentsProvider = StateNotifierProvider.autoDispose.family<
-    PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
+final searchCommentsProvider = StateNotifierProvider.autoDispose
+    .family<PaginatedNotifier<Post>, PaginatedListState<Post>, SearchRequest>((
   ref,
   request,
 ) {
-  final repo = ref.watch(searchRepositoryProvider);
-  final account = ref.watch(activeAccountProvider);
-  return PaginatedNotifier<Post>(
-    fetchPage: ({after}) => repo.searchComments(
-      request.query,
-      after: after,
-      subreddit: request.subreddit,
-      sessionCookie: account?.sessionCookie,
-    ),
-  );
+  return _createSearchNotifier<Post>(
+      ref,
+      request,
+      (
+        repo, {
+        after,
+        sessionCookie,
+      }) =>
+          repo.searchComments(
+            request.query,
+            after: after,
+            subreddit: request.subreddit,
+            sessionCookie: sessionCookie,
+          ));
 });

@@ -4,6 +4,7 @@ import '../../data/comment_providers.dart';
 import '../../data/auth_providers.dart';
 import '../utils/error_messages.dart';
 import 'reddit_body.dart';
+import 'shared/confirm_dialog.dart';
 
 Future<bool?> showCommentComposerSheet(
   BuildContext context, {
@@ -152,22 +153,9 @@ class _CommentComposerSheetContentState
   }
 
   Future<bool?> _confirmDiscard() {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Discard draft?'),
-        content: const Text('You have unsent text. Discard it?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Keep editing'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Discard'),
-          ),
-        ],
-      ),
+    return showDiscardDraftDialog(
+      context,
+      content: 'You have unsent text. Discard it?',
     );
   }
 
