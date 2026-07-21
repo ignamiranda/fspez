@@ -6,7 +6,6 @@ import '../../data/comment_providers.dart';
 import '../../data/write_providers.dart';
 import '../../data/comment_repository.dart';
 import '../../domain/enums/comment_sort.dart';
-import '../../domain/enums/feed_density.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/block_user_helpers.dart';
@@ -16,11 +15,7 @@ import '../widgets/bottom_sheet_menu.dart';
 import '../widgets/comment_composer_sheet.dart';
 import '../widgets/comment_tree.dart';
 import '../widgets/edit_sheet.dart';
-import '../widgets/media_viewer.dart';
-import '../widgets/sensitive_media_overlay.dart';
-import '../widgets/post_action_bar.dart';
-import '../widgets/post_metadata.dart';
-import '../widgets/feed_media_tile.dart';
+import '../widgets/post_body.dart';
 import '../widgets/reddit_body.dart';
 import 'subreddit_feed_screen.dart';
 import 'user_profile_screen.dart';
@@ -51,8 +46,6 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   CommentSort _commentSort = CommentSort.best;
-  // ignore: prefer_final_fields
-  bool _sensitiveRevealed = false;
   final Map<String, GlobalKey> _commentKeys = {};
 
   @override
@@ -207,7 +200,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     bool commentsLoading = false,
   }) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final comments = detail?.comments ?? const [];
     final post = detail?.post ?? widget.post;
     if (post == null) return const SizedBox.shrink();
@@ -215,9 +207,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final actions = ref.read(postActionsServiceProvider);
     final username = ref.read(activeAccountProvider)?.username;
     final settings = ref.watch(appSettingsProvider);
-    final shouldBlur = !_sensitiveRevealed &&
-        ((post.isNsfw && settings.nsfwBlur) ||
-            (post.isSpoiler && settings.spoilerBlur));
     final showAwards = settings.showAwards;
     final vote = effectiveVote ?? post.vote;
     final isSaved = effectiveSaved ?? post.isSaved;
@@ -230,11 +219,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         Expanded(
           child: ListView(
             children: [
-              _PostDetailHeader(
+              PostBody(
                 post: post,
-                theme: theme,
-                cs: cs,
-                showAwards: showAwards,
                 vote: vote,
                 onVote: actions != null
                     ? (dir) => handleVote(actions, context, postFullname, dir)
@@ -250,6 +236,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         );
                       }
                     : () => requireLoginForAction(context, action: 'save'),
+                showAwards: showAwards,
+                showStickiedIndicator: post.isStickied,
+                upvoteRatio: post.upvoteRatio,
                 onSubredditTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) =>
@@ -302,71 +291,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: RedditBody(post.selftext!),
                 ),
-              if (post.videoUrl != null)
-                _buildMediaTile(
-                  context: context,
-                  post: post,
-                  imageUrl: post.thumbnailUrl ??
-                      (post.mediaUrls.isNotEmpty ? post.mediaUrls.first : ''),
-                  shouldBlur: shouldBlur,
-                  onReveal: () => setState(() => _sensitiveRevealed = true),
-                  isVideo: true,
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: post.mediaUrls,
-                    videoUrl: post.videoUrl,
-                    isNsfw: post.isNsfw,
-                    isSpoiler: post.isSpoiler,
-                    initiallyRevealed: _sensitiveRevealed,
-                  ),
-                )
-              else if (post.mediaUrls.length >= 2)
-                _buildMediaTile(
-                  context: context,
-                  post: post,
-                  imageUrl: post.mediaUrls.first,
-                  shouldBlur: shouldBlur,
-                  onReveal: () => setState(() => _sensitiveRevealed = true),
-                  badgeText: '${post.mediaUrls.length}',
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: post.mediaUrls,
-                    isNsfw: post.isNsfw,
-                    isSpoiler: post.isSpoiler,
-                    initiallyRevealed: _sensitiveRevealed,
-                  ),
-                )
-              else if (post.mediaUrls.length == 1)
-                _buildMediaTile(
-                  context: context,
-                  post: post,
-                  imageUrl: post.mediaUrls.first,
-                  shouldBlur: shouldBlur,
-                  onReveal: () => setState(() => _sensitiveRevealed = true),
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: post.mediaUrls,
-                    isNsfw: post.isNsfw,
-                    isSpoiler: post.isSpoiler,
-                    initiallyRevealed: _sensitiveRevealed,
-                  ),
-                )
-              else if (post.type == PostType.image && post.url != null)
-                _buildMediaTile(
-                  context: context,
-                  post: post,
-                  imageUrl: post.url!,
-                  shouldBlur: shouldBlur,
-                  onReveal: () => setState(() => _sensitiveRevealed = true),
-                  onTap: () => MediaViewer.show(
-                    context,
-                    imageUrls: [post.url!],
-                    isNsfw: post.isNsfw,
-                    isSpoiler: post.isSpoiler,
-                    initiallyRevealed: _sensitiveRevealed,
-                  ),
-                )
-              else if (post.type == PostType.link && post.url != null)
+              if (post.type == PostType.link && post.url != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -565,118 +490,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-Widget _buildMediaTile({
-  required BuildContext context,
-  required Post post,
-  required String imageUrl,
-  required bool shouldBlur,
-  required VoidCallback onReveal,
-  bool isVideo = false,
-  String? badgeText,
-  required VoidCallback onTap,
-}) {
-  final tile = Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
-    child: FeedMediaTile(
-      imageUrl: imageUrl,
-      isVideo: isVideo,
-      badgeText: badgeText,
-      maxHeight: 340,
-      onTap: onTap,
-    ),
-  );
-
-  if (shouldBlur) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: SensitiveMediaOverlay(
-        isNsfw: post.isNsfw,
-        isSpoiler: post.isSpoiler,
-        onReveal: onReveal,
-        child: tile,
-      ),
-    );
-  }
-
-  return tile;
-}
-
-class _PostDetailHeader extends StatelessWidget {
-  final Post post;
-  final ThemeData theme;
-  final ColorScheme cs;
-  final bool showAwards;
-  final VoteDirection vote;
-  final ValueChanged<VoteDirection>? onVote;
-  final bool isSaved;
-  final VoidCallback? onSave;
-  final VoidCallback? onSubredditTap;
-  final VoidCallback? onAuthorTap;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-  final VoidCallback? onBlock;
-
-  const _PostDetailHeader({
-    required this.post,
-    required this.theme,
-    required this.cs,
-    required this.showAwards,
-    required this.vote,
-    this.onVote,
-    required this.isSaved,
-    this.onSave,
-    this.onSubredditTap,
-    this.onAuthorTap,
-    this.onEdit,
-    this.onDelete,
-    this.onBlock,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PostMetadataRow(
-            post: post,
-            theme: theme,
-            cs: cs,
-            density: FeedDensity.comfortable,
-            showAwards: showAwards,
-            showStickiedIndicator: post.isStickied,
-            onSubredditTap: onSubredditTap,
-            onAuthorTap: onAuthorTap,
-            onEdit: onEdit,
-            onDelete: onDelete,
-            onBlock: onBlock,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            post.title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          PostActionBar(
-            post: post,
-            vote: vote,
-            score: post.score,
-            commentCount: post.commentCount,
-            isSaved: isSaved,
-            upvoteRatio: post.upvoteRatio,
-            compact: false,
-            onVote: onVote,
-            onSave: onSave,
-          ),
-        ],
       ),
     );
   }

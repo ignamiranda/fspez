@@ -4,13 +4,10 @@ import '../../data/app_settings.dart';
 import '../../domain/enums/feed_density.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
-import 'media_viewer.dart';
-import 'video_playback_coordinator.dart';
 import 'post_metadata.dart';
 import 'post_action_bar.dart';
-import 'post_inline_video.dart';
-import 'feed_media_tile.dart';
-import 'sensitive_media_overlay.dart';
+import 'post_body.dart';
+import 'video_playback_coordinator.dart';
 import 'title_with_thumbnail.dart';
 
 class PostCard extends ConsumerStatefulWidget {
@@ -54,34 +51,6 @@ class PostCard extends ConsumerStatefulWidget {
 }
 
 class _PostCardState extends ConsumerState<PostCard> {
-  bool _sensitiveRevealed = false;
-
-  String? get _compactThumbnailUrl {
-    final thumbnail = widget.post.thumbnailUrl;
-    if (thumbnail != null &&
-        thumbnail != 'self' &&
-        thumbnail != 'default' &&
-        thumbnail != 'nsfw' &&
-        thumbnail != 'spoiler') {
-      return thumbnail;
-    }
-    if (widget.post.mediaUrls.isNotEmpty) return widget.post.mediaUrls.first;
-    if (widget.post.type == PostType.image && widget.post.url != null) {
-      return widget.post.url;
-    }
-    return null;
-  }
-
-  /// Whether this post's media should be blurred based on settings.
-  bool get _shouldBlur {
-    final settings = ref.read(appSettingsProvider);
-    final post = widget.post;
-    if (_sensitiveRevealed) return false;
-    if (post.isNsfw && settings.nsfwBlur) return true;
-    if (post.isSpoiler && settings.spoilerBlur) return true;
-    return false;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -90,9 +59,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     final density = settings.feedDensity;
     final showAwards = settings.showAwards;
     final compact = density == FeedDensity.compact;
-    final hasFeedMedia = widget.post.videoUrl != null ||
-        widget.post.mediaUrls.isNotEmpty ||
-        (widget.post.type == PostType.image && widget.post.url != null);
     final showSelftext = density == FeedDensity.comfortable;
     final vote = widget.effectiveVote ?? widget.post.vote;
 
@@ -134,56 +100,31 @@ class _PostCardState extends ConsumerState<PostCard> {
                 const SizedBox(height: 2),
                 PostTitleWithThumbnail(
                   post: widget.post,
-                  thumbnailUrl: _compactThumbnailUrl,
+                  thumbnailUrl: null,
                   theme: theme,
                   isCompact: true,
                 ),
-              ] else if (hasFeedMedia) ...[
-                PostMetadataRow(
+                const SizedBox(height: 4),
+                PostActionBar(
                   post: widget.post,
-                  theme: theme,
-                  cs: cs,
-                  density: density,
-                  showAwards: showAwards,
-                  showStickiedIndicator: widget.showStickiedIndicator,
-                  onSubredditTap: widget.onSubredditTap,
-                  onAuthorTap: widget.onAuthorTap,
-                  onEdit: widget.onEdit,
-                  onDelete: widget.onDelete,
-                  onHide: widget.onHide,
-                  onUnhide: widget.onUnhide,
-                  onBlock: widget.onBlock,
+                  vote: vote,
+                  score: widget.post.score,
+                  commentCount: widget.post.commentCount,
+                  isSaved: widget.effectiveSaved ?? widget.post.isSaved,
+                  compact: true,
+                  onVote: widget.onVote,
+                  onSave: widget.onSave,
+                  onTap: widget.onTap,
                 ),
-                const SizedBox(height: 6),
-                PostTitleWithThumbnail(
-                  post: widget.post,
-                  thumbnailUrl: null,
-                  theme: theme,
-                  isCompact: false,
-                ),
-                const SizedBox(height: 8),
-                _buildMediaSection(theme, cs, density: density),
-                if (showSelftext &&
-                    widget.post.type == PostType.self_ &&
-                    widget.post.selftext != null &&
-                    widget.post.selftext!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      widget.post.selftext!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
               ] else ...[
-                PostMetadataRow(
+                PostBody(
                   post: widget.post,
-                  theme: theme,
-                  cs: cs,
-                  density: density,
+                  vote: vote,
+                  onVote: widget.onVote,
+                  isSaved: widget.effectiveSaved ?? widget.post.isSaved,
+                  onSave: widget.onSave,
+                  onTap: widget.onTap,
+                  showSelftext: showSelftext,
                   showAwards: showAwards,
                   showStickiedIndicator: widget.showStickiedIndicator,
                   onSubredditTap: widget.onSubredditTap,
@@ -193,128 +134,13 @@ class _PostCardState extends ConsumerState<PostCard> {
                   onHide: widget.onHide,
                   onUnhide: widget.onUnhide,
                   onBlock: widget.onBlock,
+                  videoPlaybackCoordinator: widget.videoPlaybackCoordinator,
                 ),
-                const SizedBox(height: 2),
-                PostTitleWithThumbnail(
-                  post: widget.post,
-                  thumbnailUrl: _compactThumbnailUrl,
-                  theme: theme,
-                  isCompact: false,
-                ),
-                if (showSelftext &&
-                    widget.post.type == PostType.self_ &&
-                    widget.post.selftext != null &&
-                    widget.post.selftext!.isNotEmpty)
-                  Padding(
-                    padding: EdgeInsets.only(top: compact ? 2 : 4),
-                    child: Text(
-                      widget.post.selftext!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                _buildMediaSection(theme, cs, density: density),
               ],
-              SizedBox(height: compact ? 4 : 6),
-              PostActionBar(
-                post: widget.post,
-                vote: vote,
-                score: widget.post.score,
-                commentCount: widget.post.commentCount,
-                isSaved: widget.effectiveSaved ?? widget.post.isSaved,
-                compact: compact,
-                onVote: widget.onVote,
-                onSave: widget.onSave,
-                onTap: widget.onTap,
-              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildMediaSection(
-    ThemeData theme,
-    ColorScheme cs, {
-    required FeedDensity density,
-  }) {
-    final post = widget.post;
-    final shouldBlur = _shouldBlur;
-    final mediaMaxHeight = density == FeedDensity.compact ? 140.0 : 240.0;
-
-    Widget? mediaWidget;
-
-    if (post.videoUrl != null) {
-      mediaWidget = InlineVideoPlayer(
-        postKey: post.fullname,
-        videoUrl: post.videoUrl!,
-        thumbnailUrl: post.thumbnailUrl,
-        videoPlaybackCoordinator: widget.videoPlaybackCoordinator ??
-            GlobalVideoPlaybackCoordinator.instance,
-        onTap: () => MediaViewer.show(
-          context,
-          imageUrls: post.mediaUrls,
-          videoUrl: post.videoUrl,
-          isNsfw: post.isNsfw,
-          isSpoiler: post.isSpoiler,
-          initiallyRevealed: _sensitiveRevealed,
-        ),
-      );
-    } else if (post.mediaUrls.length >= 2) {
-      mediaWidget = FeedMediaTile(
-        imageUrl: post.mediaUrls.first,
-        badgeText: '${post.mediaUrls.length}',
-        badgeIcon: Icons.photo_library_outlined,
-        onTap: () => MediaViewer.show(
-          context,
-          imageUrls: post.mediaUrls,
-          isNsfw: post.isNsfw,
-          isSpoiler: post.isSpoiler,
-          initiallyRevealed: _sensitiveRevealed,
-        ),
-        maxHeight: mediaMaxHeight,
-      );
-    } else if (post.mediaUrls.length == 1) {
-      mediaWidget = FeedMediaTile(
-        imageUrl: post.mediaUrls.first,
-        onTap: () => MediaViewer.show(
-          context,
-          imageUrls: post.mediaUrls,
-          isNsfw: post.isNsfw,
-          isSpoiler: post.isSpoiler,
-          initiallyRevealed: _sensitiveRevealed,
-        ),
-        maxHeight: mediaMaxHeight,
-      );
-    } else if (post.type == PostType.image && post.url != null) {
-      mediaWidget = FeedMediaTile(
-        imageUrl: post.url!,
-        onTap: () => MediaViewer.show(
-          context,
-          imageUrls: [post.url!],
-          isNsfw: post.isNsfw,
-          isSpoiler: post.isSpoiler,
-          initiallyRevealed: _sensitiveRevealed,
-        ),
-        maxHeight: mediaMaxHeight,
-      );
-    }
-
-    if (mediaWidget == null) return const SizedBox.shrink();
-
-    if (shouldBlur) {
-      return SensitiveMediaOverlay(
-        isNsfw: post.isNsfw,
-        isSpoiler: post.isSpoiler,
-        onReveal: () => setState(() => _sensitiveRevealed = true),
-        child: mediaWidget,
-      );
-    }
-
-    return mediaWidget;
   }
 }

@@ -1,0 +1,5 @@
+# 0005: Unified post layout across feed and detail views
+
+Feed cards and the detail page rendered the same Post data with different layouts: the action bar (vote/comment/save) appeared below media in the feed but above it in the detail page. This inconsistency made the same post look unrelated across views.
+
+We decided that the feed layout — metadata row, title, media block, action bar — is the canonical PostBody and the detail page reuses it identically as its header, appending selftext and comments below. This means the action bar sits below the full selftext on text-only posts in detail, trading immediate action-bar visibility for layout consistency. The action bar is the correct place for its affordances (it communicates post-level state — score, vote direction, saved status — that applies whether or not the user has read the body), and keeping it in the same position across views removes a source of disorientation.
