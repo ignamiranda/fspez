@@ -8,6 +8,11 @@ import 'award_badge.dart';
 import 'reddit_body.dart';
 import 'user_flair_chip.dart';
 
+/// Maximum comment depth before truncation, matching old Reddit's MAX_RECURSION.
+/// Comments at this depth or beyond show a "Continue this thread" link instead
+/// of rendering further nested children.
+const kMaxCommentDepth = 10;
+
 class CommentTree extends StatefulWidget {
   final Map<String, GlobalKey>? commentKeys;
   final Comment comment;
@@ -46,6 +51,7 @@ class CommentTree extends StatefulWidget {
 
 class _CommentTreeState extends State<CommentTree> {
   bool? _userCollapsed;
+  bool _showTruncated = false;
 
   bool get _isCollapsed => _userCollapsed ?? widget.comment.isCollapsed;
 
@@ -84,92 +90,87 @@ class _CommentTreeState extends State<CommentTree> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        _toggleCollapse();
-                        widget.onAuthorTap?.call(widget.comment.author);
-                      },
-                      child: Text(
-                        'u/${widget.comment.author}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (widget.comment.authorFlair != null) ...[
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: UserFlairChip(
-                          flair: widget.comment.authorFlair!,
-                        ),
-                      ),
-                    ],
-                    if (widget.comment.isSubmitter) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
+                GestureDetector(
+                  onTap: _toggleCollapse,
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: _isCollapsed
+                            ? _toggleCollapse
+                            : () =>
+                                widget.onAuthorTap?.call(widget.comment.author),
                         child: Text(
-                          'OP',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: theme.colorScheme.onPrimary,
+                          'u/${widget.comment.author}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                    ],
-                    if (widget.comment.isModerator) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.shield,
-                        size: 14,
-                        color: theme.colorScheme.tertiary,
-                      ),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        '·',
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      if (widget.comment.authorFlair != null) ...[
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: UserFlairChip(
+                            flair: widget.comment.authorFlair!,
+                          ),
                         ),
-                      ),
-                    ),
-                    Text(
-                      timeAgo(widget.comment.createdAt),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (_isCollapsed)
-                      GestureDetector(
-                        onTap: _toggleCollapse,
-                        child: Icon(
-                          Icons.unfold_more,
+                      ],
+                      if (widget.comment.isSubmitter) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            'OP',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (widget.comment.isModerator) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.shield,
                           size: 14,
+                          color: theme.colorScheme.tertiary,
+                        ),
+                      ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          '·',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        timeAgo(widget.comment.createdAt),
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    Text(
-                      '${widget.comment.score} pts',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const Spacer(),
+                      Text(
+                        '${widget.comment.score} pts',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    if (widget.showAwards && widget.comment.awardCount > 0) ...[
-                      const SizedBox(width: 8),
-                      AwardBadge(awardCount: widget.comment.awardCount),
+                      if (widget.showAwards &&
+                          widget.comment.awardCount > 0) ...[
+                        const SizedBox(width: 8),
+                        AwardBadge(awardCount: widget.comment.awardCount),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
                 GestureDetector(
                   onTap: _toggleCollapse,
@@ -389,28 +390,7 @@ class _CommentTreeState extends State<CommentTree> {
                       ? const SizedBox.shrink()
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: widget.comment.replies.map(
-                            (reply) {
-                              widget.commentKeys
-                                  ?.putIfAbsent(reply.id, () => GlobalKey());
-                              return CommentTree(
-                                key: widget.commentKeys?[reply.id],
-                                commentKeys: widget.commentKeys,
-                                comment: reply,
-                                voteOverrides: widget.voteOverrides,
-                                onVote: widget.onVote,
-                                saveOverrides: widget.saveOverrides,
-                                onSave: widget.onSave,
-                                onReply: widget.onReply,
-                                onAuthorTap: widget.onAuthorTap,
-                                onDelete: widget.onDelete,
-                                onEdit: widget.onEdit,
-                                onBlock: widget.onBlock,
-                                onReport: widget.onReport,
-                                showAwards: widget.showAwards,
-                              );
-                            },
-                          ).toList(),
+                          children: _buildReplyList(theme),
                         ),
                 ),
               ],
@@ -419,6 +399,134 @@ class _CommentTreeState extends State<CommentTree> {
         ),
       ],
     );
+  }
+
+  List<Widget> _buildReplyList(ThemeData theme) {
+    final truncated = <Comment>[];
+    final visible = <Comment>[];
+
+    for (final reply in widget.comment.replies) {
+      // "more" placeholders are always visible — they're load-more buttons.
+      if (reply.isMorePlaceholder) {
+        visible.add(reply);
+      } else if (!_showTruncated && reply.depth >= kMaxCommentDepth) {
+        truncated.add(reply);
+      } else {
+        visible.add(reply);
+      }
+    }
+
+    final children = <Widget>[];
+
+    for (final reply in visible) {
+      if (reply.isMorePlaceholder) {
+        children.add(_buildMorePlaceholder(reply, theme));
+      } else {
+        widget.commentKeys?.putIfAbsent(reply.id, () => GlobalKey());
+        children.add(CommentTree(
+          key: widget.commentKeys?[reply.id],
+          commentKeys: widget.commentKeys,
+          comment: reply,
+          voteOverrides: widget.voteOverrides,
+          onVote: widget.onVote,
+          saveOverrides: widget.saveOverrides,
+          onSave: widget.onSave,
+          onReply: widget.onReply,
+          onAuthorTap: widget.onAuthorTap,
+          onDelete: widget.onDelete,
+          onEdit: widget.onEdit,
+          onBlock: widget.onBlock,
+          onReport: widget.onReport,
+          showAwards: widget.showAwards,
+        ));
+      }
+    }
+
+    if (truncated.isNotEmpty) {
+      final totalHidden = _countTruncated(truncated);
+      children.add(_buildContinueThreadLink(totalHidden, theme));
+    }
+
+    return children;
+  }
+
+  Widget _buildMorePlaceholder(Comment reply, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12.0, top: 8, bottom: 8),
+      child: InkWell(
+        onTap: () {
+          // For now, expanding a "more" placeholder is a no-op.
+          // In a future pass this could load children from /api/morechildren.
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${reply.moreCount} more replies')),
+          );
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.unfold_more,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                reply.moreCount == 1
+                    ? '1 more reply'
+                    : '${reply.moreCount} more replies',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContinueThreadLink(int totalHidden, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 48, top: 8, bottom: 8),
+      child: InkWell(
+        onTap: () => setState(() => _showTruncated = true),
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.arrow_downward,
+                size: 14,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                totalHidden == 1
+                    ? 'Continue this thread — 1 more reply'
+                    : 'Continue this thread — $totalHidden more replies',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Recursively count all comments in the truncated sub-tree.
+  int _countTruncated(List<Comment> comments) {
+    int count = 0;
+    for (final c in comments) {
+      count += 1 + _countTruncated(c.replies);
+    }
+    return count;
   }
 }
 

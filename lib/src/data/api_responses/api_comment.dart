@@ -27,6 +27,9 @@ class ApiComment {
   final String? linkPermalink;
   final String? commentSubreddit;
 
+  /// For "more" placeholders: list of child comment IDs.
+  final List<String> moreChildren;
+
   ApiComment({
     required this.id,
     required this.body,
@@ -51,7 +54,33 @@ class ApiComment {
     this.linkTitle,
     this.linkPermalink,
     this.commentSubreddit,
+    this.moreChildren = const [],
   });
+
+  /// Create a placeholder ApiComment from a "more" API object.
+  factory ApiComment.more(Map<String, dynamic> data) {
+    final children =
+        (data['children'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    final syntheticId = children.isNotEmpty ? children.first : '';
+    return ApiComment(
+      id: syntheticId,
+      body: '',
+      author: '',
+      score: 0,
+      saved: false,
+      isSubmitter: false,
+      stickied: false,
+      awardCount: 0,
+      createdUtc: 0,
+      linkId: data['parent_id'] as String? ?? '',
+      parentId: data['parent_id'] as String?,
+      depth: data['depth'] as int? ?? 0,
+      collapsed: false,
+      replies: [],
+      commentSubreddit: data['subreddit'] as String?,
+      moreChildren: children,
+    );
+  }
 
   factory ApiComment.fromJson(Map<String, dynamic> data) {
     final repliesRaw = data['replies'];
@@ -59,11 +88,12 @@ class ApiComment {
     if (repliesRaw is Map<String, dynamic> && repliesRaw['kind'] == 'Listing') {
       final children = (repliesRaw['data'] as Map<String, dynamic>)['children']
           as List<dynamic>;
-      replies = children
-          .whereType<Map<String, dynamic>>()
-          .where((c) => c['kind'] == 't1')
-          .map((c) => ApiComment.fromJson(c['data'] as Map<String, dynamic>))
-          .toList();
+      replies = children.whereType<Map<String, dynamic>>().map((c) {
+        if (c['kind'] == 'more') {
+          return ApiComment.more(c['data'] as Map<String, dynamic>);
+        }
+        return ApiComment.fromJson(c['data'] as Map<String, dynamic>);
+      }).toList();
     } else {
       replies = [];
     }
@@ -123,6 +153,8 @@ class ApiComment {
       subreddit: commentSubreddit,
       linkTitle: linkTitle,
       linkPermalink: linkPermalink,
+      isMorePlaceholder: moreChildren.isNotEmpty,
+      moreCount: moreChildren.length,
     );
   }
 }

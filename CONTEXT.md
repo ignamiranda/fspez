@@ -43,3 +43,7 @@ _Avoid_: Anonymous, offline
 **PostBody**:
 The canonical layout block for a single post, rendered identically in feed cards and detail headers. Consists of metadata row (subreddit, author, timestamp, awards), title, media block (images, video, gallery if present), and action bar (vote, comment, save, share). In feed, PostBody *is* the card; in detail, it is the header — additional content (full selftext, comments) is appended below but does not alter the PostBody layout.
 _Avoid_: PostHeader (implies a different layout than feed), PostCard (refers to the feed wrapper, not the layout)
+
+**Comment**:
+A reply to a post or another comment in a thread. Comments are organized in a tree structure via `depth` and `replies`. Each Comment can be individually collapsed or expanded by the User.
+_Avoid_: Reply (ambiguous — also means the action of replying), Thread

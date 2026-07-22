@@ -101,13 +101,14 @@ class CommentRepository {
   }
 
   List<Comment> _parseComments(List<dynamic> children) {
-    return children
-        .whereType<Map<String, dynamic>>()
-        .where((child) => child['kind'] == 't1')
-        .map((child) =>
-            ApiComment.fromJson(child['data'] as Map<String, dynamic>)
-                .toDomain())
-        .toList();
+    return children.whereType<Map<String, dynamic>>().map((child) {
+      if (child['kind'] == 'more') {
+        return ApiComment.more(child['data'] as Map<String, dynamic>)
+            .toDomain();
+      }
+      return ApiComment.fromJson(child['data'] as Map<String, dynamic>)
+          .toDomain();
+    }).toList();
   }
 
   Comment _applyAwards(Comment comment, Map<String, int> awardCounts) {

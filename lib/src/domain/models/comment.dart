@@ -24,6 +24,14 @@ class Comment with Equatable {
   final String? linkTitle;
   final String? linkPermalink;
 
+  /// API "more" placeholder fields (false/0 by default for regular comments).
+  /// When true, this Comment represents a "load more replies" placeholder
+  /// from the API (kind: "more"), not an actual comment.
+  final bool isMorePlaceholder;
+
+  /// Number of additional replies represented by this placeholder.
+  final int moreCount;
+
   String get fullname => 't1_$id';
 
   const Comment({
@@ -47,6 +55,8 @@ class Comment with Equatable {
     this.subreddit,
     this.linkTitle,
     this.linkPermalink,
+    this.isMorePlaceholder = false,
+    this.moreCount = 0,
   });
 
   Comment copyWith({
@@ -70,6 +80,8 @@ class Comment with Equatable {
     String? subreddit,
     String? linkTitle,
     String? linkPermalink,
+    bool? isMorePlaceholder,
+    int? moreCount,
   }) {
     return Comment(
       id: id ?? this.id,
@@ -92,6 +104,8 @@ class Comment with Equatable {
       subreddit: subreddit ?? this.subreddit,
       linkTitle: linkTitle ?? this.linkTitle,
       linkPermalink: linkPermalink ?? this.linkPermalink,
+      isMorePlaceholder: isMorePlaceholder ?? this.isMorePlaceholder,
+      moreCount: moreCount ?? this.moreCount,
     );
   }
 
@@ -117,5 +131,7 @@ class Comment with Equatable {
         subreddit,
         linkTitle,
         linkPermalink,
+        isMorePlaceholder,
+        moreCount,
       ];
 }
