@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
 import '../../data/app_settings.dart';
@@ -9,6 +10,7 @@ import '../../domain/enums/comment_sort.dart';
 import '../../domain/models/post.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../utils/block_user_helpers.dart';
+import '../utils/desktop_shortcuts.dart';
 import '../utils/interaction_helpers.dart';
 import '../utils/open_url.dart';
 import '../widgets/bottom_sheet_menu.dart';
@@ -47,6 +49,7 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   CommentSort _commentSort = CommentSort.best;
   final Map<String, GlobalKey> _commentKeys = {};
+  final FocusNode _detailFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -64,6 +67,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _detailFocusNode.dispose();
+    super.dispose();
+  }
+
   void _scheduleScrollToComment(String targetId, {int retries = 5}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = _commentKeys[targetId];
@@ -79,6 +88,48 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         });
       }
     });
+  }
+
+  KeyEventResult _handleDetailKeyEvent(FocusNode node, KeyEvent event) {
+    if (!isDesktopPlatform) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final postFullname = _postFullname;
+    final actions = ref.read(postActionsServiceProvider);
+    final key = event.logicalKey;
+
+    if (key == LogicalKeyboardKey.keyA) {
+      if (actions != null) {
+        handleVote(actions, context, postFullname, VoteDirection.upvote);
+      } else {
+        requireLoginForAction(context, action: 'vote');
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (key == LogicalKeyboardKey.keyZ) {
+      if (actions != null) {
+        handleVote(actions, context, postFullname, VoteDirection.downvote);
+      } else {
+        requireLoginForAction(context, action: 'vote');
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (key == LogicalKeyboardKey.keyS) {
+      if (actions != null) {
+        final postSave = ref.read(saveProvider.select((m) => m[postFullname]));
+        final wasSaved = postSave ?? widget.post?.isSaved ?? false;
+        handleSave(actions, postFullname, context, wasSaved: wasSaved);
+      } else {
+        requireLoginForAction(context, action: 'save');
+      }
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 
   ({String subreddit, String postId, CommentSort sort}) _postDetailParams([
@@ -156,7 +207,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             error: (_, __) => '',
           );
 
-    return Scaffold(
+    Widget scaffold = Scaffold(
       appBar: AppBar(
         title: Text(
           appBarTitle,
@@ -188,6 +239,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           onRetry: () => ref.invalidate(postDetailProvider(params)),
         ),
       ),
+    );
+
+    if (!isDesktopPlatform) return scaffold;
+
+    return Focus(
+      focusNode: _detailFocusNode,
+      autofocus: true,
+      onKeyEvent: _handleDetailKeyEvent,
+      child: scaffold,
     );
   }
 

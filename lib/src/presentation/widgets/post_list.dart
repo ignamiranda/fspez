@@ -24,6 +24,8 @@ class PostList extends StatelessWidget {
   final ScrollController? scrollController;
   final Widget? footer;
   final Future<void> Function()? onRefresh;
+  final int focusedIndex;
+  final ValueChanged<int>? onFocusedIndexChanged;
 
   const PostList({
     super.key,
@@ -47,6 +49,8 @@ class PostList extends StatelessWidget {
     this.scrollController,
     this.footer,
     this.onRefresh,
+    this.focusedIndex = -1,
+    this.onFocusedIndexChanged,
   });
 
   @override
@@ -74,12 +78,13 @@ class PostList extends StatelessWidget {
         }
         final post = visiblePosts[index];
         final fullname = post.fullname;
+        final isFocused = focusedIndex == index;
         return PostCard(
           post: post,
+          isFocused: isFocused,
           effectiveVote: voteOverrides[fullname],
-          onVote: onPostVote != null
-              ? (dir) => onPostVote!(fullname, dir)
-              : null,
+          onVote:
+              onPostVote != null ? (dir) => onPostVote!(fullname, dir) : null,
           effectiveSaved: saveOverrides[fullname],
           onSave: onPostSave != null ? () => onPostSave!(fullname) : null,
           onEdit: onPostEdit != null && post.author == currentUsername
@@ -97,9 +102,8 @@ class PostList extends StatelessWidget {
               : null,
           onTap: onPostTap != null ? () => onPostTap!(post) : null,
           showStickiedIndicator: showStickiedIndicator,
-          onSubredditTap: onSubredditTap != null
-              ? () => onSubredditTap!(post)
-              : null,
+          onSubredditTap:
+              onSubredditTap != null ? () => onSubredditTap!(post) : null,
           onAuthorTap: onAuthorTap != null ? () => onAuthorTap!(post) : null,
         );
       },

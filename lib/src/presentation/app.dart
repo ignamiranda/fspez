@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'tab_scroll_signal.dart';
 import 'theme.dart';
@@ -14,6 +15,7 @@ import '../data/inbox_providers.dart';
 import '../data/session_health.dart';
 import '../domain/enums/app_theme_mode.dart';
 import '../domain/models/session_cookie.dart';
+import 'utils/desktop_shortcuts.dart';
 import 'widgets/shared/offline_banner.dart';
 
 class ConnectivityNotifier extends StateNotifier<bool> {
@@ -113,8 +115,41 @@ class _MainShellState extends ConsumerState<_MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    return _buildBody(context);
+  }
+
+  final FocusNode _globalFocusNode = FocusNode();
+
+  Widget _buildBody(BuildContext context) {
     final unreadCount = ref.watch(inboxUnreadCountProvider);
 
+    final scaffold = _buildScaffold(context, unreadCount);
+
+    if (!isDesktopPlatform) return scaffold;
+
+    return Focus(
+      focusNode: _globalFocusNode,
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+          return KeyEventResult.ignored;
+        }
+        // Show help on ? (question mark key, which is Shift+/ on US keyboards).
+        // We match the key directly — the character field is set only for
+        // printable keys on some platforms, so we check logicalKey == slash
+        // and verify the event character is '?'.
+        if (event.logicalKey == LogicalKeyboardKey.slash &&
+            event.character == '?') {
+          showKeyboardShortcutHelp(context);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: scaffold,
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, int unreadCount) {
     ref.listen(sessionHealthProvider, (_, next) {
       final health = next.valueOrNull;
 

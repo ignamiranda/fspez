@@ -31,6 +31,7 @@ class PostCard extends ConsumerStatefulWidget {
   final VoidCallback? onAuthorTap;
   final VoidCallback? onBlock;
   final VideoPlaybackCoordinator? videoPlaybackCoordinator;
+  final bool isFocused;
 
   const PostCard({
     super.key,
@@ -49,6 +50,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.onAuthorTap,
     this.onBlock,
     this.videoPlaybackCoordinator,
+    this.isFocused = false,
   });
 
   @override
@@ -78,11 +80,16 @@ class _PostCardState extends ConsumerState<PostCard>
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
+          left: widget.isFocused
+              ? BorderSide(color: cs.primary, width: 3)
+              : BorderSide.none,
         ),
       ),
-      padding: EdgeInsets.symmetric(
-        vertical: compact ? 4 : 10,
-        horizontal: 0,
+      padding: EdgeInsets.fromLTRB(
+        widget.isFocused ? 9 : 12,
+        compact ? 4 : 10,
+        0,
+        compact ? 4 : 10,
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(

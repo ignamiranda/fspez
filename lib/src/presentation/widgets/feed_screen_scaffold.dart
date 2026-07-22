@@ -23,6 +23,8 @@ class FeedScreenScaffold extends ConsumerWidget {
   final void Function(Post post)? onSubredditTapOverride;
   final String emptyMessage;
   final bool filterHidden;
+  final int focusedIndex;
+  final ValueChanged<int>? onFocusedIndexChanged;
 
   const FeedScreenScaffold({
     super.key,
@@ -31,6 +33,8 @@ class FeedScreenScaffold extends ConsumerWidget {
     this.onSubredditTapOverride,
     this.emptyMessage = 'No posts yet.',
     this.filterHidden = true,
+    this.focusedIndex = -1,
+    this.onFocusedIndexChanged,
   });
 
   @override
@@ -82,6 +86,8 @@ class FeedScreenScaffold extends ConsumerWidget {
     final postList = PostList(
       scrollController: scrollController,
       posts: state.items,
+      focusedIndex: focusedIndex,
+      onFocusedIndexChanged: onFocusedIndexChanged,
       onRefresh: () async {
         HapticFeedback.mediumImpact();
 
