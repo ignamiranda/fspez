@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/post.dart';
 import 'package:fspez/src/domain/models/subreddit.dart';
 import 'package:fspez/src/presentation/utils/desktop_shortcuts.dart';
 import 'package:fspez/src/presentation/widgets/post_card.dart';
 import 'package:fspez/src/presentation/widgets/post_list.dart';
-import 'package:fspez/src/data/app_settings.dart';
 import 'package:fspez/src/data/auth_providers.dart';
 
 /// Wraps [child] in a [ProviderScope] with overrides needed for widget tests.
