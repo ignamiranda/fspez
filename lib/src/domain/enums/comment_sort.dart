@@ -3,7 +3,8 @@ enum CommentSort {
   top('top', 'Top'),
   new_('new', 'New'),
   controversial('controversial', 'Controversial'),
-  old('old', 'Old');
+  old('old', 'Old'),
+  qa('qa', 'Q&A');
 
   final String queryValue;
   final String label;
