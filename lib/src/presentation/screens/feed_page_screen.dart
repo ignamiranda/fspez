@@ -5,22 +5,34 @@ import '../../data/feed_providers.dart';
 import '../utils/infinite_scroll.dart';
 import '../widgets/feed_screen_scaffold.dart';
 
-class HiddenScreen extends ConsumerStatefulWidget {
-  const HiddenScreen({super.key});
+/// A parameterized screen that renders a feed page for any [FeedPageConfig].
+///
+/// Replaces HiddenScreen and SavedScreen, which were identical except for
+/// the config, title, and empty message.
+class FeedPageScreen extends ConsumerStatefulWidget {
+  final FeedPageConfig config;
+  final String title;
+  final String emptyMessage;
+
+  const FeedPageScreen({
+    super.key,
+    required this.config,
+    required this.title,
+    this.emptyMessage = 'No posts.',
+  });
 
   @override
-  ConsumerState<HiddenScreen> createState() => _HiddenScreenState();
+  ConsumerState<FeedPageScreen> createState() => _FeedPageScreenState();
 }
 
-class _HiddenScreenState extends ConsumerState<HiddenScreen> {
-  static const _config = FeedPageConfig.hidden();
+class _FeedPageScreenState extends ConsumerState<FeedPageScreen> {
   ScrollController? _scrollController;
 
   @override
   void initState() {
     super.initState();
     _scrollController = createInfiniteScrollController(
-      () => ref.read(feedPageProvider(_config).notifier).loadMore(),
+      () => ref.read(feedPageProvider(widget.config).notifier).loadMore(),
     );
   }
 
@@ -34,19 +46,19 @@ class _HiddenScreenState extends ConsumerState<HiddenScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hidden'),
+        title: Text(widget.title),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () =>
-                ref.read(feedPageProvider(_config).notifier).refresh(),
+                ref.read(feedPageProvider(widget.config).notifier).refresh(),
           ),
         ],
       ),
       body: FeedScreenScaffold(
-        config: _config,
+        config: widget.config,
         scrollController: _scrollController!,
-        emptyMessage: 'No hidden posts.',
+        emptyMessage: widget.emptyMessage,
         filterHidden: false,
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/inbox_notifier.dart';
 import 'package:fspez/src/data/inbox_repository.dart';
+import 'package:fspez/src/data/paginated_list_state.dart';
 import 'package:fspez/src/domain/models/account.dart';
 import 'package:fspez/src/domain/models/inbox_item.dart';
 import 'package:fspez/src/domain/models/inbox_feed.dart';
@@ -101,7 +102,7 @@ void main() {
       final notifier = _TestInboxNotifier(repository, account)
         ..state = InboxState(
           tab: InboxTab.all,
-          messages: [message],
+          page: PaginatedListState(items: [message]),
           unreadCount: 3,
         );
 
@@ -120,7 +121,7 @@ void main() {
       final notifier = _TestInboxNotifier(repository, account)
         ..state = InboxState(
           tab: InboxTab.all,
-          messages: [message],
+          page: PaginatedListState(items: [message]),
           unreadCount: 3,
         );
 

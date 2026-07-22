@@ -6,9 +6,8 @@ import '../domain/models/session_cookie.dart';
 import '../domain/enums/comment_sort.dart';
 import 'reddit_client.dart';
 import 'api_responses/api_responses.dart';
-import 'reddit_award_html_parser.dart';
+import 'award_enricher.dart';
 import 'message_client.dart';
-import 'parsers/shared_parsers.dart';
 
 class PostDetail {
   final Post post;
@@ -20,8 +19,13 @@ class PostDetail {
 class CommentRepository {
   final RedditClient _client;
   final MessageClient _messageClient;
+  final AwardEnricher _awardEnricher;
 
-  CommentRepository(this._client, this._messageClient);
+  CommentRepository(
+    this._client,
+    this._messageClient,
+    this._awardEnricher,
+  );
 
   Future<PostDetail> fetchComments(
     String subreddit,
@@ -71,28 +75,12 @@ class CommentRepository {
     final comments = _parseComments(commentsChildren);
 
     try {
-      final mainHtml = await _client.getHtml(
-        '/r/$subreddit/comments/$postId',
-        queryParams: sort != null ? {'sort': sort.queryValue} : null,
+      final awardCounts = await _awardEnricher.fetchAwards(
+        subreddit,
+        postId,
+        sort: sort,
         sessionCookie: sessionCookie,
       );
-
-      final awardCounts = <String, int>{}
-        ..addAll(RedditAwardHtmlParser.parseAwardCounts(mainHtml));
-
-      final partialPath =
-          RedditAwardHtmlParser.extractCommentsPartialPath(mainHtml);
-      if (partialPath != null) {
-        final partialUri = Uri.parse(partialPath);
-        final partialHtml = await _client.getHtml(
-          partialUri.path,
-          queryParams: partialUri.queryParameters.isEmpty
-              ? null
-              : partialUri.queryParameters,
-          sessionCookie: sessionCookie,
-        );
-        awardCounts.addAll(RedditAwardHtmlParser.parseAwardCounts(partialHtml));
-      }
 
       if (awardCounts.isNotEmpty) {
         return PostDetail(
@@ -116,7 +104,9 @@ class CommentRepository {
     return children
         .whereType<Map<String, dynamic>>()
         .where((child) => child['kind'] == 't1')
-        .map((child) => commentFromApiData(child['data'] as Map<String, dynamic>))
+        .map((child) =>
+            ApiComment.fromJson(child['data'] as Map<String, dynamic>)
+                .toDomain())
         .toList();
   }
 

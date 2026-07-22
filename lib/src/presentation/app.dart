@@ -10,12 +10,23 @@ import 'screens/auth_webview_screen.dart';
 import '../data/app_settings.dart';
 import '../data/auth_providers.dart';
 import '../data/inbox_providers.dart';
-import '../data/notifiers/connectivity_notifier.dart';
-import 'providers/guest_mode_provider.dart';
+
 import '../data/session_health.dart';
 import '../domain/enums/app_theme_mode.dart';
 import '../domain/models/session_cookie.dart';
 import 'widgets/shared/offline_banner.dart';
+
+class ConnectivityNotifier extends StateNotifier<bool> {
+  ConnectivityNotifier() : super(false);
+
+  void setOnline() => state = false;
+  void setOffline() => state = true;
+}
+
+final connectivityProvider =
+    StateNotifierProvider<ConnectivityNotifier, bool>((ref) {
+  return ConnectivityNotifier();
+});
 
 class FspezApp extends ConsumerWidget {
   const FspezApp({super.key});

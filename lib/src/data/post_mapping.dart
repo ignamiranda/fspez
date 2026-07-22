@@ -1,3 +1,4 @@
+import '../domain/enums/vote_direction.dart';
 import '../domain/models/post.dart';
 
 List<String> parseMediaUrls(Map<String, dynamic> data) {
@@ -94,6 +95,12 @@ String? cleanThumbnail(String? thumbnail) {
 }
 
 String cleanUrl(String url) => url.replaceAll('&amp;', '&');
+
+VoteDirection parseVoteDirection(dynamic likes) {
+  if (likes == true) return VoteDirection.upvote;
+  if (likes == false) return VoteDirection.downvote;
+  return VoteDirection.none;
+}
 
 int awardCount(Map<String, dynamic> data) {
   final totalAwards = data['total_awards_received'];

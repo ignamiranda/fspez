@@ -139,7 +139,7 @@ class SubmitNotifier extends StateNotifier<SubmitState> {
   }
 
   void selectFlair(FlairOption? flair) {
-    state = state.copyWith(selectedFlair: flair, error: null);
+    state = state.copyWith(selectedFlair: flair, clearError: true);
   }
 
   bool get canSubmit => state.canSubmit;

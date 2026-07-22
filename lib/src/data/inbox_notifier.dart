@@ -6,50 +6,43 @@ import '../domain/models/inbox_feed.dart';
 import '../domain/models/account.dart';
 import 'inbox_repository.dart';
 import 'paginated_notifier.dart';
+import 'paginated_list_state.dart';
 
 class InboxState with Equatable {
   final InboxTab tab;
-  final List<InboxItem> messages;
-  final bool isLoading;
-  final bool isLoadingMore;
-  final String? error;
-  final bool hasMore;
   final int unreadCount;
+  final PaginatedListState<InboxItem> page;
 
   const InboxState({
     this.tab = InboxTab.all,
-    this.messages = const [],
-    this.isLoading = false,
-    this.isLoadingMore = false,
-    this.error,
-    this.hasMore = false,
     this.unreadCount = 0,
+    this.page = const PaginatedListState(isLoading: true),
   });
+
+  /// Convenience: delegates to [page] fields so consumers don't chase the
+  /// inner state object.
+  List<InboxItem> get messages => page.items;
+  bool get isLoading => page.isLoading;
+  bool get isLoadingMore => page.isLoadingMore;
+  String? get error => page.error;
+  bool get hasMore => page.hasMore;
 
   InboxState copyWith({
     InboxTab? tab,
-    List<InboxItem>? messages,
-    bool? isLoading,
-    bool? isLoadingMore,
-    String? error,
-    bool? hasMore,
     int? unreadCount,
+    PaginatedListState<InboxItem>? page,
     bool clearError = false,
   }) {
     return InboxState(
       tab: tab ?? this.tab,
-      messages: messages ?? this.messages,
-      isLoading: isLoading ?? this.isLoading,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      error: clearError ? null : (error ?? this.error),
-      hasMore: hasMore ?? this.hasMore,
       unreadCount: unreadCount ?? this.unreadCount,
+      page: page ??
+          (clearError ? this.page.copyWith(clearError: true) : this.page),
     );
   }
 
   @override
-  List<Object?> get props =>
-      [tab, messages, isLoading, isLoadingMore, error, hasMore, unreadCount];
+  List<Object?> get props => [tab, unreadCount, page];
 }
 
 class InboxNotifier extends StateNotifier<InboxState> {
@@ -58,7 +51,7 @@ class InboxNotifier extends StateNotifier<InboxState> {
   PaginatedNotifier<InboxItem>? _paginated;
 
   InboxNotifier(this._repository, this._account, {bool autoLoad = true})
-      : super(const InboxState(isLoading: true)) {
+      : super(const InboxState()) {
     if (autoLoad) {
       Future.microtask(() async {
         await loadTab(InboxTab.all);
@@ -86,42 +79,33 @@ class InboxNotifier extends StateNotifier<InboxState> {
     );
   }
 
-  /// Syncs InboxState from the internal PaginatedNotifier's state.
-  void _syncFromPaginated({int? unreadCount}) {
-    if (_paginated == null) return;
-    final ps = _paginated!.state;
-    state = InboxState(
-      tab: state.tab,
-      messages: ps.items,
-      isLoading: ps.isLoading,
-      isLoadingMore: ps.isLoadingMore,
-      error: ps.error,
-      hasMore: ps.hasMore,
-      unreadCount: unreadCount ?? state.unreadCount,
-    );
-  }
-
   Future<void> loadTab(InboxTab tab) async {
-    state = state.copyWith(tab: tab, isLoading: true, clearError: true);
+    state = state.copyWith(
+      tab: tab,
+      page: const PaginatedListState(isLoading: true),
+    );
     _paginated = PaginatedNotifier<InboxItem>(
       fetchPage: ({after}) => _fetchPage(tab, after: after),
       autoLoad: false,
     );
     try {
       await _paginated!.loadInitial();
-      _syncFromPaginated(
+      state = state.copyWith(
+        page: _paginated!.state,
         unreadCount:
             tab == InboxTab.unread ? _paginated!.state.items.length : null,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        page: PaginatedListState<InboxItem>(error: e.toString()),
+      );
     }
   }
 
   Future<void> loadMore() async {
     if (_paginated == null) return;
     await _paginated!.loadMore();
-    _syncFromPaginated();
+    state = state.copyWith(page: _paginated!.state);
   }
 
   Future<void> refresh() => loadTab(state.tab);
@@ -153,7 +137,7 @@ class InboxNotifier extends StateNotifier<InboxState> {
         .toList();
 
     state = state.copyWith(
-      messages: updatedMessages,
+      page: state.page.copyWith(items: updatedMessages),
       unreadCount: state.unreadCount > 0 ? state.unreadCount - 1 : 0,
     );
 

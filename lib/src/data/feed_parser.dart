@@ -3,7 +3,7 @@ import '../domain/models/post.dart';
 import '../domain/enums/feed_sort.dart';
 import '../domain/enums/vote_direction.dart';
 import 'api_responses/api_responses.dart';
-import 'parsers/shared_parsers.dart';
+import 'post_mapping.dart' as post_mapping;
 
 class FeedParser {
   Feed parseFeed(
@@ -27,7 +27,14 @@ class FeedParser {
     return ApiPost.fromJson(data).toDomain();
   }
 
-  PostType parsePostType(Map<String, dynamic> data) => postTypeFromMap(data);
+  PostType parsePostType(Map<String, dynamic> data) =>
+      post_mapping.inferPostType(
+        postHint: data['post_hint'] as String?,
+        isGallery: data['is_gallery'] as bool?,
+        isSelf: data['is_self'] as bool?,
+        crosspostParent: data['crosspost_parent'] as String?,
+      );
 
-  VoteDirection parseVote(dynamic likes) => parseVoteDirection(likes);
+  VoteDirection parseVote(dynamic likes) =>
+      post_mapping.parseVoteDirection(likes);
 }

@@ -1,7 +1,6 @@
 import '../post_mapping.dart' as post_mapping;
 import '../../domain/models/comment.dart';
 import '../../domain/models/user_flair.dart';
-import '../parsers/shared_parsers.dart';
 
 class ApiComment {
   final String id;
@@ -103,7 +102,7 @@ class ApiComment {
       body: body,
       author: author,
       score: score,
-      vote: parseVoteDirection(likes),
+      vote: post_mapping.parseVoteDirection(likes),
       isSaved: saved,
       isSubmitter: isSubmitter,
       isModerator: distinguished == 'moderator',

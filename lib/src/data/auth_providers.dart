@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/models/account.dart';
 import 'account_repository.dart';
 import 'account_notifier.dart';
-import 'cache_providers.dart';
+import 'feed_cache.dart';
 
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('SharedPreferences must be overridden in main');
@@ -29,6 +29,12 @@ final accountsProvider = FutureProvider<List<Account>>((ref) async {
 });
 
 final corruptedSessionProvider = StateProvider<bool>((ref) => false);
+
+final guestModeProvider = StateProvider<bool>((ref) => false);
+
+final feedCacheProvider = Provider<FeedCache>((ref) {
+  return FeedCache(ref.watch(sharedPrefsProvider));
+});
 
 final activeAccountProvider =
     StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {

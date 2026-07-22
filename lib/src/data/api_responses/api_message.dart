@@ -1,5 +1,5 @@
 import '../../domain/models/inbox_item.dart';
-import '../parsers/shared_parsers.dart';
+import '../post_mapping.dart' as post_mapping;
 
 class ApiMessage {
   final String id;
@@ -74,8 +74,7 @@ class ApiMessage {
   }
 
   InboxItem toDomain() {
-    final createdAt =
-        DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000);
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000);
     final replyList = replies.isEmpty
         ? <InboxItem>[]
         : replies.map((r) => r.toDomain()).toList();
@@ -91,7 +90,7 @@ class ApiMessage {
         parentId: parentId,
         subreddit: subreddit,
         distinguished: distinguished,
-        vote: parseVoteDirection(likes),
+        vote: post_mapping.parseVoteDirection(likes),
         score: score,
         context: context,
         firstMessageName: firstMessageName,

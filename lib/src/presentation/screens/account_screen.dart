@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_providers.dart';
+import '../../data/feed_pagination.dart';
 import '../../data/session_health.dart';
 import '../../domain/models/account.dart';
 import '../tab_scroll_signal.dart';
 import 'auth_webview_screen.dart';
-import 'saved_screen.dart';
-import 'hidden_screen.dart';
+import 'feed_page_screen.dart';
 import 'settings_screen.dart';
 import 'user_profile_screen.dart';
 
@@ -78,8 +78,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 Icon(Icons.person_outline,
                     size: 64, color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(height: 16),
-                Text('Browsing as guest',
-                    style: theme.textTheme.titleMedium),
+                Text('Browsing as guest', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 4),
                 Text('Log in to access your account, inbox, and post.',
                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
@@ -88,7 +87,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const AuthWebViewScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const AuthWebViewScreen()),
                     );
                   },
                   icon: const Icon(Icons.login),
@@ -161,8 +161,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 ? () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => UserProfileScreen(
-                            username: activeAccount.username),
+                        builder: (_) =>
+                            UserProfileScreen(username: activeAccount.username),
                       ),
                     );
                   }
@@ -186,7 +186,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           title: const Text('Saved'),
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SavedScreen()),
+              MaterialPageRoute(
+                builder: (_) => const FeedPageScreen(
+                  config: FeedPageConfig.saved(),
+                  title: 'Saved',
+                  emptyMessage: 'No saved posts yet.',
+                ),
+              ),
             );
           },
         ),
@@ -195,7 +201,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           title: const Text('Hidden'),
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const HiddenScreen()),
+              MaterialPageRoute(
+                builder: (_) => const FeedPageScreen(
+                  config: FeedPageConfig.hidden(),
+                  title: 'Hidden',
+                  emptyMessage: 'No hidden posts.',
+                ),
+              ),
             );
           },
         ),

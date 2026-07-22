@@ -3,7 +3,7 @@ import '../domain/models/user_profile.dart';
 import '../domain/models/comment.dart';
 import '../domain/enums/comment_sort.dart';
 import 'reddit_client.dart';
-import 'parsers/shared_parsers.dart';
+import 'api_responses/api_responses.dart';
 
 class UserRepository {
   final RedditClient _client;
@@ -88,6 +88,6 @@ class UserRepository {
   }
 
   Comment _parseComment(Map<String, dynamic> data) {
-    return commentFromApiData(data);
+    return ApiComment.fromJson(data).toDomain();
   }
 }

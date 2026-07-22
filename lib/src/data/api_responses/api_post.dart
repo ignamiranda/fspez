@@ -2,7 +2,6 @@ import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/user_flair.dart';
 import '../post_mapping.dart' as post_mapping;
-import '../parsers/shared_parsers.dart';
 
 class ApiPost {
   final String id;
@@ -139,7 +138,7 @@ class ApiPost {
       ),
       score: score,
       commentCount: numComments,
-      vote: parseVoteDirection(likes),
+      vote: post_mapping.parseVoteDirection(likes),
       isNsfw: over18,
       isSpoiler: spoiler,
       isSaved: saved,

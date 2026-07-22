@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/comment_repository.dart';
+import 'package:fspez/src/data/award_enricher.dart';
 import 'package:fspez/src/data/message_client.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/enums/comment_sort.dart';
@@ -11,6 +12,8 @@ import 'package:mocktail/mocktail.dart';
 class _MockHttpClient extends Mock implements http.Client {}
 
 class _MockMessageClient extends Mock implements MessageClient {}
+
+class _MockAwardEnricher extends Mock implements AwardEnricher {}
 
 void main() {
   late _MockHttpClient mockHttp;
@@ -26,7 +29,8 @@ void main() {
     mockHttp = _MockHttpClient();
     mockMessageClient = _MockMessageClient();
     client = RedditClient(httpClient: mockHttp);
-    repository = CommentRepository(client, mockMessageClient);
+    repository =
+        CommentRepository(client, mockMessageClient, const NoopAwardEnricher());
   });
 
   group('fetchComments', () {
@@ -413,26 +417,24 @@ void main() {
       when(() => mockHttp.get(
             any(),
             headers: any(named: 'headers'),
-          )).thenAnswer((invocation) async {
-        final uri = invocation.positionalArguments[0] as Uri;
-        if (uri.path.endsWith('.json')) {
-          return http.Response(jsonEncode(responseJson), 200);
-        }
-        if (uri.path.contains('/svc/shreddit/comments/')) {
-          return http.Response(
-            '<shreddit-comment id="t1_c1" award-count="2"></shreddit-comment>',
-            200,
-            headers: {'content-type': 'text/html'},
-          );
-        }
-        return http.Response(
-          '<shreddit-post id="t3_post1" award-count="7"></shreddit-post><faceplate-partial name="TopComments_test" src="/svc/shreddit/comments/r/flutter/post1?seeker-session=false&render-mode=partial&referer="></faceplate-partial>',
-          200,
-          headers: {'content-type': 'text/html'},
-        );
+          )).thenAnswer((_) async {
+        return http.Response(jsonEncode(responseJson), 200);
       });
 
-      final detail = await repository.fetchComments('flutter', 'post1');
+      final mockEnricher = _MockAwardEnricher();
+      when(() => mockEnricher.fetchAwards(
+            any(),
+            any(),
+            sort: any(named: 'sort'),
+            sessionCookie: any(named: 'sessionCookie'),
+          )).thenAnswer((_) async => {'t3_post1': 7, 't1_c1': 2});
+
+      final repo = CommentRepository(
+        client,
+        mockMessageClient,
+        mockEnricher,
+      );
+      final detail = await repo.fetchComments('flutter', 'post1');
 
       expect(detail.post.awardCount, 7);
       expect(detail.comments.single.awardCount, 2);
