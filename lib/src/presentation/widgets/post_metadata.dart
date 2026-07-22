@@ -133,6 +133,30 @@ class ComfortablePostMetadata extends StatelessWidget {
             ),
           ),
         ),
+        if (post.linkFlairText != null && post.linkFlairText!.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: post.linkFlairBackgroundColor != null
+                  ? Color(int.parse(
+                      post.linkFlairBackgroundColor!.replaceFirst('#', '0xFF')))
+                  : cs.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(
+              post.linkFlairText!,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: post.linkFlairTextColor != null
+                    ? Color(int.parse(
+                        post.linkFlairTextColor!.replaceFirst('#', '0xFF')))
+                    : cs.primary,
+              ),
+            ),
+          ),
+        ],
         if (post.authorFlair != null) ...[
           const SizedBox(width: 4),
           Flexible(child: UserFlairChip(flair: post.authorFlair!)),
@@ -168,6 +192,10 @@ class ComfortablePostMetadata extends StatelessWidget {
               ),
             ),
           ),
+        ],
+        if (post.isLocked) ...[
+          const SizedBox(width: 6),
+          Icon(Icons.lock_outline, size: 14, color: cs.onSurfaceVariant),
         ],
         if (post.isNsfw) ...[
           const SizedBox(width: 6),
@@ -291,6 +319,8 @@ class CompactPostMetadata extends StatelessWidget {
           PostCompactTag(label: '⭐ ${post.awardCount}', color: cs.tertiary),
         if (showStickiedIndicator && post.isStickied)
           PostCompactTag(label: 'PINNED', color: cs.tertiary),
+        if (post.isLocked)
+          PostCompactTag(label: 'LOCKED', color: cs.onSurfaceVariant),
         if (post.isNsfw) PostCompactTag(label: 'NSFW', color: cs.error),
         if (post.isSpoiler)
           PostCompactTag(label: 'SPOILER', color: cs.tertiary),

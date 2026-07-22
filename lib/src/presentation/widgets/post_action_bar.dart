@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../domain/enums/vote_direction.dart';
 import '../../domain/models/post.dart';
 import '../utils/format_utils.dart';
@@ -46,15 +47,21 @@ class PostActionBar extends StatelessWidget {
     final downActive = vote == VoteDirection.downvote;
     final showLabel = !compact;
 
+    final voteEnabled = !post.isLocked;
+
     return Row(
       children: [
         PostVoteButton(
           icon: upActive ? Icons.arrow_upward : Icons.arrow_upward_outlined,
           active: upActive,
-          color: upActive ? cs.primary : cs.onSurfaceVariant,
+          color: post.isLocked
+              ? cs.onSurfaceVariant.withValues(alpha: 0.38)
+              : upActive
+                  ? cs.primary
+                  : cs.onSurfaceVariant,
           activeColor: cs.primary,
           semanticLabel: upActive ? 'Upvoted' : 'Upvote',
-          onTap: () => onVote?.call(VoteDirection.upvote),
+          onTap: voteEnabled ? () => onVote?.call(VoteDirection.upvote) : null,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -63,11 +70,13 @@ class PostActionBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: upActive
-                  ? cs.primary
-                  : downActive
-                      ? cs.secondary
-                      : cs.onSurfaceVariant,
+              color: post.isLocked
+                  ? cs.onSurfaceVariant.withValues(alpha: 0.38)
+                  : upActive
+                      ? cs.primary
+                      : downActive
+                          ? cs.secondary
+                          : cs.onSurfaceVariant,
             ),
           ),
         ),
@@ -75,10 +84,15 @@ class PostActionBar extends StatelessWidget {
           icon:
               downActive ? Icons.arrow_downward : Icons.arrow_downward_outlined,
           active: downActive,
-          color: downActive ? cs.secondary : cs.onSurfaceVariant,
+          color: post.isLocked
+              ? cs.onSurfaceVariant.withValues(alpha: 0.38)
+              : downActive
+                  ? cs.secondary
+                  : cs.onSurfaceVariant,
           activeColor: cs.secondary,
           semanticLabel: downActive ? 'Downvoted' : 'Downvote',
-          onTap: () => onVote?.call(VoteDirection.downvote),
+          onTap:
+              voteEnabled ? () => onVote?.call(VoteDirection.downvote) : null,
         ),
         if (upvoteRatio != null) ...[
           const SizedBox(width: 2),
@@ -117,6 +131,17 @@ class PostActionBar extends StatelessWidget {
             color: cs.onSurfaceVariant,
           ),
         ],
+        SizedBox(width: compact ? 10 : 16),
+        PostActionItem(
+          icon: Icons.share_outlined,
+          semanticLabel: 'Share',
+          compact: compact,
+          onTap: () {
+            final shareUrl = 'https://www.reddit.com${post.permalink}';
+            Share.share(shareUrl);
+          },
+          color: cs.onSurfaceVariant,
+        ),
         if (onEdit != null) ...[
           SizedBox(width: compact ? 10 : 16),
           PostActionItem(

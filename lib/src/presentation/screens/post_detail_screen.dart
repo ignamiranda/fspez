@@ -454,8 +454,43 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ],
           ),
         ),
-        if (loggedIn) _buildInputBar(theme, postFullname),
+        if (post.isLocked)
+          _buildLockedBanner(theme)
+        else if (loggedIn)
+          _buildInputBar(theme, postFullname),
       ],
+    );
+  }
+
+  Widget _buildLockedBanner(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+      ),
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 12,
+        bottom: MediaQuery.of(context).padding.bottom + 12,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.lock_outline,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'This post is locked',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

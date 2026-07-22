@@ -31,6 +31,9 @@ class ApiPost {
   final String? crosspostParent;
   final List<String> mediaUrls;
   final String? videoUrl;
+  final String? linkFlairText;
+  final String? linkFlairBackgroundColor;
+  final String? linkFlairTextColor;
   final String? authorFlairText;
   final List<dynamic>? authorFlairRichtext;
   final String? authorFlairBackgroundColor;
@@ -65,6 +68,9 @@ class ApiPost {
     this.crosspostParent,
     this.mediaUrls = const [],
     this.videoUrl,
+    this.linkFlairText,
+    this.linkFlairBackgroundColor,
+    this.linkFlairTextColor,
     this.authorFlairText,
     this.authorFlairRichtext,
     this.authorFlairBackgroundColor,
@@ -108,6 +114,9 @@ class ApiPost {
       crosspostParent: data['crosspost_parent'] as String?,
       mediaUrls: mediaUrls,
       videoUrl: videoUrl,
+      linkFlairText: data['link_flair_text'] as String?,
+      linkFlairBackgroundColor: data['link_flair_background_color'] as String?,
+      linkFlairTextColor: data['link_flair_text_color'] as String?,
       authorFlairText: data['author_flair_text'] as String?,
       authorFlairRichtext: data['author_flair_richtext'] as List<dynamic>?,
       authorFlairBackgroundColor:
@@ -151,6 +160,9 @@ class ApiPost {
       crosspostParent: crosspostParentPost?.toDomain(),
       mediaUrls: mediaUrls,
       videoUrl: videoUrl,
+      linkFlairText: linkFlairText,
+      linkFlairBackgroundColor: linkFlairBackgroundColor,
+      linkFlairTextColor: linkFlairTextColor,
       authorFlair: UserFlair.fromApi(
         text: authorFlairText,
         richtext: authorFlairRichtext,

@@ -6,7 +6,7 @@ class PostVoteButton extends StatelessWidget {
   final Color color;
   final Color activeColor;
   final String semanticLabel;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const PostVoteButton({
     super.key,
@@ -24,7 +24,7 @@ class PostVoteButton extends StatelessWidget {
       button: true,
       selected: active,
       label: semanticLabel,
-      enabled: true,
+      enabled: onTap != null,
       child: Tooltip(
         message: semanticLabel,
         child: ConstrainedBox(

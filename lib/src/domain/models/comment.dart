@@ -11,6 +11,10 @@ class Comment with Equatable {
   final bool isSaved;
   final bool isSubmitter;
   final bool isModerator;
+  final bool isAdmin;
+  final bool isApprovedSubmitter;
+  final bool isControversial;
+  final bool isScoreHidden;
   final bool isStickied;
   final int awardCount;
   final DateTime createdAt;
@@ -43,6 +47,10 @@ class Comment with Equatable {
     this.isSaved = false,
     this.isSubmitter = false,
     this.isModerator = false,
+    this.isAdmin = false,
+    this.isApprovedSubmitter = false,
+    this.isControversial = false,
+    this.isScoreHidden = false,
     this.isStickied = false,
     this.awardCount = 0,
     required this.createdAt,
@@ -68,6 +76,10 @@ class Comment with Equatable {
     bool? isSaved,
     bool? isSubmitter,
     bool? isModerator,
+    bool? isAdmin,
+    bool? isApprovedSubmitter,
+    bool? isControversial,
+    bool? isScoreHidden,
     bool? isStickied,
     int? awardCount,
     DateTime? createdAt,
@@ -92,6 +104,10 @@ class Comment with Equatable {
       isSaved: isSaved ?? this.isSaved,
       isSubmitter: isSubmitter ?? this.isSubmitter,
       isModerator: isModerator ?? this.isModerator,
+      isAdmin: isAdmin ?? this.isAdmin,
+      isApprovedSubmitter: isApprovedSubmitter ?? this.isApprovedSubmitter,
+      isControversial: isControversial ?? this.isControversial,
+      isScoreHidden: isScoreHidden ?? this.isScoreHidden,
       isStickied: isStickied ?? this.isStickied,
       awardCount: awardCount ?? this.awardCount,
       createdAt: createdAt ?? this.createdAt,
@@ -119,6 +135,10 @@ class Comment with Equatable {
         isSaved,
         isSubmitter,
         isModerator,
+        isAdmin,
+        isApprovedSubmitter,
+        isControversial,
+        isScoreHidden,
         isStickied,
         awardCount,
         createdAt,

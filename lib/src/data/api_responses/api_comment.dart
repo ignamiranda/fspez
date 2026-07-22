@@ -18,6 +18,8 @@ class ApiComment {
   final String? parentId;
   final int depth;
   final bool collapsed;
+  final int controversiality;
+  final bool scoreHidden;
   final List<ApiComment> replies;
   final String? authorFlairText;
   final List<dynamic>? authorFlairRichtext;
@@ -46,6 +48,8 @@ class ApiComment {
     this.parentId,
     required this.depth,
     required this.collapsed,
+    this.controversiality = 0,
+    this.scoreHidden = false,
     required this.replies,
     this.authorFlairText,
     this.authorFlairRichtext,
@@ -114,6 +118,8 @@ class ApiComment {
       parentId: data['parent_id'] as String?,
       depth: data['depth'] as int? ?? 0,
       collapsed: data['collapsed'] as bool? ?? false,
+      controversiality: (data['controversiality'] as int?) ?? 0,
+      scoreHidden: data['score_hidden'] as bool? ?? false,
       replies: replies,
       authorFlairText: data['author_flair_text'] as String?,
       authorFlairRichtext: data['author_flair_richtext'] as List<dynamic>?,
@@ -136,6 +142,10 @@ class ApiComment {
       isSaved: saved,
       isSubmitter: isSubmitter,
       isModerator: distinguished == 'moderator',
+      isAdmin: distinguished == 'admin',
+      isApprovedSubmitter: distinguished == 'special',
+      isControversial: controversiality > 0,
+      isScoreHidden: scoreHidden,
       isStickied: stickied,
       awardCount: awardCount,
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000),

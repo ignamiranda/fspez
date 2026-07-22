@@ -29,6 +29,9 @@ class Post with Equatable {
   final Post? crosspostParent;
   final List<String> mediaUrls;
   final String? videoUrl;
+  final String? linkFlairText;
+  final String? linkFlairBackgroundColor;
+  final String? linkFlairTextColor;
   final UserFlair? authorFlair;
 
   String get fullname => 't3_$id';
@@ -57,6 +60,9 @@ class Post with Equatable {
     this.crosspostParent,
     this.mediaUrls = const [],
     this.videoUrl,
+    this.linkFlairText,
+    this.linkFlairBackgroundColor,
+    this.linkFlairTextColor,
     this.authorFlair,
   });
 
@@ -84,6 +90,9 @@ class Post with Equatable {
     Post? crosspostParent,
     List<String>? mediaUrls,
     String? videoUrl,
+    String? linkFlairText,
+    String? linkFlairBackgroundColor,
+    String? linkFlairTextColor,
     UserFlair? authorFlair,
   }) {
     return Post(
@@ -110,6 +119,10 @@ class Post with Equatable {
       crosspostParent: crosspostParent ?? this.crosspostParent,
       mediaUrls: mediaUrls ?? this.mediaUrls,
       videoUrl: videoUrl ?? this.videoUrl,
+      linkFlairText: linkFlairText ?? this.linkFlairText,
+      linkFlairBackgroundColor:
+          linkFlairBackgroundColor ?? this.linkFlairBackgroundColor,
+      linkFlairTextColor: linkFlairTextColor ?? this.linkFlairTextColor,
       authorFlair: authorFlair ?? this.authorFlair,
     );
   }
@@ -139,6 +152,9 @@ class Post with Equatable {
         crosspostParent,
         mediaUrls,
         videoUrl,
+        linkFlairText,
+        linkFlairBackgroundColor,
+        linkFlairTextColor,
         authorFlair,
       ];
 }

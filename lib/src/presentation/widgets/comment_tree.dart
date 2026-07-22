@@ -134,12 +134,52 @@ class _CommentTreeState extends State<CommentTree> {
                           ),
                         ),
                       ],
-                      if (widget.comment.isModerator) ...[
+                      if (widget.comment.isAdmin) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE53935),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            '[A]',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ] else if (widget.comment.isModerator) ...[
                         const SizedBox(width: 4),
                         Icon(
                           Icons.shield,
                           size: 14,
                           color: theme.colorScheme.tertiary,
+                        ),
+                      ] else if (widget.comment.isApprovedSubmitter) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E88E5),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            '[S]',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ],
                       Padding(
@@ -158,12 +198,31 @@ class _CommentTreeState extends State<CommentTree> {
                         ),
                       ),
                       const Spacer(),
-                      Text(
-                        '${widget.comment.score} pts',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      if (widget.comment.isScoreHidden)
+                        Text(
+                          'score hidden',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${widget.comment.score} pts',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
+                      if (widget.comment.isControversial) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '†',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                       if (widget.showAwards &&
                           widget.comment.awardCount > 0) ...[
                         const SizedBox(width: 8),
