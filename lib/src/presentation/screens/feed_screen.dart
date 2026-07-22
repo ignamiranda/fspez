@@ -6,6 +6,7 @@ import '../../data/feed_providers.dart';
 import '../../data/feed_pagination.dart';
 import '../../domain/enums/feed_sort.dart';
 import '../../domain/enums/feed_density.dart';
+import '../../domain/enums/top_time_filter.dart';
 import '../tab_scroll_signal.dart';
 import '../utils/infinite_scroll.dart';
 import '../widgets/bottom_sheet_menu.dart';
@@ -21,6 +22,7 @@ class FeedScreen extends ConsumerStatefulWidget {
 
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   FeedSort _sort = FeedSort.hot;
+  TopTimeFilter _timeFilter = TopTimeFilter.all;
   bool _showAll = false;
   ScrollController? _scrollController;
 
@@ -39,11 +41,16 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   }
 
   FeedPageConfig _buildConfig() {
-    if (_showAll) return FeedPageConfig.popularAll(sort: _sort);
+    if (_showAll) {
+      return FeedPageConfig.popularAll(
+        sort: _sort,
+        topTimeFilter: _timeFilter,
+      );
+    }
     final account = ref.read(activeAccountProvider);
     final loggedIn = account != null;
     return loggedIn
-        ? FeedPageConfig.home(sort: _sort)
+        ? FeedPageConfig.home(sort: _sort, topTimeFilter: _timeFilter)
         : const FeedPageConfig.popular();
   }
 
@@ -107,15 +114,33 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
             icon: const Icon(Icons.sort),
             tooltip: 'Sort feed',
             onPressed: () async {
+              final ctx = context;
               final sort = await showRadioBottomSheet<FeedSort>(
-                context,
+                ctx,
                 title: 'Sort feed',
                 currentValue: _sort,
                 values: FeedSort.values,
                 labelFn: (s) => s.label,
               );
               if (sort != null && sort != _sort) {
-                setState(() => _sort = sort);
+                if (sort == FeedSort.top) {
+                  final timeFilter = await showRadioBottomSheet<TopTimeFilter>(
+                    // ignore: use_build_context_synchronously
+                    ctx,
+                    title: 'Top from…',
+                    currentValue: _timeFilter,
+                    values: TopTimeFilter.values,
+                    labelFn: (s) => s.label,
+                  );
+                  if (timeFilter != null) {
+                    setState(() {
+                      _sort = sort;
+                      _timeFilter = timeFilter;
+                    });
+                  }
+                } else {
+                  setState(() => _sort = sort);
+                }
               }
             },
           ),

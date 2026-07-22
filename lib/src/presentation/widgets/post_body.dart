@@ -9,6 +9,7 @@ import 'post_inline_video.dart';
 import 'video_playback_coordinator.dart';
 import 'post_metadata.dart';
 import 'post_action_bar.dart';
+import 'reddit_body.dart';
 import 'title_with_thumbnail.dart';
 import 'feed_media_tile.dart';
 import 'sensitive_media_overlay.dart';
@@ -132,15 +133,18 @@ class _PostBodyState extends ConsumerState<PostBody> {
             widget.post.selftext!.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              widget.post.selftext!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 40),
+              child: ClipRect(
+                child: RedditBody(widget.post.selftext!),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
+        if (widget.post.type == PostType.crosspost &&
+            widget.post.crosspostParent != null) ...[
+          const SizedBox(height: 6),
+          _CrosspostCard(parent: widget.post.crosspostParent!),
+        ],
         const SizedBox(height: 6),
         PostActionBar(
           post: widget.post,
@@ -232,5 +236,84 @@ class _PostBodyState extends ConsumerState<PostBody> {
     }
 
     return mediaWidget;
+  }
+}
+
+/// A compact card showing the original post in a crosspost.
+///
+/// Displays the parent post's subreddit, author, title, and truncated selftext
+/// in a visually contained card. Tapping navigates to the original post.
+class _CrosspostCard extends StatelessWidget {
+  final Post parent;
+
+  const _CrosspostCard({required this.parent});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+        border: Border(
+          left: BorderSide(
+            color: cs.primary.withValues(alpha: 0.4),
+            width: 3,
+          ),
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.repeat, size: 13, color: cs.primary),
+              const SizedBox(width: 4),
+              Text(
+                parent.subreddit.name.isNotEmpty
+                    ? 'Crossposted from r/${parent.subreddit.name}'
+                    : 'Crossposted',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'u/${parent.author}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            parent.title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (parent.selftext != null && parent.selftext!.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              parent.selftext!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

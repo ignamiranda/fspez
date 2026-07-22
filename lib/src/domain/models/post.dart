@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/enums/vote_direction.dart';
+import 'award_data.dart';
 import 'subreddit.dart';
 import 'user_flair.dart';
 
@@ -23,6 +24,7 @@ class Post with Equatable {
   final bool isStickied;
   final bool isLocked;
   final int awardCount;
+  final List<AwardData> awards;
   final DateTime createdAt;
   final String permalink;
   final double? upvoteRatio;
@@ -54,6 +56,7 @@ class Post with Equatable {
     this.isStickied = false,
     this.isLocked = false,
     this.awardCount = 0,
+    this.awards = const [],
     required this.createdAt,
     required this.permalink,
     this.upvoteRatio,
@@ -84,6 +87,7 @@ class Post with Equatable {
     bool? isStickied,
     bool? isLocked,
     int? awardCount,
+    List<AwardData>? awards,
     DateTime? createdAt,
     String? permalink,
     double? upvoteRatio,
@@ -113,6 +117,7 @@ class Post with Equatable {
       isStickied: isStickied ?? this.isStickied,
       isLocked: isLocked ?? this.isLocked,
       awardCount: awardCount ?? this.awardCount,
+      awards: awards ?? this.awards,
       createdAt: createdAt ?? this.createdAt,
       permalink: permalink ?? this.permalink,
       upvoteRatio: upvoteRatio ?? this.upvoteRatio,
@@ -146,6 +151,7 @@ class Post with Equatable {
         isStickied,
         isLocked,
         awardCount,
+        awards,
         createdAt,
         permalink,
         upvoteRatio,

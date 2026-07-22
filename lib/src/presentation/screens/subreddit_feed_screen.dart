@@ -6,6 +6,7 @@ import '../../data/feed_pagination.dart';
 import '../../data/feed_providers.dart';
 import '../../data/comment_providers.dart';
 import '../../domain/enums/feed_sort.dart';
+import '../../domain/enums/top_time_filter.dart';
 import '../../domain/models/subreddit.dart';
 import '../tab_scroll_signal.dart';
 import '../utils/infinite_scroll.dart';
@@ -30,6 +31,7 @@ class SubredditFeedScreen extends ConsumerStatefulWidget {
 
 class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
   FeedSort _sort = FeedSort.hot;
+  TopTimeFilter _timeFilter = TopTimeFilter.all;
   Subreddit? _subInfo;
   bool _isSubscribed = false;
   bool _togglingSub = false;
@@ -41,8 +43,8 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadSubInfo());
     _scrollController = createInfiniteScrollController(
       () => ref
-          .read(feedPageProvider(
-                  FeedPageConfig.subreddit(widget.subredditName, sort: _sort))
+          .read(feedPageProvider(FeedPageConfig.subreddit(widget.subredditName,
+                  sort: _sort, topTimeFilter: _timeFilter))
               .notifier)
           .loadMore(),
     );
@@ -97,7 +99,11 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
         );
       }
     });
-    final config = FeedPageConfig.subreddit(widget.subredditName, sort: _sort);
+    final config = FeedPageConfig.subreddit(
+      widget.subredditName,
+      sort: _sort,
+      topTimeFilter: _timeFilter,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -122,15 +128,33 @@ class _SubredditFeedScreenState extends ConsumerState<SubredditFeedScreen> {
           IconButton(
             icon: const Icon(Icons.sort),
             onPressed: () async {
+              final ctx = context;
               final sort = await showRadioBottomSheet<FeedSort>(
-                context,
+                ctx,
                 title: 'Sort feed',
                 currentValue: _sort,
                 values: FeedSort.values,
                 labelFn: (s) => s.label,
               );
               if (sort != null && sort != _sort) {
-                setState(() => _sort = sort);
+                if (sort == FeedSort.top) {
+                  final timeFilter = await showRadioBottomSheet<TopTimeFilter>(
+                    // ignore: use_build_context_synchronously
+                    ctx,
+                    title: 'Top from…',
+                    currentValue: _timeFilter,
+                    values: TopTimeFilter.values,
+                    labelFn: (s) => s.label,
+                  );
+                  if (timeFilter != null) {
+                    setState(() {
+                      _sort = sort;
+                      _timeFilter = timeFilter;
+                    });
+                  }
+                } else {
+                  setState(() => _sort = sort);
+                }
               }
             },
           ),

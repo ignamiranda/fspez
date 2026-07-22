@@ -1,4 +1,5 @@
 import '../post_mapping.dart' as post_mapping;
+import '../../domain/models/award_data.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/user_flair.dart';
 
@@ -13,6 +14,7 @@ class ApiComment {
   final String? distinguished;
   final bool stickied;
   final int awardCount;
+  final List<AwardData> awards;
   final int createdUtc;
   final String linkId;
   final String? parentId;
@@ -43,6 +45,7 @@ class ApiComment {
     this.distinguished,
     required this.stickied,
     required this.awardCount,
+    this.awards = const [],
     required this.createdUtc,
     required this.linkId,
     this.parentId,
@@ -113,6 +116,7 @@ class ApiComment {
       distinguished: data['distinguished'] as String?,
       stickied: data['stickied'] as bool? ?? false,
       awardCount: post_mapping.awardCount(data),
+      awards: post_mapping.parseAwards(data),
       createdUtc: (data['created_utc'] as num).toInt(),
       linkId: data['link_id'] as String? ?? '',
       parentId: data['parent_id'] as String?,
@@ -148,6 +152,7 @@ class ApiComment {
       isScoreHidden: scoreHidden,
       isStickied: stickied,
       awardCount: awardCount,
+      awards: awards,
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000),
       postId: linkId,
       parentId: parentId,

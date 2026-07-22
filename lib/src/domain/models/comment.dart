@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/enums/vote_direction.dart';
+import 'award_data.dart';
 import 'user_flair.dart';
 
 class Comment with Equatable {
@@ -17,6 +18,7 @@ class Comment with Equatable {
   final bool isScoreHidden;
   final bool isStickied;
   final int awardCount;
+  final List<AwardData> awards;
   final DateTime createdAt;
   final String postId;
   final String? parentId;
@@ -53,6 +55,7 @@ class Comment with Equatable {
     this.isScoreHidden = false,
     this.isStickied = false,
     this.awardCount = 0,
+    this.awards = const [],
     required this.createdAt,
     required this.postId,
     this.parentId,
@@ -82,6 +85,7 @@ class Comment with Equatable {
     bool? isScoreHidden,
     bool? isStickied,
     int? awardCount,
+    List<AwardData>? awards,
     DateTime? createdAt,
     String? postId,
     String? parentId,
@@ -110,6 +114,7 @@ class Comment with Equatable {
       isScoreHidden: isScoreHidden ?? this.isScoreHidden,
       isStickied: isStickied ?? this.isStickied,
       awardCount: awardCount ?? this.awardCount,
+      awards: awards ?? this.awards,
       createdAt: createdAt ?? this.createdAt,
       postId: postId ?? this.postId,
       parentId: parentId ?? this.parentId,
@@ -141,6 +146,7 @@ class Comment with Equatable {
         isScoreHidden,
         isStickied,
         awardCount,
+        awards,
         createdAt,
         postId,
         parentId,

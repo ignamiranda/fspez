@@ -1,3 +1,4 @@
+import '../../domain/models/award_data.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/user_flair.dart';
@@ -21,6 +22,7 @@ class ApiPost {
   final bool stickied;
   final bool locked;
   final int awardCount;
+  final List<AwardData> awards;
   final int createdUtc;
   final String permalink;
   final double? upvoteRatio;
@@ -58,6 +60,7 @@ class ApiPost {
     required this.stickied,
     required this.locked,
     required this.awardCount,
+    this.awards = const [],
     required this.createdUtc,
     required this.permalink,
     this.upvoteRatio,
@@ -104,6 +107,7 @@ class ApiPost {
       stickied: data['stickied'] as bool? ?? false,
       locked: data['locked'] as bool? ?? false,
       awardCount: post_mapping.awardCount(data),
+      awards: post_mapping.parseAwards(data),
       createdUtc: (data['created_utc'] as num).toInt(),
       permalink: data['permalink'] as String? ?? '',
       upvoteRatio: (data['upvote_ratio'] as num?)?.toDouble(),
@@ -154,6 +158,7 @@ class ApiPost {
       isStickied: stickied,
       isLocked: locked,
       awardCount: awardCount,
+      awards: awards,
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000),
       permalink: permalink,
       upvoteRatio: upvoteRatio,

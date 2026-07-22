@@ -1,5 +1,6 @@
 import '../domain/enums/vote_direction.dart';
 import '../domain/models/post.dart';
+import '../domain/models/award_data.dart';
 
 List<String> parseMediaUrls(Map<String, dynamic> data) {
   final metadata = data['media_metadata'] as Map<String, dynamic>?;
@@ -138,4 +139,21 @@ int awardCount(Map<String, dynamic> data) {
   if (gilded is num) return gilded.toInt();
 
   return 0;
+}
+
+/// Parses the `all_awardings` API list into rich [AwardData] objects.
+List<AwardData> parseAwards(Map<String, dynamic> data) {
+  final raw = data['all_awardings'];
+  if (raw is! List) return const [];
+  return raw.whereType<Map<String, dynamic>>().map((a) {
+    final count = a['count'];
+    int c = 1;
+    if (count is num) c = count.toInt();
+    return AwardData(
+      iconUrl: a['icon_url'] as String?,
+      name: (a['name'] as String?) ?? 'Award',
+      count: c,
+      backgroundColor: a['background_color'] as String?,
+    );
+  }).toList();
 }

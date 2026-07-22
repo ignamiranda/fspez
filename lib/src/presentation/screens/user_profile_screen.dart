@@ -7,6 +7,7 @@ import '../../data/user_providers.dart';
 import '../../data/write_providers.dart';
 import '../../domain/enums/comment_sort.dart';
 import '../../domain/enums/feed_sort.dart';
+import '../../domain/enums/top_time_filter.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/subreddit.dart';
 import '../../domain/models/user_profile.dart';
@@ -38,6 +39,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   FeedSort _postsSort = FeedSort.new_;
+  TopTimeFilter _postsTimeFilter = TopTimeFilter.all;
   CommentSort _commentsSort = CommentSort.new_;
   List<Comment> _comments = [];
   bool _commentsLoading = true;
@@ -67,7 +69,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 
   FeedPageConfig _postsConfig() {
-    return FeedPageConfig.user(widget.username, sort: _postsSort);
+    return FeedPageConfig.user(
+      widget.username,
+      sort: _postsSort,
+      topTimeFilter: _postsTimeFilter,
+    );
   }
 
   ScrollController _createPostsScrollController() {
@@ -80,20 +86,41 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     if (_tabController.index == 2) return;
 
     if (_tabController.index == 0) {
+      final ctx = context;
       final sort = await showRadioBottomSheet<FeedSort>(
-        context,
+        ctx,
         title: 'Sort posts',
         currentValue: _postsSort,
         values: FeedSort.values,
         labelFn: (s) => s.label,
       );
       if (sort != null && sort != _postsSort) {
-        final oldController = _scrollController;
-        setState(() {
-          _postsSort = sort;
-          _scrollController = _createPostsScrollController();
-        });
-        oldController?.dispose();
+        if (sort == FeedSort.top) {
+          final timeFilter = await showRadioBottomSheet<TopTimeFilter>(
+            // ignore: use_build_context_synchronously
+            ctx,
+            title: 'Top from…',
+            currentValue: _postsTimeFilter,
+            values: TopTimeFilter.values,
+            labelFn: (s) => s.label,
+          );
+          if (timeFilter != null) {
+            final oldController = _scrollController;
+            setState(() {
+              _postsSort = sort;
+              _postsTimeFilter = timeFilter;
+              _scrollController = _createPostsScrollController();
+            });
+            oldController?.dispose();
+          }
+        } else {
+          final oldController = _scrollController;
+          setState(() {
+            _postsSort = sort;
+            _scrollController = _createPostsScrollController();
+          });
+          oldController?.dispose();
+        }
       }
       return;
     }

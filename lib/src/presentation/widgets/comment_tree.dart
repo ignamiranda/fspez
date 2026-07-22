@@ -226,7 +226,10 @@ class _CommentTreeState extends State<CommentTree> {
                       if (widget.showAwards &&
                           widget.comment.awardCount > 0) ...[
                         const SizedBox(width: 8),
-                        AwardBadge(awardCount: widget.comment.awardCount),
+                        AwardBadge(
+                          awardCount: widget.comment.awardCount,
+                          awards: widget.comment.awards,
+                        ),
                       ],
                     ],
                   ),

@@ -173,7 +173,7 @@ class ComfortablePostMetadata extends StatelessWidget {
         ),
         if (showAwards && post.awardCount > 0) ...[
           const SizedBox(width: 6),
-          AwardBadge(awardCount: post.awardCount),
+          AwardBadge(awardCount: post.awardCount, awards: post.awards),
         ],
         if (showStickiedIndicator && post.isStickied) ...[
           const SizedBox(width: 6),
