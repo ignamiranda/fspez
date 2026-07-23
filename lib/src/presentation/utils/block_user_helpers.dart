@@ -34,11 +34,7 @@ Future<void> handleBlockUser({
   if (confirmed != true) return;
 
   try {
-    if (accountId != null) {
-      await notifier.blockKnown(username, accountId);
-    } else {
-      await notifier.block(username);
-    }
+    await notifier.block(username, accountId: accountId);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -48,11 +44,7 @@ Future<void> handleBlockUser({
             label: 'Undo',
             onPressed: () async {
               try {
-                if (accountId != null) {
-                  await notifier.unblockKnown(username, accountId);
-                } else {
-                  await notifier.unblock(username);
-                }
+                await notifier.unblock(username, accountId: accountId);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -93,11 +85,7 @@ Future<void> handleUnblockUser({
   String? accountId,
 }) async {
   try {
-    if (accountId != null) {
-      await notifier.unblockKnown(username, accountId);
-    } else {
-      await notifier.unblock(username);
-    }
+    await notifier.unblock(username, accountId: accountId);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -107,11 +95,7 @@ Future<void> handleUnblockUser({
             label: 'Undo',
             onPressed: () async {
               try {
-                if (accountId != null) {
-                  await notifier.blockKnown(username, accountId);
-                } else {
-                  await notifier.block(username);
-                }
+                await notifier.block(username, accountId: accountId);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

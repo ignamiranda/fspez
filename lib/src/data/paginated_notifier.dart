@@ -29,8 +29,17 @@ class PaginatedNotifier<T> extends StateNotifier<PaginatedListState<T>> {
   final Future<PaginatedResult<T>> Function({String? after}) fetchPage;
   String? after;
 
+  /// Optional callback invoked on load error. Receives the current state and
+  /// error; returns the state to transition to. If null, defaults to clearing
+  /// items and showing the error.
+  final PaginatedListState<T> Function(
+    PaginatedListState<T> previousState,
+    Object error,
+  )? onLoadError;
+
   PaginatedNotifier({
     required this.fetchPage,
+    this.onLoadError,
     bool autoLoad = true,
   }) : super(const PaginatedListState.initial()) {
     if (autoLoad) {
@@ -39,6 +48,8 @@ class PaginatedNotifier<T> extends StateNotifier<PaginatedListState<T>> {
   }
 
   Future<void> loadInitial() async {
+    final previousState = state;
+    final previousAfter = after;
     state = const PaginatedListState(isLoading: true);
     after = null;
     try {
@@ -51,7 +62,12 @@ class PaginatedNotifier<T> extends StateNotifier<PaginatedListState<T>> {
         isStale: false,
       );
     } catch (e) {
-      state = PaginatedListState<T>(isLoading: false, error: e.toString());
+      if (onLoadError != null) {
+        after = previousAfter;
+        state = onLoadError!(previousState, e);
+      } else {
+        state = PaginatedListState<T>(isLoading: false, error: e.toString());
+      }
     }
   }
 

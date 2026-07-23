@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/action_notifier.dart';
 import 'package:fspez/src/data/edit_notifier.dart';
 import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/post_actions_service.dart';
+import 'package:fspez/src/data/write_operation_notifier.dart';
 import 'package:fspez/src/data/reddit_client.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
@@ -20,9 +20,9 @@ Widget _app(Widget body) => MaterialApp(home: Scaffold(body: body));
 void main() {
   late _MockHttpClient mockHttp;
   late _MockInteractionClient mockClient;
-  late ActionNotifier<VoteDirection> voteNotifier;
-  late ActionNotifier<bool> saveNotifier;
-  late ActionNotifier<bool> hideNotifier;
+  late WriteOperationNotifier<VoteDirection> voteNotifier;
+  late WriteOperationNotifier<bool> saveNotifier;
+  late WriteOperationNotifier<bool> hideNotifier;
   late PostActionsService actions;
 
   setUpAll(() {
@@ -42,14 +42,14 @@ void main() {
     when(() => mockClient.unhide(any(), any())).thenAnswer((_) async {});
     final cookie = SessionCookie(
         value: 'abc', expiresAt: DateTime.now().add(const Duration(days: 1)));
-    voteNotifier = ActionNotifier<VoteDirection>(null);
-    saveNotifier = ActionNotifier<bool>(cookie);
-    hideNotifier = ActionNotifier<bool>(cookie);
+    voteNotifier = WriteOperationNotifier<VoteDirection>(null);
+    saveNotifier = WriteOperationNotifier<bool>(cookie);
+    hideNotifier = WriteOperationNotifier<bool>(cookie);
     actions = PostActionsService(
       voteNotifier: voteNotifier,
       saveNotifier: saveNotifier,
       hideNotifier: hideNotifier,
-      deleteNotifier: ActionNotifier<void>(cookie),
+      deleteNotifier: WriteOperationNotifier<void>(cookie),
       editNotifier: EditNotifier(mockClient),
       client: mockClient,
       sessionCookie: cookie,
@@ -205,8 +205,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Post unhidden'), findsOneWidget);
-      // unhide skips optimistic state removal — state still reflects the hide
-      expect(hideNotifier.state['t3_test'], isTrue);
+      expect(hideNotifier.state['t3_test'], isFalse);
 
       await tester.tap(find.text('Undo'), warnIfMissed: false);
       await tester.pump();

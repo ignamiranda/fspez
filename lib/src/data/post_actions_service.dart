@@ -1,24 +1,23 @@
 import '../domain/enums/vote_direction.dart';
 import '../domain/models/session_cookie.dart';
-import 'action_notifier.dart';
 import 'edit_notifier.dart';
 import 'interaction_client.dart';
 import 'write_operation_notifier.dart';
 
 class PostActionsService {
-  final ActionNotifier<VoteDirection> _voteNotifier;
-  final ActionNotifier<bool> _saveNotifier;
-  final ActionNotifier<bool> _hideNotifier;
-  final ActionNotifier<void> _deleteNotifier;
+  final WriteOperationNotifier<VoteDirection> _voteNotifier;
+  final WriteOperationNotifier<bool> _saveNotifier;
+  final WriteOperationNotifier<bool> _hideNotifier;
+  final WriteOperationNotifier<void> _deleteNotifier;
   final EditNotifier _editNotifier;
   final InteractionClient _client;
   final SessionCookie _sessionCookie;
 
   PostActionsService({
-    required ActionNotifier<VoteDirection> voteNotifier,
-    required ActionNotifier<bool> saveNotifier,
-    required ActionNotifier<bool> hideNotifier,
-    required ActionNotifier<void> deleteNotifier,
+    required WriteOperationNotifier<VoteDirection> voteNotifier,
+    required WriteOperationNotifier<bool> saveNotifier,
+    required WriteOperationNotifier<bool> hideNotifier,
+    required WriteOperationNotifier<void> deleteNotifier,
     required EditNotifier editNotifier,
     required InteractionClient client,
     required SessionCookie sessionCookie,
@@ -50,7 +49,7 @@ class PostActionsService {
   }
 
   Future<void> toggleSave(String fullname) async {
-    final current = _saveNotifier.peek(fullname) ?? false;
+    final current = _saveNotifier.effectiveValue(fullname, false);
     final next = !current;
     final sc = _sessionCookie;
     try {
@@ -68,13 +67,16 @@ class PostActionsService {
 
   Future<void> hide(String fullname) async {
     final sc = _sessionCookie;
-    await _hideNotifier.write(fullname, true, _hideNotifier.peek(fullname),
+    final current = _hideNotifier.effectiveValue(fullname, false);
+    await _hideNotifier.write(fullname, true, current,
         () => _client.hide(fullname, sc));
   }
 
   Future<void> unhide(String fullname) async {
     final sc = _sessionCookie;
-    await _client.unhide(fullname, sc);
+    final current = _hideNotifier.effectiveValue(fullname, true);
+    await _hideNotifier.write(fullname, false, current,
+        () => _client.unhide(fullname, sc));
   }
 
   Future<void> delete(String fullname) async {

@@ -83,10 +83,23 @@ enum FeedPageKind {
 }
 
 class FeedPageNotifier extends PaginatedNotifier<Post> {
+  // ignore: use_super_parameters
   FeedPageNotifier({
-    required super.fetchPage,
-    super.autoLoad = true,
-  });
+    required Future<PaginatedResult<Post>> Function({String? after}) fetchPage,
+    bool autoLoad = true,
+  }) : super(
+          fetchPage: fetchPage,
+          autoLoad: autoLoad,
+          onLoadError: (prev, error) {
+            if (prev.items.isNotEmpty) {
+              return prev.copyWith(isLoading: false, error: error.toString());
+            }
+            return PaginatedListState<Post>(
+              isLoading: false,
+              error: error.toString(),
+            );
+          },
+        );
 
   /// Seeds cached items directly into state (skips loading state).
   ///
@@ -104,31 +117,6 @@ class FeedPageNotifier extends PaginatedNotifier<Post> {
       isStale: isStale,
     );
     after = feed.after;
-  }
-
-  @override
-  Future<void> loadInitial() async {
-    final previousState = state;
-    final previousAfter = after;
-    state = previousState.copyWith(isLoading: true, clearError: true);
-    after = null;
-    try {
-      final page = await fetchPage(after: null);
-      after = page.after;
-      state = PaginatedListState<Post>(
-        items: page.items,
-        isLoading: false,
-        hasMore: page.hasMore,
-        isStale: false,
-      );
-    } catch (e) {
-      after = previousAfter;
-      if (previousState.items.isNotEmpty) {
-        state = previousState.copyWith(isLoading: false, error: e.toString());
-      } else {
-        state = PaginatedListState<Post>(isLoading: false, error: e.toString());
-      }
-    }
   }
 }
 

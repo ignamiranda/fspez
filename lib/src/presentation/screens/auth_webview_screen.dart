@@ -5,6 +5,8 @@ import '../../domain/models/account.dart';
 import '../../data/auth_providers.dart';
 import '../../data/reddit_client_provider.dart';
 import '../../data/auth_acquirer.dart';
+import '../../data/cdp_cookie_provider.dart';
+import '../../data/session_acquirer.dart';
 
 class AuthWebViewScreen extends ConsumerStatefulWidget {
   const AuthWebViewScreen({super.key});
@@ -24,11 +26,13 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
 
     setState(() => _loading = true);
     try {
+      final provider = CdpCookieProvider(c);
       final acquirer = AuthAcquirer(
         redditClient: ref.read(redditClientProvider),
       );
 
-      final cookie = await acquirer.acquire(c,
+      final store = SessionAcquirer(cookieProvider: provider);
+      final cookie = await acquirer.acquire(store,
           maxAttempts: 20, interval: const Duration(milliseconds: 500));
       if (cookie == null || _done) return;
 

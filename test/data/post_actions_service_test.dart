@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/action_notifier.dart';
 import 'package:fspez/src/data/edit_notifier.dart';
 import 'package:fspez/src/data/post_actions_service.dart';
 import 'package:fspez/src/data/reddit_client.dart';
+import 'package:fspez/src/data/write_operation_notifier.dart';
 import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/domain/enums/vote_direction.dart';
 import 'package:fspez/src/domain/models/session_cookie.dart';
@@ -20,10 +20,10 @@ SessionCookie _cookie() {
 void main() {
   late _MockInteractionClient client;
   late SessionCookie cookie;
-  late ActionNotifier<VoteDirection> voteNotifier;
-  late ActionNotifier<bool> saveNotifier;
-  late ActionNotifier<bool> hideNotifier;
-  late ActionNotifier<void> deleteNotifier;
+  late WriteOperationNotifier<VoteDirection> voteNotifier;
+  late WriteOperationNotifier<bool> saveNotifier;
+  late WriteOperationNotifier<bool> hideNotifier;
+  late WriteOperationNotifier<void> deleteNotifier;
   late EditNotifier editNotifier;
   late PostActionsService service;
 
@@ -50,10 +50,10 @@ void main() {
           sessionCookie: any(named: 'sessionCookie'),
         )).thenAnswer((_) async {});
 
-    voteNotifier = ActionNotifier<VoteDirection>(cookie);
-    saveNotifier = ActionNotifier<bool>(cookie);
-    hideNotifier = ActionNotifier<bool>(cookie);
-    deleteNotifier = ActionNotifier<void>(cookie);
+    voteNotifier = WriteOperationNotifier<VoteDirection>(cookie);
+    saveNotifier = WriteOperationNotifier<bool>(cookie);
+    hideNotifier = WriteOperationNotifier<bool>(cookie);
+    deleteNotifier = WriteOperationNotifier<void>(cookie);
     editNotifier = EditNotifier(client);
     service = PostActionsService(
       voteNotifier: voteNotifier,
@@ -98,7 +98,7 @@ void main() {
     expect(hideNotifier.state['t3_post'], true);
 
     await service.unhide('t3_post');
-    expect(hideNotifier.state['t3_post'], true);
+    expect(hideNotifier.state['t3_post'], false);
     verify(() => client.unhide('t3_post', cookie)).called(1);
   });
 

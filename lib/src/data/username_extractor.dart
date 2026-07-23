@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
+import 'session_info.dart';
 
 String? extractUsernameFromCookieValue(String cookieValue) {
   try {
@@ -92,15 +93,8 @@ class UsernameExtractor {
   }
 
   Future<String?> _tryApiCall(SessionCookie cookie) async {
-    try {
-      final me = await _redditClient.get('/api/me', sessionCookie: cookie);
-      final data = me['data'] as Map<String, dynamic>?;
-      final name = data?['name'] as String?;
-      if (name != null && name.isNotEmpty) return name;
-    } catch (e) {
-      debugPrint('UsernameExtractor._tryApiCall failed: $e');
-    }
-    return null;
+    final info = await fetchSessionInfo(_redditClient, cookie);
+    return info.username != 'unknown' ? info.username : null;
   }
 
   String _extractFromCookie(String cookieValue) {

@@ -1,9 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/enums/vote_direction.dart';
-import 'account_client.dart';
-import 'action_notifier.dart';
 import 'interaction_client.dart';
 import 'media_client.dart';
+import 'write_operation_notifier.dart';
 import 'reddit_client_provider.dart';
 import 'message_client.dart';
 import 'submit_client.dart';
@@ -27,34 +26,30 @@ final messageClientProvider = Provider<MessageClient>((ref) {
   return MessageClient(ref.watch(httpTransportProvider));
 });
 
-final accountClientProvider = Provider<AccountClient>((ref) {
-  return AccountClient(ref.watch(httpTransportProvider));
-});
-
 final voteProvider =
-    StateNotifierProvider<ActionNotifier<VoteDirection>, Map<String, VoteDirection>>((ref) {
+    StateNotifierProvider<WriteOperationNotifier<VoteDirection>, Map<String, VoteDirection>>((ref) {
       final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-      return ActionNotifier<VoteDirection>(cookie);
+      return WriteOperationNotifier<VoteDirection>(cookie);
     });
 
-final saveProvider = StateNotifierProvider<ActionNotifier<bool>, Map<String, bool>>((
+final saveProvider = StateNotifierProvider<WriteOperationNotifier<bool>, Map<String, bool>>((
   ref,
 ) {
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return ActionNotifier<bool>(cookie);
+  return WriteOperationNotifier<bool>(cookie);
 });
 
-final hideProvider = StateNotifierProvider<ActionNotifier<bool>, Map<String, bool>>((
+final hideProvider = StateNotifierProvider<WriteOperationNotifier<bool>, Map<String, bool>>((
   ref,
 ) {
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-  return ActionNotifier<bool>(cookie);
+  return WriteOperationNotifier<bool>(cookie);
 });
 
-final deleteProvider = StateNotifierProvider<ActionNotifier<void>, Map<String, void>>(
+final deleteProvider = StateNotifierProvider<WriteOperationNotifier<void>, Map<String, void>>(
   (ref) {
     final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-    return ActionNotifier<void>(cookie);
+    return WriteOperationNotifier<void>(cookie);
   },
 );
 
@@ -84,9 +79,9 @@ final editProvider = StateNotifierProvider<EditNotifier, WriteState>((ref) {
 
 final blockActionProvider =
     StateNotifierProvider<BlockActionNotifier, Map<String, bool>>((ref) {
-      final client = ref.watch(accountClientProvider);
+      final transport = ref.watch(httpTransportProvider);
       final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-      return BlockActionNotifier(client, cookie);
+      return BlockActionNotifier(transport, cookie);
     });
 
 final postActionsServiceProvider = Provider<PostActionsService?>((ref) {

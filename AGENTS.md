@@ -89,11 +89,30 @@ Before calling `edit()` with an `oldString` parameter for changes to existing co
 
 If edit() fails with "oldString not found": Read the file again to verify current content before retrying.
 
+### Autonomous/automatic mode — discover all required steps
+
+When the user tells you to do something "autonomously", "automatically", "handle it", or instructs you to proceed without further direction:
+
+1. Load the relevant skill(s) for the task.
+2. Read the skill's full instructions end to end.
+3. Re-read this AGENTS.md — especially any hardened patterns and documented workflows.
+4. Compile the **complete list** of required steps, not just the ones the user happened to mention.
+5. Execute every step. Do not skip any step because the user didn't name it explicitly.
+6. Common steps that are easy to miss: running `@configure` to ensure agent behavior is properly configured for the task, running `/code-review` after implementation, running `flutter analyze` until zero-clean, running tests.
+
+This prevents the failure mode where the agent does only the steps the user explicitly listed and skips mandatory steps documented in skills or AGENTS.md.
+
 ### CI gate: flutter analyze must be zero-clean
 
 The CI pipeline (`flutter analyze --no-pub`) exits with code 1 on **any** issue — `info`, `warning`, or `error`. A "No issues found!" exit is required before landing.
 
 When running `flutter analyze` in verify or review tasks: the exit code and full issue count must be checked. All findings must be fixed before sign-off, regardless of severity level. If the analysis shows any issues, your task is incomplete — fix them and re-run until clean.
+
+### Use fetch subagent for URLs
+
+When the user shares a URL or asks you to fetch web content, use the `fetch` subagent (via `task` tool with `subagent_type: "fetch"` in background mode) instead of the built-in `webfetch` tool. The `fetch` subagent has better extraction knowhow — it consults site-specific instructions under the `web-fetch` skill and can handle dynamic sites that return 403 or JS-rendered shells to the basic `webfetch` tool.
+
+Exception: only use `webfetch` directly when the URL is known to be a simple static page (blog, docs, etc.) and the `fetch` subagent is unavailable or inappropriate for the context.
 
 ## Agent skills
 

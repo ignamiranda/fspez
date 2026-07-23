@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fspez/src/data/action_notifier.dart';
 import 'package:fspez/src/data/http_transport.dart';
 import 'package:fspez/src/data/interaction_client.dart';
 import 'package:fspez/src/data/write_operation_notifier.dart';
@@ -20,7 +19,7 @@ SessionCookie _testCookie() {
 void main() {
   late _MockHttpClient mockHttp;
   late InteractionClient interactionClient;
-  late ActionNotifier<VoteDirection> notifier;
+  late WriteOperationNotifier<VoteDirection> notifier;
   late SessionCookie cookie;
 
   setUpAll(() {
@@ -34,7 +33,7 @@ void main() {
     when(() => mockHttp.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
         .thenAnswer((_) async => http.Response('{}', 200));
     interactionClient = InteractionClient(HttpTransport(httpClient: mockHttp));
-    notifier = ActionNotifier<VoteDirection>(null);
+    notifier = WriteOperationNotifier<VoteDirection>(null);
   });
 
   group('write', () {

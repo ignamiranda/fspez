@@ -1,36 +1,36 @@
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../domain/models/session_cookie.dart';
 import 'reddit_client.dart';
-import 'cdp_cookie_provider.dart';
 import 'session_acquirer.dart';
-import 'modhash_fetcher.dart';
+import 'session_info.dart';
 import 'username_extractor.dart';
 
 class AuthAcquirer {
-  final ModhashFetcher _modhashFetcher;
+  final RedditClient _redditClient;
   final UsernameExtractor _usernameExtractor;
+  String? _cachedUsername;
 
   AuthAcquirer({required RedditClient redditClient})
-      : _modhashFetcher = ModhashFetcher(redditClient: redditClient),
+      : _redditClient = redditClient,
         _usernameExtractor = UsernameExtractor(redditClient: redditClient);
 
   Future<SessionCookie?> acquire(
-    InAppWebViewController controller, {
+    SessionAcquirer acquirer, {
     int maxAttempts = 10,
     Duration interval = const Duration(milliseconds: 500),
   }) async {
-    final provider = CdpCookieProvider(controller);
-    final store = SessionAcquirer(cookieProvider: provider);
     final cookie =
-        await store.acquire(maxAttempts: maxAttempts, interval: interval);
+        await acquirer.acquire(maxAttempts: maxAttempts, interval: interval);
     if (cookie == null) return null;
 
-    final modhash = await _modhashFetcher.fetch(cookie);
+    final info = await fetchSessionInfo(_redditClient, cookie);
+    _cachedUsername = info.username;
+
     return SessionCookie(
       value: cookie.value,
       expiresAt: cookie.expiresAt,
       rawCookie: cookie.rawCookie,
-      modhash: modhash ?? cookie.modhash,
+      modhash: info.modhash ?? cookie.modhash,
     );
   }
 
@@ -38,6 +38,7 @@ class AuthAcquirer {
     SessionCookie cookie, {
     InAppWebViewController? controller,
   }) async {
+    if (_cachedUsername != null) return _cachedUsername!;
     return _usernameExtractor.extract(cookie, controller: controller);
   }
 }
