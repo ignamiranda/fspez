@@ -2,7 +2,12 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
+
+import '../../data/image_gallery_saver_wrapper.dart';
+import '../../data/media_save_service.dart';
+import '../../domain/enums/media_type.dart';
 import 'shared/error_retry_widget.dart';
 import '../utils/error_messages.dart';
 
@@ -85,6 +90,54 @@ class _MediaViewerState extends State<MediaViewer> {
   double _dragOffset = 0;
   bool _anyPageZoomed = false;
   Timer? _chromeTimer;
+  MediaSaveService? _mediaSaveService;
+
+  String? get _currentMediaUrl {
+    if (_hasVideo && _currentIndex == 0) {
+      return widget.videoUrl;
+    }
+    final imageIndex = _imagePageIndex(_currentIndex);
+    if (imageIndex >= 0 && imageIndex < widget.imageUrls.length) {
+      return widget.imageUrls[imageIndex];
+    }
+    return null;
+  }
+
+  Future<void> _saveMedia() async {
+    if (!_revealed) return;
+    final url = _currentMediaUrl;
+    if (url == null) return;
+
+    _mediaSaveService ??= MediaSaveService(
+      httpClient: http.Client(),
+      gallerySaver: const ImageGallerySaverWrapper(),
+    );
+
+    final type =
+        _hasVideo && _currentIndex == 0 ? MediaType.video : MediaType.image;
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(content: Text('Saving…')));
+
+    final result = await _mediaSaveService!.saveMedia(url, type);
+
+    if (!mounted) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          switch (result) {
+            SaveSuccess() => 'Saved to gallery',
+            SaveFailure(message: final m) => 'Failed to save: $m',
+          },
+        ),
+        duration: switch (result) {
+          SaveSuccess() => const Duration(seconds: 2),
+          SaveFailure() => const Duration(seconds: 4),
+        },
+      ),
+    );
+  }
 
   static const _chromeAutoHideDuration = Duration(seconds: 4);
   static const _dismissThreshold = 150.0;
@@ -102,6 +155,7 @@ class _MediaViewerState extends State<MediaViewer> {
   void dispose() {
     _chromeTimer?.cancel();
     _pageController.dispose();
+    _mediaSaveService?.dispose();
     super.dispose();
   }
 
@@ -176,6 +230,7 @@ class _MediaViewerState extends State<MediaViewer> {
                       return _ZoomableImagePage(
                         imageUrl: widget.imageUrls[imageIndex],
                         onTap: _toggleChrome,
+                        onLongPress: _revealed ? _saveMedia : null,
                         onDragUpdate: _onDismissUpdate,
                         onDragEnd: _onDismissEnd,
                         onZoomChanged: (zoomed) {
@@ -235,6 +290,32 @@ class _MediaViewerState extends State<MediaViewer> {
                     icon: Icons.close,
                     onTap: _close,
                   ),
+                ),
+
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  right: 8,
+                  child: _revealed
+                      ? PopupMenuButton<String>(
+                          color: Colors.black87,
+                          icon: const Icon(Icons.more_vert,
+                              color: Colors.white, size: 22),
+                          onSelected: (_) => _saveMedia(),
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'save',
+                              child: ListTile(
+                                leading: Icon(Icons.download,
+                                    color: Colors.white, size: 20),
+                                title: Text('Save to gallery',
+                                    style: TextStyle(color: Colors.white)),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
                 ),
 
                 // Bottom page indicator
@@ -492,12 +573,14 @@ class _VideoSeekBar extends StatelessWidget {
 class _ZoomableImagePage extends StatefulWidget {
   final String imageUrl;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final ValueChanged<double>? onDragUpdate;
   final VoidCallback? onDragEnd;
   final ValueChanged<bool>? onZoomChanged;
   const _ZoomableImagePage({
     required this.imageUrl,
     required this.onTap,
+    this.onLongPress,
     this.onDragUpdate,
     this.onDragEnd,
     this.onZoomChanged,
@@ -645,6 +728,7 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
 
     return GestureDetector(
       onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
       onDoubleTapDown: (d) => _doubleTapDownPosition = d.localPosition,
       onDoubleTap: _onDoubleTap,
       child: _isLongImage ? _buildLongImage(context) : _buildZoomableImage(),
