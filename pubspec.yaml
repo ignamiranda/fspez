@@ -40,6 +40,8 @@ dev_dependencies:
 dependency_overrides:
   flutter_inappwebview_windows:
     path: third_party/flutter_inappwebview_windows
+  image_gallery_saver:
+    path: third_party/image_gallery_saver
 
 flutter:
   uses-material-design: true
