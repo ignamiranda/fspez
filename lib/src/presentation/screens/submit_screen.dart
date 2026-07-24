@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,7 +45,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
   void _onSubredditChanged() {
     setState(() {});
     ref
-        .read(submitProvider.notifier)
+        .read(flairProvider.notifier)
         .onSubredditChanged(_subredditController.text);
   }
 
@@ -63,31 +64,35 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
     final title = _titleController.text.trim();
     final subreddit = _subredditController.text.trim();
     if (title.isEmpty || subreddit.isEmpty) return false;
-    final state = ref.read(submitProvider);
+    final flairState = ref.read(flairProvider);
+    if (flairState.isFlairRequired && flairState.selectedFlair == null) {
+      return false;
+    }
+    final mediaState = ref.read(mediaPickerProvider);
     switch (_tabController.index) {
       case 0: // Text
       case 1: // Link
         return true;
       case 2: // Image
-        return state.selectedImage != null;
+        return mediaState.selectedImage != null;
       case 3: // Gallery
-        return state.galleryFiles.isNotEmpty;
+        return mediaState.galleryFiles.isNotEmpty;
       case 4: // Video
-        return state.selectedVideo != null;
+        return mediaState.selectedVideo != null;
       default:
         return false;
     }
   }
 
   bool get _hasInput {
-    final state = ref.read(submitProvider);
+    final mediaState = ref.read(mediaPickerProvider);
     return _titleController.text.trim().isNotEmpty ||
         _textController.text.trim().isNotEmpty ||
         _urlController.text.trim().isNotEmpty ||
         _subredditController.text.trim().isNotEmpty ||
-        state.selectedImage != null ||
-        state.galleryFiles.isNotEmpty ||
-        state.selectedVideo != null;
+        mediaState.selectedImage != null ||
+        mediaState.galleryFiles.isNotEmpty ||
+        mediaState.selectedVideo != null;
   }
 
   Future<bool?> _confirmDiscard() {
@@ -116,54 +121,87 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
     final account = ref.read(activeAccountProvider);
     if (title.isEmpty || subreddit.isEmpty || account == null) return;
 
-    final notifier = ref.read(submitProvider.notifier);
+    final submitNotifier = ref.read(submitProvider.notifier);
+    final flairState = ref.read(flairProvider);
+    final mediaState = ref.read(mediaPickerProvider);
+    final flairId = flairState.selectedFlair?.flairTemplateId;
+    final flairText = flairState.selectedFlair?.text;
+
     bool success;
     switch (_tabController.index) {
       case 0: // Text
-        success = await notifier.submitText(
+        success = await submitNotifier.submitText(
           title: title,
           subreddit: subreddit,
           text: _textController.text.trim(),
           sessionCookie: account.sessionCookie,
+          flairId: flairId,
+          flairText: flairText,
         );
         break;
       case 1: // Link
-        success = await notifier.submitLink(
+        success = await submitNotifier.submitLink(
           title: title,
           subreddit: subreddit,
           url: _urlController.text.trim(),
           sessionCookie: account.sessionCookie,
+          flairId: flairId,
+          flairText: flairText,
         );
         break;
       case 2: // Image
-        final state = ref.read(submitProvider);
-        if (state.selectedImage == null) return;
-        success = await notifier.submitImage(
+        if (mediaState.selectedImage == null) return;
+        final imageFile = mediaState.selectedImage!;
+        if (imageFile.path == null) return;
+        final imageBytes = await File(imageFile.path!).readAsBytes();
+        success = await submitNotifier.submitImage(
           title: title,
           subreddit: subreddit,
-          file: state.selectedImage!,
+          bytes: imageBytes,
+          filename: imageFile.name,
           sessionCookie: account.sessionCookie,
+          flairId: flairId,
+          flairText: flairText,
         );
         break;
       case 3: // Gallery
-        final state = ref.read(submitProvider);
-        if (state.galleryFiles.isEmpty) return;
-        success = await notifier.submitGallery(
+        if (mediaState.galleryFiles.isEmpty) return;
+        final items = <({Uint8List bytes, String filename, String caption})>[];
+        for (var i = 0; i < mediaState.galleryFiles.length; i++) {
+          final f = mediaState.galleryFiles[i];
+          if (f.path == null) continue;
+          final bytes = await File(f.path!).readAsBytes();
+          items.add((
+            bytes: bytes,
+            filename: f.name,
+            caption: i < mediaState.galleryCaptions.length
+                ? mediaState.galleryCaptions[i].trim()
+                : '',
+          ));
+        }
+        if (items.isEmpty) return;
+        success = await submitNotifier.submitGallery(
           title: title,
           subreddit: subreddit,
-          files: state.galleryFiles,
-          captions: state.galleryCaptions,
+          items: items,
           sessionCookie: account.sessionCookie,
+          flairId: flairId,
+          flairText: flairText,
         );
         break;
       case 4: // Video
-        final state = ref.read(submitProvider);
-        if (state.selectedVideo == null) return;
-        success = await notifier.submitVideo(
+        if (mediaState.selectedVideo == null) return;
+        final videoFile = mediaState.selectedVideo!;
+        if (videoFile.path == null) return;
+        final videoBytes = await File(videoFile.path!).readAsBytes();
+        success = await submitNotifier.submitVideo(
           title: title,
           subreddit: subreddit,
-          file: state.selectedVideo!,
+          bytes: videoBytes,
+          filename: videoFile.name,
           sessionCookie: account.sessionCookie,
+          flairId: flairId,
+          flairText: flairText,
         );
         break;
       default:
@@ -195,26 +233,28 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
   }
 
   Future<void> _showFlairPicker() async {
-    final notifier = ref.read(submitProvider.notifier);
-    final state = ref.read(submitProvider);
-    if (state.flairOptions.isEmpty) return;
+    final flairNotifier = ref.read(flairProvider.notifier);
+    final flairState = ref.read(flairProvider);
+    if (flairState.flairOptions.isEmpty) return;
 
     final picked = await showFlairPickerSheet(
       context,
-      options: state.flairOptions,
-      currentSelection: state.selectedFlair,
+      options: flairState.flairOptions,
+      currentSelection: flairState.selectedFlair,
     );
 
     if (!mounted) return;
-    if (picked != state.selectedFlair) {
-      notifier.selectFlair(picked);
+    if (picked != flairState.selectedFlair) {
+      flairNotifier.selectFlair(picked);
+      ref.read(submitProvider.notifier).reset();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final submitState = ref.watch(submitProvider);
-    final canSubmit = submitState.canSubmit;
+    final flairState = ref.watch(flairProvider);
+    final canSubmit = submitState.canSubmit && _canSubmit;
 
     return PopScope(
       canPop: !_hasInput,
@@ -250,7 +290,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
               )
             else
               TextButton(
-                onPressed: _canSubmit && canSubmit ? _submit : null,
+                onPressed: canSubmit ? _submit : null,
                 child: const Text('Submit'),
               ),
           ],
@@ -291,7 +331,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
                     maxLengthEnforcement: MaxLengthEnforcement.enforced,
                   ),
                   // Flair section — visible when flair options exist for the target subreddit.
-                  if (submitState.flairOptions.isNotEmpty) ...[
+                  if (flairState.flairOptions.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     InkWell(
                       onTap: _showFlairPicker,
@@ -300,7 +340,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
                         decoration: InputDecoration(
                           labelText: 'Flair',
                           border: const OutlineInputBorder(),
-                          suffixIcon: submitState.isFetchingFlairs
+                          suffixIcon: flairState.isFetchingFlairs
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
@@ -312,10 +352,10 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
                                 )
                               : const Icon(Icons.arrow_drop_down),
                         ),
-                        child: submitState.selectedFlair != null
-                            ? _FlairChip(flair: submitState.selectedFlair!)
+                        child: flairState.selectedFlair != null
+                            ? _FlairChip(flair: flairState.selectedFlair!)
                             : Text(
-                                submitState.isFetchingFlairs
+                                flairState.isFetchingFlairs
                                     ? 'Loading…'
                                     : 'Select a flair',
                                 style: Theme.of(context)
@@ -329,8 +369,8 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen>
                               ),
                       ),
                     ),
-                    if (submitState.isFlairRequired &&
-                        submitState.selectedFlair == null)
+                    if (flairState.isFlairRequired &&
+                        flairState.selectedFlair == null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4, left: 12),
                         child: Text(

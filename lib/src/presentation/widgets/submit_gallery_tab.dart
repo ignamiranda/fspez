@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../data/submit_notifier.dart';
+import '../../data/media_picker_notifier.dart';
 import '../../data/write_providers.dart';
 
 class SubmitGalleryTab extends ConsumerWidget {
@@ -10,8 +10,8 @@ class SubmitGalleryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(submitProvider);
-    final notifier = ref.read(submitProvider.notifier);
+    final state = ref.watch(mediaPickerProvider);
+    final notifier = ref.read(mediaPickerProvider.notifier);
 
     if (state.galleryFiles.isEmpty) {
       return Center(
@@ -59,8 +59,8 @@ class SubmitGalleryTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildGalleryItem(BuildContext context, int index, SubmitState state,
-      SubmitNotifier notifier) {
+  Widget _buildGalleryItem(BuildContext context, int index,
+      MediaPickerState state, MediaPickerNotifier notifier) {
     final file = state.galleryFiles[index];
     return Card(
       key: ValueKey(file.path ?? file.name),

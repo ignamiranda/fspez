@@ -7,6 +7,8 @@ import 'reddit_client_provider.dart';
 import 'message_client.dart';
 import 'submit_client.dart';
 import 'auth_providers.dart';
+import 'flair_notifier.dart';
+import 'media_picker_notifier.dart';
 import 'submit_notifier.dart';
 import 'compose_notifier.dart';
 import 'edit_notifier.dart';
@@ -26,27 +28,30 @@ final messageClientProvider = Provider<MessageClient>((ref) {
   return MessageClient(ref.watch(httpTransportProvider));
 });
 
-final voteProvider =
-    StateNotifierProvider<WriteOperationNotifier<VoteDirection>, Map<String, VoteDirection>>((ref) {
-      final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-      return WriteOperationNotifier<VoteDirection>(cookie);
-    });
+final voteProvider = StateNotifierProvider<
+    WriteOperationNotifier<VoteDirection>, Map<String, VoteDirection>>((ref) {
+  final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return WriteOperationNotifier<VoteDirection>(cookie);
+});
 
-final saveProvider = StateNotifierProvider<WriteOperationNotifier<bool>, Map<String, bool>>((
+final saveProvider =
+    StateNotifierProvider<WriteOperationNotifier<bool>, Map<String, bool>>((
   ref,
 ) {
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return WriteOperationNotifier<bool>(cookie);
 });
 
-final hideProvider = StateNotifierProvider<WriteOperationNotifier<bool>, Map<String, bool>>((
+final hideProvider =
+    StateNotifierProvider<WriteOperationNotifier<bool>, Map<String, bool>>((
   ref,
 ) {
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
   return WriteOperationNotifier<bool>(cookie);
 });
 
-final deleteProvider = StateNotifierProvider<WriteOperationNotifier<void>, Map<String, void>>(
+final deleteProvider =
+    StateNotifierProvider<WriteOperationNotifier<void>, Map<String, void>>(
   (ref) {
     final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
     return WriteOperationNotifier<void>(cookie);
@@ -57,6 +62,15 @@ final mediaUploadClientProvider = Provider<MediaUploadClient>((ref) {
   final client = MediaUploadClient(ref.watch(submitClientProvider));
   ref.onDispose(client.dispose);
   return client;
+});
+
+final flairProvider = StateNotifierProvider<FlairNotifier, FlairState>((ref) {
+  return FlairNotifier(ref.watch(submitClientProvider));
+});
+
+final mediaPickerProvider =
+    StateNotifierProvider<MediaPickerNotifier, MediaPickerState>((ref) {
+  return MediaPickerNotifier();
 });
 
 final submitProvider =
@@ -79,10 +93,10 @@ final editProvider = StateNotifierProvider<EditNotifier, WriteState>((ref) {
 
 final blockActionProvider =
     StateNotifierProvider<BlockActionNotifier, Map<String, bool>>((ref) {
-      final transport = ref.watch(httpTransportProvider);
-      final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
-      return BlockActionNotifier(transport, cookie);
-    });
+  final transport = ref.watch(httpTransportProvider);
+  final cookie = ref.watch(activeAccountProvider)?.sessionCookie;
+  return BlockActionNotifier(transport, cookie);
+});
 
 final postActionsServiceProvider = Provider<PostActionsService?>((ref) {
   final cookie = ref.watch(activeAccountProvider)?.sessionCookie;

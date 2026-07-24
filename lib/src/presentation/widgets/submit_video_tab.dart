@@ -9,8 +9,8 @@ class SubmitVideoTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(submitProvider);
-    final notifier = ref.read(submitProvider.notifier);
+    final state = ref.watch(mediaPickerProvider);
+    final notifier = ref.read(mediaPickerProvider.notifier);
 
     return SubmitFileTab(
       fileType: FileType.video,

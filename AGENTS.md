@@ -114,6 +114,20 @@ When the user shares a URL or asks you to fetch web content, use the `fetch` sub
 
 Exception: only use `webfetch` directly when the URL is known to be a simple static page (blog, docs, etc.) and the `fetch` subagent is unavailable or inappropriate for the context.
 
+### Fetch subagent: verify file-path-only return
+
+The fetch subagent MUST save fetched content to files and return only file paths — never inline content. When invoking the fetch subagent:
+
+1. **Explicitly instruct it**: tell the fetch subagent "Save the content to files and return only the file paths — do NOT output the content inline."
+2. **Verify the response**: check that the fetch subagent's response contains file paths, not inline content. If it dumped content inline, it violated its instructions.
+3. **If violated**: do not accept the inline output. Run `@configure` with the problem description "fetch subagent returned inline content instead of saving to files and returning paths" to reinforce the rule.
+
+This prevents the failure mode where the fetch subagent burns a huge number of tokens writing out fetched content verbatim, defeating the purpose of running it as a background agent.
+
+### Always run @configure as a background task
+
+When calling the `configure` subagent (via `task` with `subagent_type: "configure"`), always pass `background: true`. Do not wait for the result — the user will see the notification when it completes.
+
 ## Agent skills
 
 ### Issue tracker
