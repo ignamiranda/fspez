@@ -19,6 +19,8 @@ bool? boolOr(Map<String, dynamic> map, String key) => map[key] as bool?;
 double? doubleOr(Map<String, dynamic> map, String key) =>
     (map[key] as num?)?.toDouble();
 
+final _fullnameRegex = RegExp(r'^t[0-9]+_');
+
 String? extractUsernameFromHtml(String html) {
   final patterns = [
     RegExp(r'"loggedInUser"\s*:\s*"([^"]+)"'),
@@ -31,7 +33,12 @@ String? extractUsernameFromHtml(String html) {
     final match = pattern.firstMatch(html);
     if (match != null) {
       final name = match.group(1);
-      if (name != null && name.isNotEmpty && name.length < 30) return name;
+      if (name != null &&
+          name.isNotEmpty &&
+          name.length < 30 &&
+          !_fullnameRegex.hasMatch(name)) {
+        return name;
+      }
     }
   }
 

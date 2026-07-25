@@ -50,7 +50,7 @@ class UsernameExtractor {
   final RedditClient _redditClient;
 
   UsernameExtractor({required RedditClient redditClient})
-    : _redditClient = redditClient;
+      : _redditClient = redditClient;
 
   Future<String> extract(
     SessionCookie cookie, {
@@ -71,14 +71,16 @@ class UsernameExtractor {
       final js = await controller.evaluateJavascript(
         source: '''
         (function() {
+          var isPlain = function(s) { return s && !/^t\\d+_/.test(s); };
           var el = document.querySelector('shreddit-app');
-          if (el && el.getAttribute('username')) return el.getAttribute('username');
+          var uname = el && el.getAttribute('username');
+          if (isPlain(uname)) return uname;
           var meta = document.querySelector('meta[name="twitter:data1"]');
           if (meta && meta.getAttribute('value')) return meta.getAttribute('value');
           var links = document.querySelectorAll('a[href*="/user/"]');
           for (var i = 0; i < links.length; i++) {
             var m = links[i].href.match(/\\/user\\/([^\\/?#]+)/);
-            if (m && m[1] && !m[1].startsWith('t2_') && m[1].length < 25) {
+            if (m && m[1] && isPlain(m[1]) && m[1].length < 25) {
               if (links[i].closest('header, [class*="Header"], [class*="navbar"], [class*="top"]'))
                 return m[1];
             }

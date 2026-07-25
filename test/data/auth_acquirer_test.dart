@@ -68,6 +68,22 @@ void main() {
       },
     );
 
+    test('rejects t2_ fullname from shreddit-app username attribute', () async {
+      when(
+        () => mockHttp.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer(
+        (_) async => http.Response(
+          '<html><head><script>window.__r = {"x": 1};</script></head>'
+          '<body><shreddit-app username="t2_dgo4c"></shreddit-app></body></html>',
+          200,
+        ),
+      );
+
+      final info = await fetchSessionInfo(redditClient, cookie);
+
+      expect(info, isNull);
+    });
+
     test('returns null on API error', () async {
       when(
         () => mockHttp.get(any(), headers: any(named: 'headers')),
