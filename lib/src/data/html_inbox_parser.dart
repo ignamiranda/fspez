@@ -1,21 +1,21 @@
-import '../domain/enums/vote_direction.dart';
 import '../domain/models/inbox_feed.dart';
 import '../domain/models/inbox_item.dart';
+import 'html_parser_utils.dart';
 import 'shreddit_json_extractor.dart';
 
 class HtmlInboxParser {
   InboxFeed parseInbox(String html, InboxTab tab) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
+    final pp = pageProps(extracted);
 
-    final rawMessages = pageProps['messages'] as List<dynamic>?;
+    final rawMessages = pp['messages'] as List<dynamic>?;
     final items = rawMessages
             ?.whereType<Map<String, dynamic>>()
             .map(_inboxItemFromRaw)
             .toList() ??
         [];
 
-    final after = pageProps['after'] as String?;
+    final after = pp['after'] as String?;
 
     return InboxFeed(tab: tab, items: items, after: after);
   }
@@ -26,7 +26,8 @@ class HtmlInboxParser {
     final body = raw['body'] as String? ?? '';
     final author = raw['author'] as String? ?? '[deleted]';
     final dest = raw['dest'] as String? ?? '';
-    final createdUtc = _int(raw, 'createdUtc') ?? _int(raw, 'created_utc') ?? 0;
+    final createdUtc =
+        intOr(raw, 'createdUtc') ?? intOr(raw, 'created_utc') ?? 0;
     final isNew = raw['new'] as bool? ?? false;
     final wasComment =
         (raw['wasComment'] as bool?) ?? (raw['was_comment'] as bool?) ?? false;
@@ -36,7 +37,7 @@ class HtmlInboxParser {
     final context = raw['context'] as String?;
     final firstMessageName = raw['firstMessageName'] as String? ??
         raw['first_message_name'] as String?;
-    final score = _int(raw, 'score') ?? 0;
+    final score = intOr(raw, 'score') ?? 0;
     final likes = raw['likes'];
 
     final replies = _parseReplies(raw);
@@ -55,7 +56,7 @@ class HtmlInboxParser {
         parentId: parentId,
         subreddit: subreddit,
         distinguished: distinguished,
-        vote: _parseVote(likes),
+        vote: parseVote(likes),
         score: score,
         context: context,
         firstMessageName: firstMessageName,
@@ -86,18 +87,4 @@ class HtmlInboxParser {
     }
     return [];
   }
-
-  Map<String, dynamic> _pageProps(Map<String, dynamic> extracted) {
-    final props = extracted['props'] as Map<String, dynamic>?;
-    if (props == null) return extracted;
-    return props['pageProps'] as Map<String, dynamic>? ?? extracted;
-  }
-
-  VoteDirection _parseVote(dynamic likes) {
-    if (likes == true) return VoteDirection.upvote;
-    if (likes == false) return VoteDirection.downvote;
-    return VoteDirection.none;
-  }
-
-  int? _int(Map<String, dynamic> map, String key) => map[key] as int?;
 }

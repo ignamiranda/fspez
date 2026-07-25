@@ -1,30 +1,31 @@
-import '../domain/enums/vote_direction.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/user_profile.dart';
+import 'html_parser_utils.dart';
 import 'shreddit_json_extractor.dart';
 
 class HtmlUserProfileParser {
   UserProfile parseProfile(String html, String username) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
+    final pp = pageProps(extracted);
 
-    final rawUser = pageProps['user'] as Map<String, dynamic>? ??
-        pageProps['profile'] as Map<String, dynamic>? ??
+    final rawUser = pp['user'] as Map<String, dynamic>? ??
+        pp['profile'] as Map<String, dynamic>? ??
         {};
 
     final id = rawUser['id'] as String? ?? '';
     final name = rawUser['name'] as String? ?? username;
     final linkKarma =
-        _int(rawUser, 'linkKarma') ?? _int(rawUser, 'link_karma') ?? 0;
+        intOr(rawUser, 'linkKarma') ?? intOr(rawUser, 'link_karma') ?? 0;
     final commentKarma =
-        _int(rawUser, 'commentKarma') ?? _int(rawUser, 'comment_karma') ?? 0;
+        intOr(rawUser, 'commentKarma') ?? intOr(rawUser, 'comment_karma') ?? 0;
     final createdUtc =
-        _int(rawUser, 'createdUtc') ?? _int(rawUser, 'created_utc') ?? 0;
+        intOr(rawUser, 'createdUtc') ?? intOr(rawUser, 'created_utc') ?? 0;
     final iconUrl =
         rawUser['iconUrl'] as String? ?? rawUser['icon_img'] as String?;
     final isGold =
-        _bool(rawUser, 'isGold') ?? _bool(rawUser, 'is_gold') ?? false;
-    final isMod = _bool(rawUser, 'isMod') ?? _bool(rawUser, 'is_mod') ?? false;
+        boolOr(rawUser, 'isGold') ?? boolOr(rawUser, 'is_gold') ?? false;
+    final isMod =
+        boolOr(rawUser, 'isMod') ?? boolOr(rawUser, 'is_mod') ?? false;
 
     return UserProfile(
       id: id,
@@ -42,9 +43,9 @@ class HtmlUserProfileParser {
 
   List<Comment> parseComments(String html) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
+    final pp = pageProps(extracted);
 
-    final rawComments = pageProps['comments'] as List<dynamic>? ?? [];
+    final rawComments = pp['comments'] as List<dynamic>? ?? [];
     return rawComments
         .whereType<Map<String, dynamic>>()
         .map(_commentFromRaw)
@@ -55,23 +56,24 @@ class HtmlUserProfileParser {
     final id = raw['id'] as String? ?? '';
     final body = raw['body'] as String? ?? '';
     final author = raw['author'] as String? ?? '[deleted]';
-    final score = _int(raw, 'score') ?? 0;
-    final createdUtc = _int(raw, 'createdUtc') ?? _int(raw, 'created_utc') ?? 0;
+    final score = intOr(raw, 'score') ?? 0;
+    final createdUtc =
+        intOr(raw, 'createdUtc') ?? intOr(raw, 'created_utc') ?? 0;
     final linkId = raw['linkId'] as String? ?? raw['link_id'] as String? ?? '';
     final parentId = raw['parentId'] as String? ?? raw['parent_id'] as String?;
-    final depth = _int(raw, 'depth') ?? 0;
+    final depth = intOr(raw, 'depth') ?? 0;
 
     return Comment(
       id: id,
       body: body,
       author: author,
       score: score,
-      vote: _parseVote(raw['likes']),
-      isSaved: _bool(raw, 'saved') ?? false,
+      vote: parseVote(raw['likes']),
+      isSaved: boolOr(raw, 'saved') ?? false,
       isSubmitter:
-          _bool(raw, 'isSubmitter') ?? _bool(raw, 'is_submitter') ?? false,
-      awardCount: _int(raw, 'totalAwardsReceived') ??
-          _int(raw, 'total_awards_received') ??
+          boolOr(raw, 'isSubmitter') ?? boolOr(raw, 'is_submitter') ?? false,
+      awardCount: intOr(raw, 'totalAwardsReceived') ??
+          intOr(raw, 'total_awards_received') ??
           0,
       createdAt: createdUtc > 0
           ? DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000)
@@ -86,19 +88,4 @@ class HtmlUserProfileParser {
           raw['linkPermalink'] as String? ?? raw['link_permalink'] as String?,
     );
   }
-
-  Map<String, dynamic> _pageProps(Map<String, dynamic> extracted) {
-    final props = extracted['props'] as Map<String, dynamic>?;
-    if (props == null) return extracted;
-    return props['pageProps'] as Map<String, dynamic>? ?? extracted;
-  }
-
-  VoteDirection _parseVote(dynamic likes) {
-    if (likes == true) return VoteDirection.upvote;
-    if (likes == false) return VoteDirection.downvote;
-    return VoteDirection.none;
-  }
-
-  int? _int(Map<String, dynamic> map, String key) => map[key] as int?;
-  bool? _bool(Map<String, dynamic> map, String key) => map[key] as bool?;
 }

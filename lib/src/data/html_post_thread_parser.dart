@@ -1,23 +1,23 @@
-import '../domain/enums/vote_direction.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../domain/models/post_detail.dart';
 import '../domain/models/subreddit.dart';
+import 'html_parser_utils.dart';
 import 'shreddit_json_extractor.dart';
 
 class HtmlPostThreadParser {
   PostDetail parse(String html) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
 
-    final post = _extractPost(pageProps);
-    final comments = _extractComments(pageProps);
+    final post = _extractPost(extracted);
+    final comments = _extractComments(extracted);
 
     return PostDetail(post: post, comments: comments);
   }
 
-  Post _extractPost(Map<String, dynamic> pageProps) {
-    final rawPost = pageProps['post'] as Map<String, dynamic>?;
+  Post _extractPost(Map<String, dynamic> extracted) {
+    final pp = pageProps(extracted);
+    final rawPost = pp['post'] as Map<String, dynamic>?;
     if (rawPost == null) {
       return Post(
         id: '',
@@ -33,8 +33,9 @@ class HtmlPostThreadParser {
     return _postFromRaw(rawPost);
   }
 
-  List<Comment> _extractComments(Map<String, dynamic> pageProps) {
-    final rawComments = pageProps['comments'] as List<dynamic>?;
+  List<Comment> _extractComments(Map<String, dynamic> extracted) {
+    final pp = pageProps(extracted);
+    final rawComments = pp['comments'] as List<dynamic>?;
     if (rawComments == null) return [];
 
     return rawComments
@@ -49,10 +50,11 @@ class HtmlPostThreadParser {
     final author = raw['author'] as String? ?? '[deleted]';
     final subreddit = raw['subreddit'] as String? ?? '';
     final subredditId = raw['subreddit_id'] as String? ?? '';
-    final score = _int(raw, 'score') ?? 0;
+    final score = intOr(raw, 'score') ?? 0;
     final numComments =
-        _int(raw, 'numComments') ?? _int(raw, 'num_comments') ?? 0;
-    final createdUtc = _int(raw, 'createdUtc') ?? _int(raw, 'created_utc') ?? 0;
+        intOr(raw, 'numComments') ?? intOr(raw, 'num_comments') ?? 0;
+    final createdUtc =
+        intOr(raw, 'createdUtc') ?? intOr(raw, 'created_utc') ?? 0;
     final permalink = raw['permalink'] as String? ?? '';
 
     return Post(
@@ -66,20 +68,21 @@ class HtmlPostThreadParser {
       subreddit: Subreddit(id: subredditId, name: subreddit),
       score: score,
       commentCount: numComments,
-      vote: _parseVote(raw['likes']),
-      isNsfw: _bool(raw, 'over_18') ?? _bool(raw, 'over18') ?? false,
-      isSpoiler: _bool(raw, 'spoiler') ?? false,
-      isSaved: _bool(raw, 'saved') ?? false,
-      isStickied: _bool(raw, 'stickied') ?? false,
-      isLocked: _bool(raw, 'locked') ?? false,
-      awardCount: _int(raw, 'totalAwardsReceived') ??
-          _int(raw, 'total_awards_received') ??
+      vote: parseVote(raw['likes']),
+      isNsfw: boolOr(raw, 'over_18') ?? boolOr(raw, 'over18') ?? false,
+      isSpoiler: boolOr(raw, 'spoiler') ?? false,
+      isSaved: boolOr(raw, 'saved') ?? false,
+      isStickied: boolOr(raw, 'stickied') ?? false,
+      isLocked: boolOr(raw, 'locked') ?? false,
+      awardCount: intOr(raw, 'totalAwardsReceived') ??
+          intOr(raw, 'total_awards_received') ??
           0,
       createdAt: createdUtc > 0
           ? DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000)
           : DateTime.now(),
       permalink: permalink,
-      upvoteRatio: _double(raw, 'upvoteRatio') ?? _double(raw, 'upvote_ratio'),
+      upvoteRatio:
+          doubleOr(raw, 'upvoteRatio') ?? doubleOr(raw, 'upvote_ratio'),
       linkFlairText: (raw['linkFlairText'] as String?) ??
           (raw['link_flair_text'] as String?),
       linkFlairBackgroundColor: (raw['linkFlairBackgroundColor'] as String?) ??
@@ -93,9 +96,10 @@ class HtmlPostThreadParser {
     final id = raw['id'] as String? ?? '';
     final body = raw['body'] as String? ?? '';
     final author = raw['author'] as String? ?? '[deleted]';
-    final score = _int(raw, 'score') ?? 0;
-    final depth = _int(raw, 'depth') ?? 0;
-    final createdUtc = _int(raw, 'createdUtc') ?? _int(raw, 'created_utc') ?? 0;
+    final score = intOr(raw, 'score') ?? 0;
+    final depth = intOr(raw, 'depth') ?? 0;
+    final createdUtc =
+        intOr(raw, 'createdUtc') ?? intOr(raw, 'created_utc') ?? 0;
     final linkId = raw['linkId'] as String? ?? raw['link_id'] as String? ?? '';
     final parentId = raw['parentId'] as String? ?? raw['parent_id'] as String?;
 
@@ -115,19 +119,19 @@ class HtmlPostThreadParser {
       body: body,
       author: author,
       score: score,
-      vote: _parseVote(raw['likes']),
-      isSaved: _bool(raw, 'saved') ?? false,
+      vote: parseVote(raw['likes']),
+      isSaved: boolOr(raw, 'saved') ?? false,
       isSubmitter:
-          _bool(raw, 'isSubmitter') ?? _bool(raw, 'is_submitter') ?? false,
+          boolOr(raw, 'isSubmitter') ?? boolOr(raw, 'is_submitter') ?? false,
       isModerator: (raw['distinguished'] as String?) == 'moderator',
       isAdmin: (raw['distinguished'] as String?) == 'admin',
       isApprovedSubmitter: (raw['distinguished'] as String?) == 'special',
-      isControversial: (_int(raw, 'controversiality') ?? 0) > 0,
+      isControversial: (intOr(raw, 'controversiality') ?? 0) > 0,
       isScoreHidden:
-          _bool(raw, 'scoreHidden') ?? _bool(raw, 'score_hidden') ?? false,
-      isStickied: _bool(raw, 'stickied') ?? false,
-      awardCount: _int(raw, 'totalAwardsReceived') ??
-          _int(raw, 'total_awards_received') ??
+          boolOr(raw, 'scoreHidden') ?? boolOr(raw, 'score_hidden') ?? false,
+      isStickied: boolOr(raw, 'stickied') ?? false,
+      awardCount: intOr(raw, 'totalAwardsReceived') ??
+          intOr(raw, 'total_awards_received') ??
           0,
       createdAt: createdUtc > 0
           ? DateTime.fromMillisecondsSinceEpoch(createdUtc * 1000)
@@ -136,7 +140,7 @@ class HtmlPostThreadParser {
       parentId: parentId,
       depth: depth,
       replies: replies,
-      isCollapsed: _bool(raw, 'collapsed') ?? false,
+      isCollapsed: boolOr(raw, 'collapsed') ?? false,
       subreddit: raw['subreddit'] as String?,
       linkTitle: raw['linkTitle'] as String? ?? raw['link_title'] as String?,
       linkPermalink:
@@ -144,16 +148,10 @@ class HtmlPostThreadParser {
     );
   }
 
-  Map<String, dynamic> _pageProps(Map<String, dynamic> extracted) {
-    final props = extracted['props'] as Map<String, dynamic>?;
-    if (props == null) return extracted;
-    return props['pageProps'] as Map<String, dynamic>? ?? extracted;
-  }
-
   PostType _inferType(Map<String, dynamic> raw) {
     final postHint = raw['postHint'] as String? ?? raw['post_hint'] as String?;
-    final isGallery = _bool(raw, 'isGallery') ?? _bool(raw, 'is_gallery');
-    final isSelf = _bool(raw, 'isSelf') ?? _bool(raw, 'is_self');
+    final isGallery = boolOr(raw, 'isGallery') ?? boolOr(raw, 'is_gallery');
+    final isSelf = boolOr(raw, 'isSelf') ?? boolOr(raw, 'is_self');
 
     if (postHint == 'image') return PostType.image;
     if (postHint == 'hosted:video') return PostType.video;
@@ -162,15 +160,4 @@ class HtmlPostThreadParser {
     if (isSelf == true) return PostType.self_;
     return PostType.link;
   }
-
-  VoteDirection _parseVote(dynamic likes) {
-    if (likes == true) return VoteDirection.upvote;
-    if (likes == false) return VoteDirection.downvote;
-    return VoteDirection.none;
-  }
-
-  int? _int(Map<String, dynamic> map, String key) => map[key] as int?;
-  double? _double(Map<String, dynamic> map, String key) =>
-      (map[key] as num?)?.toDouble();
-  bool? _bool(Map<String, dynamic> map, String key) => map[key] as bool?;
 }

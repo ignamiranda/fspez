@@ -1,15 +1,16 @@
+import 'html_parser_utils.dart';
 import 'shreddit_json_extractor.dart';
 
 class HtmlModeratorParser {
   List<String> parseModeratedSubreddits(String html) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
+    final pp = pageProps(extracted);
 
-    final rawSubs = pageProps['moderatedSubreddits'] as List<dynamic>? ??
-        pageProps['subreddits'] as List<dynamic>? ??
+    final rawSubs = pp['moderatedSubreddits'] as List<dynamic>? ??
+        pp['subreddits'] as List<dynamic>? ??
         [];
 
-    final names = rawSubs
+    return rawSubs
         .whereType<Map<String, dynamic>>()
         .map((raw) {
           return raw['displayName'] as String? ??
@@ -19,13 +20,5 @@ class HtmlModeratorParser {
         })
         .where((name) => name.isNotEmpty)
         .toList();
-
-    return names;
-  }
-
-  Map<String, dynamic> _pageProps(Map<String, dynamic> extracted) {
-    final props = extracted['props'] as Map<String, dynamic>?;
-    if (props == null) return extracted;
-    return props['pageProps'] as Map<String, dynamic>? ?? extracted;
   }
 }

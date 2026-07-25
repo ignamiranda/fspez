@@ -24,23 +24,6 @@ class ShredditJsonExtractor {
     return {};
   }
 
-  static String? extractRaw(String html) {
-    final patterns = [
-      _nextDataPattern,
-      _initialStatePattern,
-      _shredditStatePattern,
-    ];
-
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(html);
-      if (match != null) {
-        return match.group(1);
-      }
-    }
-
-    return null;
-  }
-
   static final _nextDataPattern = RegExp(
     r'<script id="__NEXT_DATA__"[^>]*type="application/json"[^>]*>'
     r'(.*?)'

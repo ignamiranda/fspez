@@ -1,14 +1,15 @@
 import '../domain/models/subreddit.dart';
 import '../domain/models/subreddit_rule.dart';
+import 'html_parser_utils.dart';
 import 'shreddit_json_extractor.dart';
 
 class HtmlSubredditParser {
   Subreddit parseInfo(String html, String name) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
+    final pp = pageProps(extracted);
 
-    final raw = pageProps['subreddit'] as Map<String, dynamic>? ??
-        pageProps['about'] as Map<String, dynamic>? ??
+    final raw = pp['subreddit'] as Map<String, dynamic>? ??
+        pp['about'] as Map<String, dynamic>? ??
         {};
 
     final id = raw['id'] as String? ?? '';
@@ -17,14 +18,15 @@ class HtmlSubredditParser {
     final publicDescription = raw['publicDescription'] as String? ??
         raw['public_description'] as String?;
     final description = raw['description'] as String?;
-    final subscribers = _int(raw, 'subscribers') ?? 0;
+    final subscribers = intOr(raw, 'subscribers') ?? 0;
     final activeUserCount =
-        _int(raw, 'activeUserCount') ?? _int(raw, 'active_user_count');
-    final createdUtc = _int(raw, 'createdUtc') ?? _int(raw, 'created_utc') ?? 0;
-    final over18 = _bool(raw, 'over18') ?? _bool(raw, 'over_18') ?? false;
-    final quarantine = _bool(raw, 'quarantine') ?? false;
-    final userIsSubscriber = _bool(raw, 'userIsSubscriber') ??
-        _bool(raw, 'user_is_subscriber') ??
+        intOr(raw, 'activeUserCount') ?? intOr(raw, 'active_user_count');
+    final createdUtc =
+        intOr(raw, 'createdUtc') ?? intOr(raw, 'created_utc') ?? 0;
+    final over18 = boolOr(raw, 'over18') ?? boolOr(raw, 'over_18') ?? false;
+    final quarantine = boolOr(raw, 'quarantine') ?? false;
+    final userIsSubscriber = boolOr(raw, 'userIsSubscriber') ??
+        boolOr(raw, 'user_is_subscriber') ??
         false;
     final subredditType =
         raw['subredditType'] as String? ?? raw['subreddit_type'] as String?;
@@ -57,14 +59,14 @@ class HtmlSubredditParser {
 
   List<SubredditRule> parseRules(String html) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
+    final pp = pageProps(extracted);
 
-    final rawRules = pageProps['rules'] as List<dynamic>? ??
-        pageProps['subredditRules'] as List<dynamic>? ??
+    final rawRules = pp['rules'] as List<dynamic>? ??
+        pp['subredditRules'] as List<dynamic>? ??
         [];
 
     return rawRules.whereType<Map<String, dynamic>>().map((raw) {
-      final priority = _int(raw, 'priority') ?? 0;
+      final priority = intOr(raw, 'priority') ?? 0;
       return SubredditRule(
         shortName: raw['shortName'] as String? ??
             raw['short_name'] as String? ??
@@ -87,13 +89,4 @@ class HtmlSubredditParser {
     }
     return null;
   }
-
-  Map<String, dynamic> _pageProps(Map<String, dynamic> extracted) {
-    final props = extracted['props'] as Map<String, dynamic>?;
-    if (props == null) return extracted;
-    return props['pageProps'] as Map<String, dynamic>? ?? extracted;
-  }
-
-  int? _int(Map<String, dynamic> map, String key) => map[key] as int?;
-  bool? _bool(Map<String, dynamic> map, String key) => map[key] as bool?;
 }

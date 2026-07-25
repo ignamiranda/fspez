@@ -1,4 +1,5 @@
 import '../domain/models/flair_option.dart';
+import 'html_parser_utils.dart';
 import 'shreddit_json_extractor.dart';
 
 int? _parseFlairColor(String? raw) {
@@ -13,10 +14,10 @@ int? _parseFlairColor(String? raw) {
 class HtmlFlairParser {
   List<FlairOption> parseFlairOptions(String html) {
     final extracted = ShredditJsonExtractor.extract(html);
-    final pageProps = _pageProps(extracted);
+    final pp = pageProps(extracted);
 
-    final rawFlairs = pageProps['flairOptions'] as List<dynamic>? ??
-        pageProps['postFlairs'] as List<dynamic>? ??
+    final rawFlairs = pp['flairOptions'] as List<dynamic>? ??
+        pp['postFlairs'] as List<dynamic>? ??
         [];
 
     return rawFlairs.whereType<Map<String, dynamic>>().map((raw) {
@@ -45,12 +46,6 @@ class HtmlFlairParser {
             raw['flair_richtext'] as List<dynamic>?,
       );
     }).toList();
-  }
-
-  Map<String, dynamic> _pageProps(Map<String, dynamic> extracted) {
-    final props = extracted['props'] as Map<String, dynamic>?;
-    if (props == null) return extracted;
-    return props['pageProps'] as Map<String, dynamic>? ?? extracted;
   }
 
   String? _str(Map<String, dynamic> map, String key) => map[key] as String?;

@@ -74,6 +74,10 @@ class FeedPageConfig with Equatable {
   List<Object?> get props => [kind, sort, identifier, topTimeFilter];
 }
 
+/// Compile-time toggle to enable/disable RSS+HTML fallback data sources.
+/// When false, reverts to the original old.reddit.com JSON-only path.
+const bool useFallbackDataSources = true;
+
 enum FeedPageKind {
   home,
   popular,
@@ -167,7 +171,7 @@ Future<Feed> _fetchFeed(
     if (queryOverrides != null) ...queryOverrides,
   };
 
-  if (queryOverrides == null && after == null) {
+  if (useFallbackDataSources && queryOverrides == null && after == null) {
     try {
       final rssXml =
           await client.getRss(path, queryParams: params, sessionCookie: cookie);
@@ -183,13 +187,19 @@ Future<Feed> _fetchFeed(
     if (onRawResponse != null) onRawResponse(data);
     return parser.parseFeed(data, kind, sort);
   } catch (e) {
-    debugPrint('_fetchFeed JSON failed, trying HTML: $e');
+    // For saved/hidden feeds, try HTML scraping as last resort.
+    if (kind == FeedKind.saved) {
+      try {
+        final html = await client.getHtml(path,
+            queryParams: params, sessionCookie: cookie);
+        final posts = HtmlSavedHiddenParser().parseSaved(html);
+        return Feed(kind: kind, sort: sort, posts: posts);
+      } catch (htmlError) {
+        debugPrint('_fetchFeed HTML failed for saved feed: $htmlError');
+      }
+    }
+    rethrow;
   }
-
-  final html =
-      await client.getHtml(path, queryParams: params, sessionCookie: cookie);
-  final posts = HtmlSavedHiddenParser().parseSaved(html);
-  return Feed(kind: kind, sort: sort, posts: posts);
 }
 
 /// Maps a [FeedPageConfig] to the [FeedKind] expected by [FeedParser.parseFeed].

@@ -66,20 +66,4 @@ void main() {
       expect(result['source'], 'next');
     });
   });
-
-  group('ShredditJsonExtractor.extractRaw', () {
-    test('returns null for no script tags', () {
-      final result = ShredditJsonExtractor.extractRaw('<html></html>');
-      expect(result, isNull);
-    });
-
-    test('returns raw JSON string from __NEXT_DATA__', () {
-      const html = '''
-        <script id="__NEXT_DATA__" type="application/json">{"key":"value"}</script>
-      ''';
-      final result = ShredditJsonExtractor.extractRaw(html);
-      expect(result, '{"key":"value"}');
-    });
-  });
 }
-

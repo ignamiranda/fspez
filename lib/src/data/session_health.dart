@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/account.dart';
 import 'auth_providers.dart';
+import 'html_parser_utils.dart';
 import 'reddit_client.dart';
 import 'reddit_client_provider.dart';
 
@@ -76,8 +77,8 @@ Future<SessionHealth> checkSessionHealth(
       sessionCookie: account.sessionCookie,
     );
 
-    final username = _extractUsernameFromHtml(html);
-    final modhash = _extractModhashFromHtml(html);
+    final username = extractUsernameFromHtml(html);
+    final modhash = extractModhashFromHtml(html);
 
     if (username == null || username.isEmpty) {
       return SessionHealth.expired;
@@ -116,41 +117,4 @@ Future<SessionHealth> checkSessionHealth(
     debugPrint('SessionHealth check failed: $e');
     return SessionHealth.unknown;
   }
-}
-
-String? _extractUsernameFromHtml(String html) {
-  final usernamePatterns = [
-    RegExp(r'"loggedInUser"\s*:\s*"([^"]+)"'),
-    RegExp(r'"user"\s*:\s*\{\s*"name"\s*:\s*"([^"]+)"'),
-    RegExp(r'"username"\s*:\s*"([^"]+)"'),
-    RegExp(r'<shreddit-app[^>]*username="([^"]+)"'),
-  ];
-
-  for (final pattern in usernamePatterns) {
-    final match = pattern.firstMatch(html);
-    if (match != null) {
-      final name = match.group(1);
-      if (name != null && name.isNotEmpty && name.length < 30) return name;
-    }
-  }
-
-  return null;
-}
-
-String? _extractModhashFromHtml(String html) {
-  final modhashPatterns = [
-    RegExp(r'"modhash"\s*:\s*"([^"]+)"'),
-    RegExp(r'name="uh"\s+value="([^"]+)"'),
-    RegExp(r'X-Modhash:\s*([a-z0-9]+)'),
-  ];
-
-  for (final pattern in modhashPatterns) {
-    final match = pattern.firstMatch(html);
-    if (match != null) {
-      final hash = match.group(1);
-      if (hash != null && hash.isNotEmpty) return hash;
-    }
-  }
-
-  return null;
 }
