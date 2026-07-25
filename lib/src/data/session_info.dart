@@ -25,17 +25,5 @@ Future<SessionInfo> fetchSessionInfo(
     debugPrint('fetchSessionInfo HTML failed: $e');
   }
 
-  try {
-    final me = await client.get('/api/me', sessionCookie: cookie);
-    final data = me['data'] as Map<String, dynamic>?;
-    final name = data?['name'] as String? ?? 'unknown';
-    final mh = data?['modhash'] as String?;
-    return SessionInfo(
-      username: name,
-      modhash: (mh != null && mh.isNotEmpty) ? mh : null,
-    );
-  } catch (e) {
-    debugPrint('fetchSessionInfo JSON fallback failed: $e');
-    return const SessionInfo(username: 'unknown', modhash: null);
-  }
+  return const SessionInfo(username: 'unknown', modhash: null);
 }

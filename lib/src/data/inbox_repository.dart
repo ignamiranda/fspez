@@ -1,18 +1,14 @@
-import 'package:flutter/foundation.dart';
 import '../domain/models/inbox_feed.dart';
 import '../domain/models/session_cookie.dart';
 import 'html_inbox_parser.dart';
 import 'reddit_client.dart';
-import 'inbox_parser.dart';
 import 'message_client.dart';
 
 class InboxRepository {
   final RedditClient _client;
   final MessageClient _messageClient;
-  final InboxParser _parser;
 
-  InboxRepository(this._client, this._messageClient, {InboxParser? parser})
-      : _parser = parser ?? InboxParser();
+  InboxRepository(this._client, this._messageClient);
 
   Future<InboxFeed> fetchInbox({
     String? after,
@@ -44,34 +40,13 @@ class InboxRepository {
     String? after, {
     SessionCookie? sessionCookie,
   }) async {
-    if (after == null) {
-      try {
-        final html = await _client.getHtml(path, sessionCookie: sessionCookie);
-        final parsed = HtmlInboxParser().parseInbox(html, tab);
-        if (parsed.items.isNotEmpty) return parsed;
-      } catch (e) {
-        debugPrint('InboxRepository HTML parsing failed, trying JSON: $e');
-      }
-    }
-
-    final data = await _client.get(path,
-        queryParams: {
-          if (after != null) 'after': after,
-          'limit': '25',
-          'mark': 'true',
-        },
-        sessionCookie: sessionCookie);
-
-    final listing = data['data'] as Map<String, dynamic>;
-    final children = listing['children'] as List<dynamic>;
-    final messages = _parser.parseMessages(children);
-
-    return InboxFeed(
-      tab: tab,
-      items: messages,
-      after: listing['after'] as String?,
-      before: listing['before'] as String?,
-    );
+    final params = <String, String>{
+      'mark': 'true',
+      if (after != null) 'after': after,
+    };
+    final html = await _client.getHtml(path,
+        queryParams: params, sessionCookie: sessionCookie);
+    return HtmlInboxParser().parseInbox(html, tab);
   }
 
   Future<void> markAsRead(

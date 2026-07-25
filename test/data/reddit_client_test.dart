@@ -19,42 +19,48 @@ void main() {
     client = RedditClient(httpClient: mockHttp);
   });
 
-  group('get', () {
-    test('sends request without cookie when no session provided', () async {
+  group('getRss', () {
+    test('sends request and returns XML body on success', () async {
       when(() => mockHttp.get(
             any(),
             headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('{}', 200));
+          )).thenAnswer((_) async => http.Response('<feed></feed>', 200));
 
-      await client.get('/best');
+      final result = await client.getRss('/r/flutter');
 
+      expect(result, '<feed></feed>');
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/best.json'),
+            Uri.parse('https://www.reddit.com/r/flutter.rss'),
             headers: {
-              'User-Agent': 'fspez/0.1.0',
-              'Content-Type': 'application/json',
+              'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+              'Accept':
+                  'application/xml,application/atom+xml,text/xml;q=0.9,*/*;q=0.8',
+              'Cookie': 'reddit_session=',
             },
           )).called(1);
     });
 
-    test('sends request with cookie when session provided', () async {
+    test('passes cookie in RSS request', () async {
       when(() => mockHttp.get(
             any(),
             headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('{}', 200));
+          )).thenAnswer((_) async => http.Response('<feed></feed>', 200));
 
       final cookie = SessionCookie(
         value: 'abc123',
         expiresAt: DateTime.now().add(const Duration(days: 1)),
       );
 
-      await client.get('/best', sessionCookie: cookie);
+      await client.getRss('/r/flutter', sessionCookie: cookie);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/best.json'),
+            Uri.parse('https://www.reddit.com/r/flutter.rss'),
             headers: {
-              'User-Agent': 'fspez/0.1.0',
-              'Content-Type': 'application/json',
+              'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+              'Accept':
+                  'application/xml,application/atom+xml,text/xml;q=0.9,*/*;q=0.8',
               'Cookie': 'reddit_session=abc123',
             },
           )).called(1);
@@ -67,7 +73,7 @@ void main() {
           )).thenAnswer((_) async => http.Response('Not Found', 404));
 
       expect(
-        () => client.get('/best'),
+        () => client.getRss('/best'),
         throwsA(isA<RedditApiException>().having(
           (e) => e.statusCode,
           'statusCode',
@@ -80,12 +86,13 @@ void main() {
       when(() => mockHttp.get(
             any(),
             headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('{}', 200));
+          )).thenAnswer((_) async => http.Response('<feed></feed>', 200));
 
-      await client.get('/r/all', queryParams: {'sort': 'hot', 'limit': '25'});
+      await client
+          .getRss('/r/all', queryParams: {'sort': 'hot', 'limit': '25'});
 
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/r/all.json?sort=hot&limit=25'),
+            Uri.parse('https://www.reddit.com/r/all.rss?sort=hot&limit=25'),
             headers: any(named: 'headers'),
           )).called(1);
     });
@@ -150,5 +157,4 @@ void main() {
           )).called(1);
     });
   });
-
 }

@@ -66,9 +66,8 @@ class ComposeTestRunner {
     }
 
     try {
-      final me = await _client.get('/api/me', sessionCookie: cookie);
-      final data = me['data'] as Map<String, dynamic>?;
-      final modhash = data?['modhash'] as String?;
+      final html = await _client.getHtml('/', sessionCookie: cookie);
+      final modhash = _extractModhash(html);
       if (modhash != null && modhash.isNotEmpty) {
         await _log('fetched modhash=true');
         return SessionCookie(
@@ -84,5 +83,21 @@ class ComposeTestRunner {
     }
 
     return cookie;
+  }
+
+  String? _extractModhash(String html) {
+    final patterns = [
+      RegExp(r'"modhash"\s*:\s*"([^"]+)"'),
+      RegExp(r'name="uh"\s+value="([^"]+)"'),
+      RegExp(r'X-Modhash:\s*([a-z0-9]+)'),
+    ];
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(html);
+      if (match != null) {
+        final hash = match.group(1);
+        if (hash != null && hash.isNotEmpty) return hash;
+      }
+    }
+    return null;
   }
 }

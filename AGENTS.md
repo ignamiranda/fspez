@@ -21,9 +21,11 @@ lib/
 
 **Auth gate**: `_AppGate` → `LoginScreen` or `_MainShell`. Shell: `IndexedStack` with 3 tabs (Feed, Inbox, Account), bottom `NavigationBar`.
 
-**HTTP layer**: `HttpTransport` wraps `http.Client`. Uses three base URLs:
-- `old.reddit.com` (read: `*.json` suffix, write: `/api/del`, `/api/save`)
-- `www.reddit.com` (write: `/api/comment`, `/api/submit`, `/api/media/asset.json`, etc.)
+**HTTP layer**: `HttpTransport` wraps `http.Client`. Uses two base URLs:
+- `www.reddit.com` — all reads (RSS feeds via `*.rss`, HTML scraping via shreddit pages) and writes (`/api/comment`, `/api/submit`, `/api/media/asset.json`, etc.)
+- `old.reddit.com` — write operations only (`/api/del`, `/api/save`)
+
+Reads use RSS (Layer 1) for feed listings and HTML/scraping (Layer 2) for everything else — inbox, profiles, search, comments, subreddit info, saved/hidden, moderated subs, flavor. `ShredditJsonExtractor` extracts embedded JSON from `<script>` tags.
 
 6+ `ApiEndpoint` variants — each sets headers differently (User-Agent, Content-Type, Cookie, X-Modhash). `mediaUpload` includes X-Modhash header.
 
@@ -41,7 +43,7 @@ lib/
 flutter pub get                         # handles pubspec + flutter_inappwebview_windows dep override
 flutter analyze                         # runs pub get first if needed
 flutter analyze --no-pub                # CI uses --no-pub (must already have deps)
-flutter test                            # 239 tests, all pass
+flutter test                            # 411 tests, all pass
 flutter run -d windows                  # Windows dev (start.bat shorthand)
 ```
 

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/inbox_repository.dart';
 import 'package:fspez/src/data/message_client.dart';
@@ -12,6 +11,14 @@ class _MockHttpClient extends Mock implements http.Client {}
 
 class _MockMessageClient extends Mock implements MessageClient {}
 
+String _withNextData(String jsonBody) {
+  return '''
+    <html>
+    <script id="__NEXT_DATA__" type="application/json">$jsonBody</script>
+    </html>
+  ''';
+}
+
 void main() {
   late _MockHttpClient mockHttp;
   late RedditClient client;
@@ -21,7 +28,6 @@ void main() {
   setUpAll(() {
     registerFallbackValue(Uri());
     registerFallbackValue(SessionCookie(value: '', expiresAt: DateTime.now()));
-    registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
@@ -32,29 +38,30 @@ void main() {
   });
 
   group('fetchInbox', () {
-    test('GETs message/inbox endpoint', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(jsonEncode({
-            'data': {
-              'children': [
-                {
-                  'kind': 't4',
-                  'data': {
-                    'id': 'm1',
-                    'subject': 'Hello',
-                    'body': 'Body',
-                    'author': 'u1',
-                    'dest': 'u2',
-                    'created_utc': 1000000000,
-                  },
-                },
-              ],
-              'after': 't4_cursor',
-              'before': null,
-            },
-          }), 200));
+    test('parses inbox from HTML', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('''
+          {
+            "props": {
+              "pageProps": {
+                "messages": [
+                  {
+                    "id": "m1",
+                    "subject": "Hello",
+                    "body": "Body",
+                    "author": "u1",
+                    "dest": "u2",
+                    "createdUtc": 1000000000
+                  }
+                ],
+                "after": "t4_cursor"
+              }
+            }
+          }
+        '''),
+                200,
+              ));
 
       final feed = await repository.fetchInbox();
 
@@ -65,55 +72,53 @@ void main() {
       expect(feed.hasMorePages, true);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/message/inbox.json'
-                '?limit=25&mark=true'),
+            Uri.parse('https://www.reddit.com/message/inbox?mark=true'),
             headers: any(named: 'headers'),
           )).called(1);
     });
 
     test('passes after cursor', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(jsonEncode({
-            'data': {'children': [], 'after': null, 'before': null},
-          }), 200));
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('{"props":{"pageProps":{}}}'),
+                200,
+              ));
 
       await repository.fetchInbox(after: 't4_cursor');
 
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/message/inbox.json'
-                '?after=t4_cursor&limit=25&mark=true'),
+            Uri.parse(
+                'https://www.reddit.com/message/inbox?mark=true&after=t4_cursor'),
             headers: any(named: 'headers'),
           )).called(1);
     });
   });
 
   group('fetchUnread', () {
-    test('GETs message/unread endpoint', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(jsonEncode({
-            'data': {
-              'children': [
-                {
-                  'kind': 't4',
-                  'data': {
-                    'id': 'm1',
-                    'subject': 'Unread',
-                    'body': 'Body',
-                    'author': 'u1',
-                    'dest': 'u2',
-                    'created_utc': 1000000000,
-                    'new': true,
-                  },
-                },
-              ],
-              'after': null,
-              'before': null,
-            },
-          }), 200));
+    test('parses unread from HTML', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('''
+          {
+            "props": {
+              "pageProps": {
+                "messages": [
+                  {
+                    "id": "m1",
+                    "subject": "Unread",
+                    "body": "Body",
+                    "author": "u1",
+                    "dest": "u2",
+                    "createdUtc": 1000000000,
+                    "new": true
+                  }
+                ]
+              }
+            }
+          }
+        '''),
+                200,
+              ));
 
       final feed = await repository.fetchUnread();
 
@@ -122,29 +127,26 @@ void main() {
       expect(feed.items[0].isNew, true);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/message/unread.json'
-                '?limit=25&mark=true'),
+            Uri.parse('https://www.reddit.com/message/unread?mark=true'),
             headers: any(named: 'headers'),
           )).called(1);
     });
   });
 
   group('fetchSent', () {
-    test('GETs message/sent endpoint', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(jsonEncode({
-            'data': {'children': [], 'after': null, 'before': null},
-          }), 200));
+    test('parses sent from HTML', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('{"props":{"pageProps":{}}}'),
+                200,
+              ));
 
       final feed = await repository.fetchSent();
 
       expect(feed.tab, InboxTab.sent);
 
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/message/sent.json'
-                '?limit=25&mark=true'),
+            Uri.parse('https://www.reddit.com/message/sent?mark=true'),
             headers: any(named: 'headers'),
           )).called(1);
     });
@@ -152,10 +154,8 @@ void main() {
 
   group('error handling', () {
     test('throws RedditApiException on API error', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('Not Found', 404));
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response('Not Found', 404));
 
       expect(
         () => repository.fetchInbox(),
@@ -165,33 +165,6 @@ void main() {
           404,
         )),
       );
-    });
-  });
-
-  group('cookie forwarding', () {
-    test('sends cookie when session provided', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(jsonEncode({
-            'data': {'children': [], 'after': null, 'before': null},
-          }), 200));
-
-      final cookie = SessionCookie(
-        value: 'session_val',
-        expiresAt: DateTime.now().add(const Duration(days: 1)),
-      );
-
-      await repository.fetchInbox(sessionCookie: cookie);
-
-      verify(() => mockHttp.get(
-            any(),
-            headers: {
-              'User-Agent': 'fspez/0.1.0',
-              'Content-Type': 'application/json',
-              'Cookie': 'reddit_session=session_val',
-            },
-          )).called(1);
     });
   });
 
@@ -217,13 +190,13 @@ void main() {
       );
 
       verify(() => mockMessageClient.comment(
-        fields: {
-          'thing_id': 't4_msg1',
-          'text': 'Reply text',
-          'uh': 'modhash123',
-        },
-        sessionCookie: cookie,
-      )).called(1);
+            fields: {
+              'thing_id': 't4_msg1',
+              'text': 'Reply text',
+              'uh': 'modhash123',
+            },
+            sessionCookie: cookie,
+          )).called(1);
     });
   });
 }

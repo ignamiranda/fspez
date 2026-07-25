@@ -1,28 +1,28 @@
-import 'package:flutter/foundation.dart';
-import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/search_user.dart';
 import '../domain/models/session_cookie.dart';
-import '../domain/enums/feed_sort.dart';
 import 'html_search_parser.dart';
 import 'reddit_client.dart';
-import 'feed_parser.dart';
-import 'api_responses/api_responses.dart';
 import 'paginated_notifier.dart';
 
 class SearchRepository {
   final RedditClient _client;
-  final FeedParser _parser;
 
-  SearchRepository(this._client, {FeedParser? parser})
-      : _parser = parser ?? FeedParser();
+  SearchRepository(this._client);
 
   String _searchPath(String? subreddit) {
     if (subreddit == null || subreddit.isEmpty) {
       return '/search';
     }
     return '/r/$subreddit/search';
+  }
+
+  Map<String, String> _commonParams(String query, String? subreddit) {
+    return {
+      'q': query,
+      if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
+    };
   }
 
   /// Searches for posts matching [query].
@@ -32,37 +32,30 @@ class SearchRepository {
     String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    if (after == null) {
+    for (final tryHtml in [true, false]) {
       try {
-        final html = await _client.getHtml(
-          _searchPath(subreddit),
-          queryParams: {
-            'q': query,
-            'restrict_sr':
-                subreddit != null && subreddit.isNotEmpty ? 'on' : 'off',
-            'sort': 'relevance',
-          },
-          sessionCookie: sessionCookie,
-        );
-        final feed = HtmlSearchParser().parsePosts(html);
-        if (feed.posts.isNotEmpty) {
+        if (tryHtml) {
+          final params = _commonParams(query, subreddit);
+          if (after != null) params['after'] = after;
+          final html = await _client.getHtml(
+            _searchPath(subreddit),
+            queryParams: params,
+            sessionCookie: sessionCookie,
+          );
+          final feed = HtmlSearchParser().parsePosts(html);
           return PaginatedResult<Post>(
             items: feed.posts,
             after: feed.after,
             hasMore: feed.hasMorePages,
           );
         }
-      } catch (e) {
-        debugPrint('SearchRepository HTML search failed, trying JSON: $e');
+      } catch (_) {
+        if (!tryHtml) rethrow;
       }
     }
-
-    final page = await _search(query,
-        after: after, subreddit: subreddit, sessionCookie: sessionCookie);
-    return PaginatedResult<Post>(
-      items: page.posts,
-      after: page.after,
-      hasMore: page.hasMorePages,
+    throw RedditApiException(
+      statusCode: 0,
+      message: 'Search posts failed for query: $query',
     );
   }
 
@@ -73,54 +66,19 @@ class SearchRepository {
     String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    if (after == null) {
-      try {
-        final html = await _client.getHtml(
-          _searchPath(subreddit),
-          queryParams: {
-            'q': query,
-            'type': 'sr',
-            if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
-            'sort': 'relevance',
-          },
-          sessionCookie: sessionCookie,
-        );
-        final communities = HtmlSearchParser().parseCommunities(html);
-        if (communities.isNotEmpty) {
-          return PaginatedResult<Subreddit>(
-            items: communities,
-            after: null,
-            hasMore: false,
-          );
-        }
-      } catch (e) {
-        debugPrint('SearchRepository HTML community search failed: $e');
-      }
-    }
-
-    final data = await _client.get(_searchPath(subreddit),
-        queryParams: {
-          'q': query,
-          'type': 'sr',
-          if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
-          'sort': 'relevance',
-          'limit': '25',
-          if (after != null) 'after': after,
-        },
-        sessionCookie: sessionCookie);
-
-    final listing = data['data'] as Map<String, dynamic>;
-    final children = (listing['children'] as List<dynamic>)
-        .map((c) => c['data'] as Map<String, dynamic>)
-        .toList();
-
-    final subreddits =
-        children.map((c) => ApiSubreddit.fromJson(c).toDomain('')).toList();
-
+    final params = _commonParams(query, subreddit);
+    params['type'] = 'sr';
+    if (after != null) params['after'] = after;
+    final html = await _client.getHtml(
+      _searchPath(subreddit),
+      queryParams: params,
+      sessionCookie: sessionCookie,
+    );
+    final communities = HtmlSearchParser().parseCommunities(html);
     return PaginatedResult<Subreddit>(
-      items: subreddits,
-      after: listing['after'] as String?,
-      hasMore: listing['after'] != null,
+      items: communities,
+      after: null,
+      hasMore: false,
     );
   }
 
@@ -131,54 +89,19 @@ class SearchRepository {
     String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    if (after == null) {
-      try {
-        final html = await _client.getHtml(
-          _searchPath(subreddit),
-          queryParams: {
-            'q': query,
-            'type': 'user',
-            if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
-            'sort': 'relevance',
-          },
-          sessionCookie: sessionCookie,
-        );
-        final users = HtmlSearchParser().parseUsers(html);
-        if (users.isNotEmpty) {
-          return PaginatedResult<SearchUser>(
-            items: users,
-            after: null,
-            hasMore: false,
-          );
-        }
-      } catch (e) {
-        debugPrint('SearchRepository HTML user search failed: $e');
-      }
-    }
-
-    final data = await _client.get(_searchPath(subreddit),
-        queryParams: {
-          'q': query,
-          'type': 'user',
-          if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
-          'sort': 'relevance',
-          'limit': '25',
-          if (after != null) 'after': after,
-        },
-        sessionCookie: sessionCookie);
-
-    final listing = data['data'] as Map<String, dynamic>;
-    final children = (listing['children'] as List<dynamic>)
-        .map((c) => c['data'] as Map<String, dynamic>)
-        .toList();
-
-    final users =
-        children.map((c) => ApiSearchUser.fromJson(c).toDomain()).toList();
-
+    final params = _commonParams(query, subreddit);
+    params['type'] = 'user';
+    if (after != null) params['after'] = after;
+    final html = await _client.getHtml(
+      _searchPath(subreddit),
+      queryParams: params,
+      sessionCookie: sessionCookie,
+    );
+    final users = HtmlSearchParser().parseUsers(html);
     return PaginatedResult<SearchUser>(
       items: users,
-      after: listing['after'] as String?,
-      hasMore: listing['after'] != null,
+      after: null,
+      hasMore: false,
     );
   }
 
@@ -189,33 +112,11 @@ class SearchRepository {
     String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
-    // Comment search via JSON API returns t3 posts, not comments.
-    // We reuse searchPosts and render selftext as comment body.
     return searchPosts(
       query,
       after: after,
       subreddit: subreddit,
       sessionCookie: sessionCookie,
     );
-  }
-
-  Future<Feed> _search(
-    String query, {
-    String? after,
-    String? subreddit,
-    SessionCookie? sessionCookie,
-  }) async {
-    final data = await _client.get(_searchPath(subreddit),
-        queryParams: {
-          'q': query,
-          'restrict_sr':
-              subreddit != null && subreddit.isNotEmpty ? 'on' : 'off',
-          'sort': 'relevance',
-          'limit': '25',
-          'sr_detail': 'true',
-          if (after != null) 'after': after,
-        },
-        sessionCookie: sessionCookie);
-    return _parser.parseFeed(data, FeedKind.popular, FeedSort.new_);
   }
 }

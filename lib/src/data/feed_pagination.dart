@@ -74,8 +74,7 @@ class FeedPageConfig with Equatable {
   List<Object?> get props => [kind, sort, identifier, topTimeFilter];
 }
 
-/// Compile-time toggle to enable/disable RSS+HTML fallback data sources.
-/// When false, reverts to the original old.reddit.com JSON-only path.
+/// Compile-time toggle to enable/disable RSS feed data sources.
 const bool useFallbackDataSources = true;
 
 enum FeedPageKind {
@@ -171,7 +170,7 @@ Future<Feed> _fetchFeed(
     if (queryOverrides != null) ...queryOverrides,
   };
 
-  if (useFallbackDataSources && queryOverrides == null && after == null) {
+  if (useFallbackDataSources) {
     try {
       final rssXml =
           await client.getRss(path, queryParams: params, sessionCookie: cookie);
@@ -181,25 +180,22 @@ Future<Feed> _fetchFeed(
     } catch (_) {}
   }
 
-  try {
-    final data =
-        await client.get(path, queryParams: params, sessionCookie: cookie);
-    if (onRawResponse != null) onRawResponse(data);
-    return parser.parseFeed(data, kind, sort);
-  } catch (e) {
-    // For saved/hidden feeds, try HTML scraping as last resort.
-    if (kind == FeedKind.saved) {
-      try {
-        final html = await client.getHtml(path,
-            queryParams: params, sessionCookie: cookie);
-        final posts = HtmlSavedHiddenParser().parseSaved(html);
-        return Feed(kind: kind, sort: sort, posts: posts);
-      } catch (htmlError) {
-        debugPrint('_fetchFeed HTML failed for saved feed: $htmlError');
-      }
+  // For saved/hidden feeds, try HTML scraping as fallback.
+  if (kind == FeedKind.saved) {
+    try {
+      final html = await client.getHtml(path,
+          queryParams: params, sessionCookie: cookie);
+      final posts = HtmlSavedHiddenParser().parseSaved(html);
+      return Feed(kind: kind, sort: sort, posts: posts);
+    } catch (htmlError) {
+      debugPrint('_fetchFeed HTML failed for saved feed: $htmlError');
     }
-    rethrow;
   }
+
+  throw RedditApiException(
+    statusCode: 0,
+    message: 'All data sources failed for feed: $path',
+  );
 }
 
 /// Maps a [FeedPageConfig] to the [FeedKind] expected by [FeedParser.parseFeed].

@@ -26,19 +26,21 @@ void main() {
   );
 
   group('fetchSessionInfo', () {
-    test('returns username and modhash from /api/me', () async {
+    test('extracts username and modhash from homepage HTML', () async {
       when(() => mockHttp.get(
             any(),
             headers: any(named: 'headers'),
           )).thenAnswer((_) async => http.Response(
-            '{"data": {"modhash": "abc123modhash", "name": "testuser"}}', 200));
+          '<html><shreddit-app username="testuser"></shreddit-app>'
+          '<script>window.__r = {"modhash":"abc123modhash"};</script></html>',
+          200));
 
       final info = await fetchSessionInfo(redditClient, cookie);
 
       expect(info.username, 'testuser');
       expect(info.modhash, 'abc123modhash');
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/api/me.json'),
+            Uri.parse('https://www.reddit.com/'),
             headers: any(named: 'headers'),
           )).called(1);
     });
@@ -46,10 +48,12 @@ void main() {
     test('returns username with null modhash when modhash field is missing',
         () async {
       when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(
-            '{"data": {"name": "testuser"}}', 200));
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer((_) async => http.Response(
+              '<html><shreddit-app username="testuser"></shreddit-app></html>',
+              200));
 
       final info = await fetchSessionInfo(redditClient, cookie);
 
@@ -75,7 +79,9 @@ void main() {
             any(),
             headers: any(named: 'headers'),
           )).thenAnswer((_) async => http.Response(
-            '{"data": {"modhash": "", "name": "testuser"}}', 200));
+          '<html><shreddit-app username="testuser"></shreddit-app>'
+          '<script>window.__r = {"modhash":""};</script></html>',
+          200));
 
       final info = await fetchSessionInfo(redditClient, cookie);
 

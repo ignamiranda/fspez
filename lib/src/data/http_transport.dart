@@ -8,7 +8,6 @@ import 'api_types.dart';
 
 class HttpTransport {
   static const baseUrl = 'https://www.reddit.com';
-  static const readBaseUrl = 'https://old.reddit.com';
   static const _browserUA =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
@@ -21,11 +20,6 @@ class HttpTransport {
 
   Future<T> _withTimeout<T>(Future<T> future) {
     return future.timeout(_requestTimeout);
-  }
-
-  Uri readJsonUri(String path, {Map<String, String>? queryParams}) {
-    return Uri.parse('$readBaseUrl$path.json')
-        .replace(queryParameters: queryParams);
   }
 
   Uri rssUri(String path, {Map<String, String>? queryParams}) {

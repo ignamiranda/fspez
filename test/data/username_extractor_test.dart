@@ -17,7 +17,8 @@ void main() {
 
   setUp(() {
     mockHttp = _MockHttpClient();
-    extractor = UsernameExtractor(redditClient: RedditClient(httpClient: mockHttp));
+    extractor =
+        UsernameExtractor(redditClient: RedditClient(httpClient: mockHttp));
   });
 
   final cookie = SessionCookie(
@@ -26,12 +27,14 @@ void main() {
   );
 
   group('API call strategy', () {
-    test('returns username from /api/me when name is present', () async {
+    test('returns username from homepage HTML when present', () async {
       when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(
-            '{"data": {"name": "testuser", "modhash": "abc"}}', 200));
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer((_) async => http.Response(
+              '<html><shreddit-app username="testuser"></shreddit-app></html>',
+              200));
 
       final username = await extractor.extract(cookie);
 

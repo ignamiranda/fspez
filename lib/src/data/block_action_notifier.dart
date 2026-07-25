@@ -1,6 +1,8 @@
 import '../domain/models/session_cookie.dart';
 import 'http_transport.dart';
 import 'reddit_client.dart';
+import 'shreddit_json_extractor.dart';
+import 'html_parser_utils.dart';
 import 'write_operation_notifier.dart';
 
 class BlockActionNotifier extends WriteOperationNotifier<bool> {
@@ -14,11 +16,14 @@ class BlockActionNotifier extends WriteOperationNotifier<bool> {
     if (cached != null) return cached;
     final sc = sessionCookie;
     if (sc == null) throw Exception('No session');
-    final uri = _transport.readJsonUri('/user/$username/about');
-    final response = await _transport.get(uri, ApiEndpoint.json, sc);
-    final data = _transport.handleJsonResponse(response);
-    final about = data['data'] as Map<String, dynamic>;
-    final id = about['id'] as String? ?? '';
+    final uri = _transport.webUri('/user/$username');
+    final response = await _transport.getHtml(uri, sc);
+    final json = ShredditJsonExtractor.extract(response.body);
+    final pp = pageProps(json);
+    final raw = (pp['user'] as Map<String, dynamic>?) ??
+        (pp['profile'] as Map<String, dynamic>?) ??
+        {};
+    final id = raw['id'] as String? ?? '';
     final accountId = 't2_$id';
     _accountIdCache[username] = accountId;
     return accountId;
@@ -34,7 +39,8 @@ class BlockActionNotifier extends WriteOperationNotifier<bool> {
 
   bool isBlocked(String username) => state[username] ?? false;
 
-  Future<void> _setBlocked(String username, bool block, {String? accountId}) async {
+  Future<void> _setBlocked(String username, bool block,
+      {String? accountId}) async {
     final previous = state[username];
     if (previous == block) return;
     final sc = sessionCookie;

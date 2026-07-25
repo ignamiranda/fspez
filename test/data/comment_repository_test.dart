@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fspez/src/data/comment_repository.dart';
 import 'package:fspez/src/data/award_enricher.dart';
@@ -14,6 +13,14 @@ class _MockHttpClient extends Mock implements http.Client {}
 class _MockMessageClient extends Mock implements MessageClient {}
 
 class _MockAwardEnricher extends Mock implements AwardEnricher {}
+
+String _withNextData(String jsonBody) {
+  return '''
+    <html>
+    <script id="__NEXT_DATA__" type="application/json">$jsonBody</script>
+    </html>
+  ''';
+}
 
 void main() {
   late _MockHttpClient mockHttp;
@@ -34,70 +41,48 @@ void main() {
   });
 
   group('fetchComments', () {
-    test('returns post and comments from valid response', () async {
-      final responseJson = [
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't3',
-                'data': {
-                  'id': 'post1',
-                  'title': 'Test Post',
-                  'author': 'testuser',
-                  'subreddit': 'flutter',
-                  'subreddit_id': 't5_2qh30',
-                  'permalink': '/r/flutter/comments/post1/test_post/',
-                  'created_utc': 1000000000,
-                  'score': 100,
-                  'num_comments': 5,
+    test('returns post and comments from valid HTML', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('''
+          {
+            "props": {
+              "pageProps": {
+                "post": {
+                  "id": "post1",
+                  "title": "Test Post",
+                  "author": "testuser",
+                  "subreddit": "flutter",
+                  "subreddit_id": "t5_2qh30",
+                  "permalink": "/r/flutter/comments/post1/test_post/",
+                  "createdUtc": 1000000000,
+                  "score": 100,
+                  "numComments": 5
                 },
-              },
-            ],
-          },
-        },
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't1',
-                'data': {
-                  'id': 'c1',
-                  'body': 'First comment',
-                  'author': 'user1',
-                  'score': 10,
-                  'created_utc': 1000000001,
-                  'depth': 0,
-                  'collapsed': false,
-                  'replies': '',
-                },
-              },
-              {
-                'kind': 't1',
-                'data': {
-                  'id': 'c2',
-                  'body': 'Second comment',
-                  'author': 'user2',
-                  'score': 5,
-                  'created_utc': 1000000002,
-                  'depth': 0,
-                  'collapsed': false,
-                  'replies': '',
-                },
-              },
-            ],
-          },
-        },
-      ];
-
-      when(() => mockHttp.get(
-                any(),
-                headers: any(named: 'headers'),
-              ))
-          .thenAnswer(
-              (_) async => http.Response(jsonEncode(responseJson), 200));
+                "comments": [
+                  {
+                    "id": "c1",
+                    "body": "First comment",
+                    "author": "user1",
+                    "score": 10,
+                    "createdUtc": 1000000001,
+                    "depth": 0
+                  },
+                  {
+                    "id": "c2",
+                    "body": "Second comment",
+                    "author": "user2",
+                    "score": 5,
+                    "createdUtc": 1000000002,
+                    "depth": 0
+                  }
+                ]
+              }
+            }
+          }
+        '''),
+                200,
+              ));
 
       final detail = await repository.fetchComments('flutter', 'post1');
 
@@ -111,163 +96,17 @@ void main() {
       expect(detail.comments[1].body, 'Second comment');
 
       verify(() => mockHttp.get(
-            Uri.parse('https://old.reddit.com/r/flutter/comments/post1.json'),
+            Uri.parse('https://www.reddit.com/r/flutter/comments/post1'),
             headers: any(named: 'headers'),
           )).called(1);
     });
 
-    test('returns post with default values when post data is missing',
-        () async {
-      final responseJson = [
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't3',
-                'data': {
-                  'id': 'post1',
-                  'title': 'Test',
-                  'author': 'u',
-                  'subreddit': 'flutter',
-                  'subreddit_id': 't5_2qh30',
-                  'permalink': '/r/flutter/comments/post1/test/',
-                  'created_utc': 1000000000,
-                },
-              },
-            ],
-          },
-        },
-        {
-          'kind': 'Listing',
-          'data': {'children': []},
-        },
-      ];
-
-      when(() => mockHttp.get(
-                any(),
-                headers: any(named: 'headers'),
-              ))
-          .thenAnswer(
-              (_) async => http.Response(jsonEncode(responseJson), 200));
-
-      final detail = await repository.fetchComments('flutter', 'post1');
-
-      expect(detail.post.id, 'post1');
-      expect(detail.comments, isEmpty);
-    });
-
-    test('handles nested comment replies', () async {
-      final responseJson = [
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't3',
-                'data': {
-                  'id': 'post1',
-                  'title': 'Test',
-                  'author': 'u',
-                  'subreddit': 'flutter',
-                  'subreddit_id': 't5_2qh30',
-                  'permalink': '/r/test/1',
-                  'created_utc': 1000000000,
-                },
-              },
-            ],
-          },
-        },
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't1',
-                'data': {
-                  'id': 'c1',
-                  'body': 'Top level',
-                  'author': 'u1',
-                  'score': 10,
-                  'created_utc': 1000000001,
-                  'depth': 0,
-                  'collapsed': false,
-                  'replies': {
-                    'kind': 'Listing',
-                    'data': {
-                      'children': [
-                        {
-                          'kind': 't1',
-                          'data': {
-                            'id': 'c2',
-                            'body': 'Nested reply',
-                            'author': 'u2',
-                            'score': 3,
-                            'created_utc': 1000000002,
-                            'depth': 1,
-                            'collapsed': false,
-                            'replies': '',
-                          },
-                        },
-                      ],
-                    },
-                  },
-                },
-              },
-            ],
-          },
-        },
-      ];
-
-      when(() => mockHttp.get(
-                any(),
-                headers: any(named: 'headers'),
-              ))
-          .thenAnswer(
-              (_) async => http.Response(jsonEncode(responseJson), 200));
-
-      final detail = await repository.fetchComments('flutter', 'post1');
-
-      expect(detail.comments.length, 1);
-      expect(detail.comments[0].id, 'c1');
-      expect(detail.comments[0].replies.length, 1);
-      expect(detail.comments[0].replies[0].id, 'c2');
-      expect(detail.comments[0].replies[0].body, 'Nested reply');
-    });
-
     test('passes comment sort query parameter when provided', () async {
-      final responseJson = [
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't3',
-                'data': {
-                  'id': 'post1',
-                  'title': 'Test',
-                  'author': 'u',
-                  'subreddit': 'flutter',
-                  'subreddit_id': 't5_2qh30',
-                  'permalink': '/r/test/1',
-                  'created_utc': 1000000000,
-                },
-              },
-            ],
-          },
-        },
-        {
-          'kind': 'Listing',
-          'data': {'children': []},
-        },
-      ];
-
-      when(() => mockHttp.get(
-                any(),
-                headers: any(named: 'headers'),
-              ))
-          .thenAnswer(
-              (_) async => http.Response(jsonEncode(responseJson), 200));
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('{"props":{"pageProps":{}}}'),
+                200,
+              ));
 
       await repository.fetchComments(
         'flutter',
@@ -277,76 +116,54 @@ void main() {
 
       verify(() => mockHttp.get(
             Uri.parse(
-                'https://old.reddit.com/r/flutter/comments/post1.json?sort=new'),
+                'https://www.reddit.com/r/flutter/comments/post1?sort=new'),
             headers: any(named: 'headers'),
           )).called(1);
     });
 
-    test('parses vote direction on comments', () async {
-      final responseJson = [
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't3',
-                'data': {
-                  'id': 'p1',
-                  'title': 'Test',
-                  'author': 'u',
-                  'subreddit': 'flutter',
-                  'subreddit_id': 't5_2qh30',
-                  'permalink': '/r/test/1',
-                  'created_utc': 1000000000,
-                  'likes': true,
+    test('parses vote direction on posts and comments', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('''
+          {
+            "props": {
+              "pageProps": {
+                "post": {
+                  "id": "p1",
+                  "title": "Test",
+                  "author": "u",
+                  "subreddit": "flutter",
+                  "subreddit_id": "t5_2qh30",
+                  "permalink": "/r/test/1",
+                  "createdUtc": 1000000000,
+                  "likes": true
                 },
-              },
-            ],
-          },
-        },
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't1',
-                'data': {
-                  'id': 'c1',
-                  'body': 'Upvoted',
-                  'author': 'u',
-                  'score': 5,
-                  'created_utc': 1000000001,
-                  'depth': 0,
-                  'collapsed': false,
-                  'likes': true,
-                  'replies': '',
-                },
-              },
-              {
-                'kind': 't1',
-                'data': {
-                  'id': 'c2',
-                  'body': 'Downvoted',
-                  'author': 'u',
-                  'score': 2,
-                  'created_utc': 1000000002,
-                  'depth': 0,
-                  'collapsed': false,
-                  'likes': false,
-                  'replies': '',
-                },
-              },
-            ],
-          },
-        },
-      ];
-
-      when(() => mockHttp.get(
-                any(),
-                headers: any(named: 'headers'),
-              ))
-          .thenAnswer(
-              (_) async => http.Response(jsonEncode(responseJson), 200));
+                "comments": [
+                  {
+                    "id": "c1",
+                    "body": "Upvoted",
+                    "author": "u",
+                    "score": 5,
+                    "createdUtc": 1000000001,
+                    "depth": 0,
+                    "likes": true
+                  },
+                  {
+                    "id": "c2",
+                    "body": "Downvoted",
+                    "author": "u",
+                    "score": 2,
+                    "createdUtc": 1000000002,
+                    "depth": 0,
+                    "likes": false
+                  }
+                ]
+              }
+            }
+          }
+        '''),
+                200,
+              ));
 
       final detail = await repository.fetchComments('flutter', 'p1');
 
@@ -356,10 +173,8 @@ void main() {
     });
 
     test('throws on API error', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('Not Found', 404));
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response('Not Found', 404));
 
       expect(
         () => repository.fetchComments('flutter', 'post1'),
@@ -371,55 +186,38 @@ void main() {
       );
     });
 
-    test('applies award counts from html markup', () async {
-      final responseJson = [
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't3',
-                'data': {
-                  'id': 'post1',
-                  'title': 'Test Post',
-                  'author': 'testuser',
-                  'subreddit': 'flutter',
-                  'subreddit_id': 't5_2qh30',
-                  'permalink': '/r/flutter/comments/post1/test_post/',
-                  'created_utc': 1000000000,
+    test('applies award counts from enricher', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response(
+                _withNextData('''
+          {
+            "props": {
+              "pageProps": {
+                "post": {
+                  "id": "post1",
+                  "title": "Test Post",
+                  "author": "testuser",
+                  "subreddit": "flutter",
+                  "subreddit_id": "t5_2qh30",
+                  "permalink": "/r/flutter/comments/post1/test_post/",
+                  "createdUtc": 1000000000
                 },
-              },
-            ],
-          },
-        },
-        {
-          'kind': 'Listing',
-          'data': {
-            'children': [
-              {
-                'kind': 't1',
-                'data': {
-                  'id': 'c1',
-                  'body': 'First comment',
-                  'author': 'user1',
-                  'score': 10,
-                  'created_utc': 1000000001,
-                  'depth': 0,
-                  'collapsed': false,
-                  'replies': '',
-                },
-              },
-            ],
-          },
-        },
-      ];
-
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async {
-        return http.Response(jsonEncode(responseJson), 200);
-      });
+                "comments": [
+                  {
+                    "id": "c1",
+                    "body": "First comment",
+                    "author": "user1",
+                    "score": 10,
+                    "createdUtc": 1000000001,
+                    "depth": 0
+                  }
+                ]
+              }
+            }
+          }
+        '''),
+                200,
+              ));
 
       final mockEnricher = _MockAwardEnricher();
       when(() => mockEnricher.fetchAwards(

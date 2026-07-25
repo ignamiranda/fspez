@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/models/user_profile.dart';
 import '../domain/models/comment.dart';
@@ -6,7 +5,6 @@ import '../domain/enums/comment_sort.dart';
 import 'html_moderator_parser.dart';
 import 'html_user_profile_parser.dart';
 import 'reddit_client.dart';
-import 'api_responses/api_responses.dart';
 
 class UserRepository {
   final RedditClient _client;
@@ -17,35 +15,11 @@ class UserRepository {
     String username, {
     SessionCookie? sessionCookie,
   }) async {
-    try {
-      final html = await _client.getHtml(
-        '/user/$username',
-        sessionCookie: sessionCookie,
-      );
-      final parsed = HtmlUserProfileParser().parseProfile(html, username);
-      if (parsed.id.isNotEmpty) return parsed;
-    } catch (e) {
-      debugPrint('UserRepository HTML parsing failed, trying JSON: $e');
-    }
-
-    final data = await _client.get(
-      '/user/$username/about',
+    final html = await _client.getHtml(
+      '/user/$username',
       sessionCookie: sessionCookie,
     );
-    final about = data['data'] as Map<String, dynamic>;
-
-    return UserProfile(
-      id: about['id'] as String? ?? '',
-      username: about['name'] as String? ?? username,
-      linkKarma: about['link_karma'] as int? ?? 0,
-      commentKarma: about['comment_karma'] as int? ?? 0,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        (about['created_utc'] as num).toInt() * 1000,
-      ),
-      iconUrl: _iconUrl(about),
-      isGold: about['is_gold'] as bool? ?? false,
-      isMod: about['is_mod'] as bool? ?? false,
-    );
+    return HtmlUserProfileParser().parseProfile(html, username);
   }
 
   Future<List<Comment>> fetchComments(
@@ -54,37 +28,15 @@ class UserRepository {
     CommentSort sort = CommentSort.new_,
     SessionCookie? sessionCookie,
   }) async {
-    if (after == null) {
-      try {
-        final html = await _client.getHtml(
-          '/user/$username/comments',
-          sessionCookie: sessionCookie,
-        );
-        final parsed = HtmlUserProfileParser().parseComments(html);
-        if (parsed.isNotEmpty) return parsed;
-      } catch (e) {
-        debugPrint('UserRepository comments HTML failed, trying JSON: $e');
-      }
-    }
-
-    final data = await _client.get(
+    final html = await _client.getHtml(
       '/user/$username/comments',
       queryParams: {
         if (after != null) 'after': after,
-        'limit': '25',
         'sort': sort.queryValue,
       },
       sessionCookie: sessionCookie,
     );
-
-    final listing = data['data'] as Map<String, dynamic>;
-    final children = listing['children'] as List<dynamic>;
-
-    return children
-        .whereType<Map<String, dynamic>>()
-        .where((child) => child['kind'] == 't1')
-        .map((child) => _parseComment(child['data'] as Map<String, dynamic>))
-        .toList();
+    return HtmlUserProfileParser().parseComments(html);
   }
 
   /// Fetches subreddits the authenticated user moderates.
@@ -94,38 +46,10 @@ class UserRepository {
   Future<List<String>> fetchModeratedSubreddits({
     required SessionCookie sessionCookie,
   }) async {
-    try {
-      final html = await _client.getHtml(
-        '/subreddits/mine/moderator',
-        sessionCookie: sessionCookie,
-      );
-      final parsed = HtmlModeratorParser().parseModeratedSubreddits(html);
-      if (parsed.isNotEmpty) return parsed;
-    } catch (e) {
-      debugPrint('UserRepository HTML moderator parsing failed: $e');
-    }
-
-    final data = await _client.get(
+    final html = await _client.getHtml(
       '/subreddits/mine/moderator',
       sessionCookie: sessionCookie,
     );
-    final listing = data['data'] as Map<String, dynamic>? ?? {};
-    final children = listing['children'] as List<dynamic>? ?? [];
-    return children
-        .whereType<Map<String, dynamic>>()
-        .map((c) => c['data'] as Map<String, dynamic>? ?? {})
-        .where((d) => d['display_name'] != null)
-        .map((d) => d['display_name'] as String)
-        .toList();
-  }
-
-  String? _iconUrl(Map<String, dynamic> about) {
-    final raw = about['icon_img'] as String?;
-    if (raw != null && raw.isNotEmpty) return raw.replaceAll('&amp;', '&');
-    return null;
-  }
-
-  Comment _parseComment(Map<String, dynamic> data) {
-    return ApiComment.fromJson(data).toDomain();
+    return HtmlModeratorParser().parseModeratedSubreddits(html);
   }
 }

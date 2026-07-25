@@ -16,16 +16,6 @@ class RedditClient {
   RedditClient({http.Client? httpClient, HttpTransport? transport})
       : _transport = transport ?? HttpTransport(httpClient: httpClient);
 
-  Future<Map<String, dynamic>> get(
-    String path, {
-    Map<String, String>? queryParams,
-    SessionCookie? sessionCookie,
-  }) async {
-    final uri = _transport.readJsonUri(path, queryParams: queryParams);
-    final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
-    return _transport.handleJsonResponse(response);
-  }
-
   Future<String> getHtml(
     String path, {
     Map<String, String>? queryParams,
@@ -64,16 +54,6 @@ class RedditClient {
       body: body != null ? jsonEncode(body) : null,
     );
     return _transport.handleJsonResponse(response);
-  }
-
-  Future<dynamic> getRaw(
-    String path, {
-    Map<String, String>? queryParams,
-    SessionCookie? sessionCookie,
-  }) async {
-    final uri = _transport.readJsonUri(path, queryParams: queryParams);
-    final response = await _transport.get(uri, ApiEndpoint.json, sessionCookie);
-    return _transport.handleRawJsonResponse(response);
   }
 
   Future<Map<String, dynamic>> postForm(

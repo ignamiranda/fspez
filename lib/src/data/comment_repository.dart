@@ -1,12 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../domain/models/comment.dart';
-import '../domain/models/post.dart';
 import '../domain/models/post_detail.dart';
-import '../domain/models/subreddit.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/enums/comment_sort.dart';
 import 'reddit_client.dart';
-import 'api_responses/api_responses.dart';
 import 'award_enricher.dart';
 import 'html_post_thread_parser.dart';
 import 'message_client.dart';
@@ -28,74 +25,13 @@ class CommentRepository {
     CommentSort? sort,
     SessionCookie? sessionCookie,
   }) async {
-    try {
-      final html = await _client.getHtml(
-        '/r/$subreddit/comments/$postId',
-        queryParams: sort != null ? {'sort': sort.queryValue} : null,
-        sessionCookie: sessionCookie,
-      );
-      final parsed = HtmlPostThreadParser().parse(html);
-      if (parsed.post.id.isNotEmpty) {
-        return await _enrichWithAwards(parsed, subreddit, postId,
-            sort: sort, sessionCookie: sessionCookie);
-      }
-    } catch (e) {
-      debugPrint('CommentRepository HTML parsing failed, trying JSON: $e');
-    }
-
-    return _fetchCommentsJson(subreddit, postId,
-        sort: sort, sessionCookie: sessionCookie);
-  }
-
-  Future<PostDetail> _fetchCommentsJson(
-    String subreddit,
-    String postId, {
-    CommentSort? sort,
-    SessionCookie? sessionCookie,
-  }) async {
-    final raw = await _client.getRaw(
+    final html = await _client.getHtml(
       '/r/$subreddit/comments/$postId',
       queryParams: sort != null ? {'sort': sort.queryValue} : null,
       sessionCookie: sessionCookie,
     );
-
-    final items = raw as List<dynamic>;
-
-    ApiPost? apiPost;
-    if (items.isNotEmpty) {
-      final listing = items[0] as Map<String, dynamic>;
-      final children = (listing['data'] as Map<String, dynamic>)['children']
-          as List<dynamic>;
-      for (final child in children) {
-        final childMap = child as Map<String, dynamic>;
-        if (childMap['kind'] == 't3') {
-          apiPost = ApiPost.fromJson(childMap['data'] as Map<String, dynamic>);
-        }
-      }
-    }
-
-    final post = apiPost?.toDomain() ??
-        Post(
-          id: postId,
-          title: '',
-          author: '[deleted]',
-          subreddit: Subreddit(id: '', name: subreddit),
-          createdAt: DateTime.now(),
-          permalink: '',
-          type: PostType.self_,
-        );
-
-    final commentsListing =
-        items.length > 1 ? items[1] as Map<String, dynamic> : null;
-    final commentsChildren = commentsListing != null
-        ? (commentsListing['data'] as Map<String, dynamic>)['children']
-            as List<dynamic>
-        : <dynamic>[];
-
-    final comments = _parseComments(commentsChildren);
-
-    return await _enrichWithAwards(
-        PostDetail(post: post, comments: comments), subreddit, postId,
+    final parsed = HtmlPostThreadParser().parse(html);
+    return await _enrichWithAwards(parsed, subreddit, postId,
         sort: sort, sessionCookie: sessionCookie);
   }
 
@@ -130,17 +66,6 @@ class CommentRepository {
     }
 
     return detail;
-  }
-
-  List<Comment> _parseComments(List<dynamic> children) {
-    return children.whereType<Map<String, dynamic>>().map((child) {
-      if (child['kind'] == 'more') {
-        return ApiComment.more(child['data'] as Map<String, dynamic>)
-            .toDomain();
-      }
-      return ApiComment.fromJson(child['data'] as Map<String, dynamic>)
-          .toDomain();
-    }).toList();
   }
 
   Comment _applyAwards(Comment comment, Map<String, int> awardCounts) {
