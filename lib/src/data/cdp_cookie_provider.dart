@@ -65,6 +65,8 @@ class CdpCookieProvider implements CookieProvider {
       final cookies = await CookieManager.instance()
           .getCookies(url: WebUri('https://www.reddit.com'));
       if (cookies.isEmpty) return null;
+      final hasSession = cookies.any((c) => c.name == 'reddit_session');
+      if (!hasSession) return null;
       return cookies.map((c) => '${c.name}=${c.value}').join('; ');
     } catch (e) {
       debugPrint('CdpCookieProvider._tryCookieManagerString failed: $e');
@@ -80,6 +82,8 @@ class CdpCookieProvider implements CookieProvider {
       );
       if (r is! Map || r['cookies'] is! List) return null;
       final cookies = (r['cookies'] as List).cast<Map>();
+      final hasSession = cookies.any((c) => c['name'] == 'reddit_session');
+      if (!hasSession) return null;
       return cookies.map((c) => '${c['name']}=${c['value']}').join('; ');
     } catch (e) {
       debugPrint('CdpCookieProvider._tryCdpString failed: $e');

@@ -145,6 +145,12 @@ class HttpTransport {
     _httpClient.close();
   }
 
+  String _cookieHeader(SessionCookie? cookie) {
+    final raw = cookie?.rawCookie;
+    if (raw != null && raw.contains('reddit_session=')) return raw;
+    return 'reddit_session=${cookie?.value ?? ''}';
+  }
+
   Map<String, String> _headersFor(ApiEndpoint kind, SessionCookie? cookie) {
     switch (kind) {
       case ApiEndpoint.json:
@@ -178,7 +184,7 @@ class HttpTransport {
 
   Map<String, String> _formHeaders(SessionCookie? cookie,
       {bool useBrowserUA = false}) {
-    final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+    final c = _cookieHeader(cookie);
     return {
       'User-Agent': useBrowserUA ? _browserUA : 'fspez/0.1.0',
       'Content-Type':
@@ -191,7 +197,7 @@ class HttpTransport {
   }
 
   Map<String, String> _headersForHtml(SessionCookie? cookie) {
-    final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+    final c = _cookieHeader(cookie);
     return {
       'User-Agent': _browserUA,
       'Accept':
@@ -201,7 +207,7 @@ class HttpTransport {
   }
 
   Map<String, String> _headersForXml(SessionCookie? cookie) {
-    final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+    final c = _cookieHeader(cookie);
     return {
       'User-Agent': _browserUA,
       'Accept': 'application/xml,application/atom+xml,text/xml;q=0.9,*/*;q=0.8',
