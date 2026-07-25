@@ -50,7 +50,7 @@ class UsernameExtractor {
   final RedditClient _redditClient;
 
   UsernameExtractor({required RedditClient redditClient})
-      : _redditClient = redditClient;
+    : _redditClient = redditClient;
 
   Future<String> extract(
     SessionCookie cookie, {
@@ -68,7 +68,8 @@ class UsernameExtractor {
   Future<String?> _tryJsEval(InAppWebViewController? controller) async {
     if (controller == null) return null;
     try {
-      final js = await controller.evaluateJavascript(source: '''
+      final js = await controller.evaluateJavascript(
+        source: '''
         (function() {
           var el = document.querySelector('shreddit-app');
           if (el && el.getAttribute('username')) return el.getAttribute('username');
@@ -84,7 +85,8 @@ class UsernameExtractor {
           }
           return null;
         })()
-      ''');
+      ''',
+      );
       if (js is String && js.isNotEmpty && js != 'null') return js;
     } catch (e) {
       debugPrint('UsernameExtractor._tryJsEval failed: $e');
@@ -94,7 +96,7 @@ class UsernameExtractor {
 
   Future<String?> _tryApiCall(SessionCookie cookie) async {
     final info = await fetchSessionInfo(_redditClient, cookie);
-    return info.username != 'unknown' ? info.username : null;
+    return info?.username;
   }
 
   String _extractFromCookie(String cookieValue) {

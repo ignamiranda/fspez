@@ -11,26 +11,30 @@ class AuthAcquirer {
   String? _cachedUsername;
 
   AuthAcquirer({required RedditClient redditClient})
-      : _redditClient = redditClient,
-        _usernameExtractor = UsernameExtractor(redditClient: redditClient);
+    : _redditClient = redditClient,
+      _usernameExtractor = UsernameExtractor(redditClient: redditClient);
 
   Future<SessionCookie?> acquire(
     SessionAcquirer acquirer, {
     int maxAttempts = 10,
     Duration interval = const Duration(milliseconds: 500),
   }) async {
-    final cookie =
-        await acquirer.acquire(maxAttempts: maxAttempts, interval: interval);
+    final cookie = await acquirer.acquire(
+      maxAttempts: maxAttempts,
+      interval: interval,
+    );
     if (cookie == null) return null;
 
     final info = await fetchSessionInfo(_redditClient, cookie);
-    _cachedUsername = info.username;
+    if (info != null) {
+      _cachedUsername = info.username;
+    }
 
     return SessionCookie(
       value: cookie.value,
       expiresAt: cookie.expiresAt,
       rawCookie: cookie.rawCookie,
-      modhash: info.modhash ?? cookie.modhash,
+      modhash: info?.modhash ?? cookie.modhash,
     );
   }
 

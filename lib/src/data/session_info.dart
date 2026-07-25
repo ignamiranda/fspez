@@ -10,8 +10,10 @@ class SessionInfo {
   const SessionInfo({required this.username, this.modhash});
 }
 
-Future<SessionInfo> fetchSessionInfo(
-    RedditClient client, SessionCookie cookie) async {
+Future<SessionInfo?> fetchSessionInfo(
+  RedditClient client,
+  SessionCookie cookie,
+) async {
   try {
     final html = await client.getHtml('/', sessionCookie: cookie);
     final username = extractUsernameFromHtml(html);
@@ -25,5 +27,5 @@ Future<SessionInfo> fetchSessionInfo(
     debugPrint('fetchSessionInfo HTML failed: $e');
   }
 
-  return const SessionInfo(username: 'unknown', modhash: null);
+  return null;
 }

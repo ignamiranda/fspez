@@ -32,12 +32,17 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
       );
 
       final store = SessionAcquirer(cookieProvider: provider);
-      final cookie = await acquirer.acquire(store,
-          maxAttempts: 20, interval: const Duration(milliseconds: 500));
+      final cookie = await acquirer.acquire(
+        store,
+        maxAttempts: 20,
+        interval: const Duration(milliseconds: 500),
+      );
       if (cookie == null || _done) return;
 
       _done = true;
       final username = await acquirer.extractUsername(cookie, controller: c);
+
+      final displayName = username == 'unknown' ? 'a Reddit user' : username;
 
       final account = Account(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -48,9 +53,9 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
       await ref.read(activeAccountProvider.notifier).addAccount(account);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logged in as $username')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Logged in as $displayName')));
       Navigator.of(context).pop();
     } catch (e) {
       debugPrint('SessionAcquisition failed: $e');
@@ -86,9 +91,7 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
       body: Stack(
         children: [
           InAppWebView(
-            initialUrlRequest: URLRequest(
-              url: WebUri('about:blank'),
-            ),
+            initialUrlRequest: URLRequest(url: WebUri('about:blank')),
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
               mixedContentMode: MixedContentMode.MIXED_CONTENT_NEVER_ALLOW,

@@ -27,66 +27,75 @@ void main() {
 
   group('fetchSessionInfo', () {
     test('extracts username and modhash from homepage HTML', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(
+      when(
+        () => mockHttp.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer(
+        (_) async => http.Response(
           '<html><shreddit-app username="testuser"></shreddit-app>'
           '<script>window.__r = {"modhash":"abc123modhash"};</script></html>',
-          200));
+          200,
+        ),
+      );
 
       final info = await fetchSessionInfo(redditClient, cookie);
 
-      expect(info.username, 'testuser');
+      expect(info!.username, 'testuser');
       expect(info.modhash, 'abc123modhash');
-      verify(() => mockHttp.get(
-            Uri.parse('https://www.reddit.com/'),
-            headers: any(named: 'headers'),
-          )).called(1);
+      verify(
+        () => mockHttp.get(
+          Uri.parse('https://www.reddit.com/'),
+          headers: any(named: 'headers'),
+        ),
+      ).called(1);
     });
 
-    test('returns username with null modhash when modhash field is missing',
-        () async {
-      when(() => mockHttp.get(
-                any(),
-                headers: any(named: 'headers'),
-              ))
-          .thenAnswer((_) async => http.Response(
-              '<html><shreddit-app username="testuser"></shreddit-app></html>',
-              200));
+    test(
+      'returns username with null modhash when modhash field is missing',
+      () async {
+        when(
+          () => mockHttp.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '<html><shreddit-app username="testuser"></shreddit-app></html>',
+            200,
+          ),
+        );
+
+        final info = await fetchSessionInfo(redditClient, cookie);
+
+        expect(info!.username, 'testuser');
+        expect(info.modhash, isNull);
+      },
+    );
+
+    test('returns null on API error', () async {
+      when(
+        () => mockHttp.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer((_) async => http.Response('Not Found', 404));
 
       final info = await fetchSessionInfo(redditClient, cookie);
 
-      expect(info.username, 'testuser');
-      expect(info.modhash, isNull);
+      expect(info, isNull);
     });
 
-    test('returns defaults on API error', () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response('Not Found', 404));
+    test(
+      'returns username with null modhash on empty modhash string',
+      () async {
+        when(
+          () => mockHttp.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '<html><shreddit-app username="testuser"></shreddit-app>'
+            '<script>window.__r = {"modhash":""};</script></html>',
+            200,
+          ),
+        );
 
-      final info = await fetchSessionInfo(redditClient, cookie);
+        final info = await fetchSessionInfo(redditClient, cookie);
 
-      expect(info.username, 'unknown');
-      expect(info.modhash, isNull);
-    });
-
-    test('returns username with null modhash on empty modhash string',
-        () async {
-      when(() => mockHttp.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(
-          '<html><shreddit-app username="testuser"></shreddit-app>'
-          '<script>window.__r = {"modhash":""};</script></html>',
-          200));
-
-      final info = await fetchSessionInfo(redditClient, cookie);
-
-      expect(info.username, 'testuser');
-      expect(info.modhash, isNull);
-    });
+        expect(info!.username, 'testuser');
+        expect(info.modhash, isNull);
+      },
+    );
   });
 }
