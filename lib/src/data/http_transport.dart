@@ -28,6 +28,10 @@ class HttpTransport {
         .replace(queryParameters: queryParams);
   }
 
+  Uri rssUri(String path, {Map<String, String>? queryParams}) {
+    return Uri.parse('$baseUrl$path.rss').replace(queryParameters: queryParams);
+  }
+
   Uri webUri(String path, {Map<String, String>? queryParams}) {
     return Uri.parse('$baseUrl$path').replace(queryParameters: queryParams);
   }
@@ -87,6 +91,23 @@ class HttpTransport {
 
   Future<http.Response> getHtml(Uri uri, SessionCookie? cookie) {
     return _withTimeout(_httpClient.get(uri, headers: _headersForHtml(cookie)));
+  }
+
+  Future<String> getXml(Uri uri, SessionCookie? cookie) {
+    return _withTimeout(
+      _httpClient.get(
+        uri,
+        headers: _headersForXml(cookie),
+      ),
+    ).then((response) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.body;
+      }
+      throw RedditApiException(
+        statusCode: response.statusCode,
+        message: response.body,
+      );
+    });
   }
 
   Future<void> putBytes(Uri uri, Uint8List bytes,
@@ -181,6 +202,15 @@ class HttpTransport {
       'User-Agent': _browserUA,
       'Accept':
           'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Cookie': c,
+    };
+  }
+
+  Map<String, String> _headersForXml(SessionCookie? cookie) {
+    final c = cookie?.rawCookie ?? 'reddit_session=${cookie?.value ?? ''}';
+    return {
+      'User-Agent': _browserUA,
+      'Accept': 'application/xml,application/atom+xml,text/xml;q=0.9,*/*;q=0.8',
       'Cookie': c,
     };
   }

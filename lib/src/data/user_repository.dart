@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/models/user_profile.dart';
 import '../domain/models/comment.dart';
 import '../domain/enums/comment_sort.dart';
+import 'html_moderator_parser.dart';
+import 'html_user_profile_parser.dart';
 import 'reddit_client.dart';
 import 'api_responses/api_responses.dart';
 
@@ -14,6 +17,17 @@ class UserRepository {
     String username, {
     SessionCookie? sessionCookie,
   }) async {
+    try {
+      final html = await _client.getHtml(
+        '/user/$username',
+        sessionCookie: sessionCookie,
+      );
+      final parsed = HtmlUserProfileParser().parseProfile(html, username);
+      if (parsed.id.isNotEmpty) return parsed;
+    } catch (e) {
+      debugPrint('UserRepository HTML parsing failed, trying JSON: $e');
+    }
+
     final data = await _client.get(
       '/user/$username/about',
       sessionCookie: sessionCookie,
@@ -40,6 +54,19 @@ class UserRepository {
     CommentSort sort = CommentSort.new_,
     SessionCookie? sessionCookie,
   }) async {
+    if (after == null) {
+      try {
+        final html = await _client.getHtml(
+          '/user/$username/comments',
+          sessionCookie: sessionCookie,
+        );
+        final parsed = HtmlUserProfileParser().parseComments(html);
+        if (parsed.isNotEmpty) return parsed;
+      } catch (e) {
+        debugPrint('UserRepository comments HTML failed, trying JSON: $e');
+      }
+    }
+
     final data = await _client.get(
       '/user/$username/comments',
       queryParams: {
@@ -67,6 +94,17 @@ class UserRepository {
   Future<List<String>> fetchModeratedSubreddits({
     required SessionCookie sessionCookie,
   }) async {
+    try {
+      final html = await _client.getHtml(
+        '/subreddits/mine/moderator',
+        sessionCookie: sessionCookie,
+      );
+      final parsed = HtmlModeratorParser().parseModeratedSubreddits(html);
+      if (parsed.isNotEmpty) return parsed;
+    } catch (e) {
+      debugPrint('UserRepository HTML moderator parsing failed: $e');
+    }
+
     final data = await _client.get(
       '/subreddits/mine/moderator',
       sessionCookie: sessionCookie,

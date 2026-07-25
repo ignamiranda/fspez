@@ -33,14 +33,24 @@ void main() {
     );
   }
 
-  test('returns healthy when /api/me matches and modhash exists', () async {
+  String htmlWithModhash(String modhash) {
+    return '''<html><script id="__NEXT_DATA__" type="application/json">
+{"props":{"pageProps":{"user":{"name":"testuser"},"modhash":"$modhash"}}}
+</script></html>''';
+  }
+
+  String htmlNoModhash() {
+    return '''<html><script id="__NEXT_DATA__" type="application/json">
+{"props":{"pageProps":{"user":{"name":"testuser"}}}}
+</script></html>''';
+  }
+
+  test('returns healthy when shredded HTML shows user and modhash exists',
+      () async {
     when(() => mockHttp.get(
           any(),
           headers: any(named: 'headers'),
-        )).thenAnswer((_) async => http.Response(
-          '{"data":{"name":"testuser","modhash":"abc"}}',
-          200,
-        ));
+        )).thenAnswer((_) async => http.Response(htmlWithModhash('abc'), 200));
 
     final health =
         await checkSessionHealth(client, buildAccount(modhash: 'abc'));
@@ -49,15 +59,12 @@ void main() {
   });
 
   test(
-      'returns healthy with newModhash when API provides one but stored is absent',
+      'returns healthy with newModhash when HTML provides one but stored is absent',
       () async {
     when(() => mockHttp.get(
           any(),
           headers: any(named: 'headers'),
-        )).thenAnswer((_) async => http.Response(
-          '{"data":{"name":"testuser","modhash":"abc"}}',
-          200,
-        ));
+        )).thenAnswer((_) async => http.Response(htmlWithModhash('abc'), 200));
 
     final health = await checkSessionHealth(client, buildAccount());
 
@@ -65,15 +72,12 @@ void main() {
     expect(health.newModhash, 'abc');
   });
 
-  test('returns missingModhash when both stored and API modhash are absent',
+  test('returns missingModhash when both stored and HTML modhash are absent',
       () async {
     when(() => mockHttp.get(
           any(),
           headers: any(named: 'headers'),
-        )).thenAnswer((_) async => http.Response(
-          '{"data":{"name":"testuser"}}',
-          200,
-        ));
+        )).thenAnswer((_) async => http.Response(htmlNoModhash(), 200));
 
     final health = await checkSessionHealth(client, buildAccount());
 
@@ -81,7 +85,7 @@ void main() {
     expect(health.newModhash, isNull);
   });
 
-  test('returns expired on forbidden /api/me response', () async {
+  test('returns expired on forbidden response', () async {
     when(() => mockHttp.get(
           any(),
           headers: any(named: 'headers'),

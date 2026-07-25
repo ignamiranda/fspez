@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../domain/models/flair_option.dart';
 import '../domain/models/session_cookie.dart';
+import 'html_flair_parser.dart';
 import 'http_transport.dart';
 import 'media_upload_response.dart';
 import 'reddit_client.dart';
@@ -95,7 +96,17 @@ class SubmitClient {
       }
       return [];
     } catch (e) {
-      debugPrint('SubmitClient.fetchFlairOptions failed: $e');
+      debugPrint('SubmitClient.fetchFlairOptions JSON failed, trying HTML: $e');
+    }
+
+    try {
+      final resp = await _transport.getHtml(
+        _transport.webUri('/r/$subreddit/submit'),
+        sessionCookie,
+      );
+      return HtmlFlairParser().parseFlairOptions(resp.body);
+    } catch (e) {
+      debugPrint('SubmitClient.fetchFlairOptions HTML failed: $e');
       return [];
     }
   }

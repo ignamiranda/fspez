@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import '../domain/models/inbox_feed.dart';
 import '../domain/models/session_cookie.dart';
+import 'html_inbox_parser.dart';
 import 'reddit_client.dart';
 import 'inbox_parser.dart';
 import 'message_client.dart';
@@ -42,6 +44,16 @@ class InboxRepository {
     String? after, {
     SessionCookie? sessionCookie,
   }) async {
+    if (after == null) {
+      try {
+        final html = await _client.getHtml(path, sessionCookie: sessionCookie);
+        final parsed = HtmlInboxParser().parseInbox(html, tab);
+        if (parsed.items.isNotEmpty) return parsed;
+      } catch (e) {
+        debugPrint('InboxRepository HTML parsing failed, trying JSON: $e');
+      }
+    }
+
     final data = await _client.get(path,
         queryParams: {
           if (after != null) 'after': after,

@@ -5,8 +5,11 @@ import '../domain/models/account.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/enums/feed_sort.dart';
 import '../domain/enums/top_time_filter.dart';
+import 'package:flutter/foundation.dart';
 import 'reddit_client.dart';
 import 'feed_parser.dart';
+import 'html_saved_hidden_parser.dart';
+import 'rss_feed_parser.dart';
 import 'paginated_notifier.dart';
 import 'paginated_list_state.dart';
 
@@ -163,10 +166,30 @@ Future<Feed> _fetchFeed(
       't': topTimeFilter.queryValue,
     if (queryOverrides != null) ...queryOverrides,
   };
-  final data =
-      await client.get(path, queryParams: params, sessionCookie: cookie);
-  if (onRawResponse != null) onRawResponse(data);
-  return parser.parseFeed(data, kind, sort);
+
+  if (queryOverrides == null && after == null) {
+    try {
+      final rssXml =
+          await client.getRss(path, queryParams: params, sessionCookie: cookie);
+      final rssData = RssFeedParser().parseFeedXml(rssXml);
+      if (onRawResponse != null) onRawResponse(rssData);
+      return parser.parseFeed(rssData, kind, sort);
+    } catch (_) {}
+  }
+
+  try {
+    final data =
+        await client.get(path, queryParams: params, sessionCookie: cookie);
+    if (onRawResponse != null) onRawResponse(data);
+    return parser.parseFeed(data, kind, sort);
+  } catch (e) {
+    debugPrint('_fetchFeed JSON failed, trying HTML: $e');
+  }
+
+  final html =
+      await client.getHtml(path, queryParams: params, sessionCookie: cookie);
+  final posts = HtmlSavedHiddenParser().parseSaved(html);
+  return Feed(kind: kind, sort: sort, posts: posts);
 }
 
 /// Maps a [FeedPageConfig] to the [FeedKind] expected by [FeedParser.parseFeed].

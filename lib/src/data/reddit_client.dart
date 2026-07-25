@@ -14,7 +14,7 @@ class RedditClient {
   final HttpTransport _transport;
 
   RedditClient({http.Client? httpClient, HttpTransport? transport})
-    : _transport = transport ?? HttpTransport(httpClient: httpClient);
+      : _transport = transport ?? HttpTransport(httpClient: httpClient);
 
   Future<Map<String, dynamic>> get(
     String path, {
@@ -40,6 +40,15 @@ class RedditClient {
       statusCode: response.statusCode,
       message: response.body,
     );
+  }
+
+  Future<String> getRss(
+    String path, {
+    Map<String, String>? queryParams,
+    SessionCookie? sessionCookie,
+  }) async {
+    final uri = _transport.rssUri(path, queryParams: queryParams);
+    return _transport.getXml(uri, sessionCookie);
   }
 
   Future<Map<String, dynamic>> post(

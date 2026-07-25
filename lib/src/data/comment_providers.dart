@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/enums/comment_sort.dart';
+import '../domain/models/post_detail.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/subreddit_rule.dart';
 import 'reddit_client_provider.dart';

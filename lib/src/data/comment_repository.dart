@@ -1,20 +1,15 @@
 import 'package:flutter/foundation.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
+import '../domain/models/post_detail.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/enums/comment_sort.dart';
 import 'reddit_client.dart';
 import 'api_responses/api_responses.dart';
 import 'award_enricher.dart';
+import 'html_post_thread_parser.dart';
 import 'message_client.dart';
-
-class PostDetail {
-  final Post post;
-  final List<Comment> comments;
-
-  const PostDetail({required this.post, required this.comments});
-}
 
 class CommentRepository {
   final RedditClient _client;
@@ -28,6 +23,31 @@ class CommentRepository {
   );
 
   Future<PostDetail> fetchComments(
+    String subreddit,
+    String postId, {
+    CommentSort? sort,
+    SessionCookie? sessionCookie,
+  }) async {
+    try {
+      final html = await _client.getHtml(
+        '/r/$subreddit/comments/$postId',
+        queryParams: sort != null ? {'sort': sort.queryValue} : null,
+        sessionCookie: sessionCookie,
+      );
+      final parsed = HtmlPostThreadParser().parse(html);
+      if (parsed.post.id.isNotEmpty) {
+        return await _enrichWithAwards(parsed, subreddit, postId,
+            sort: sort, sessionCookie: sessionCookie);
+      }
+    } catch (e) {
+      debugPrint('CommentRepository HTML parsing failed, trying JSON: $e');
+    }
+
+    return _fetchCommentsJson(subreddit, postId,
+        sort: sort, sessionCookie: sessionCookie);
+  }
+
+  Future<PostDetail> _fetchCommentsJson(
     String subreddit,
     String postId, {
     CommentSort? sort,
@@ -74,6 +94,18 @@ class CommentRepository {
 
     final comments = _parseComments(commentsChildren);
 
+    return await _enrichWithAwards(
+        PostDetail(post: post, comments: comments), subreddit, postId,
+        sort: sort, sessionCookie: sessionCookie);
+  }
+
+  Future<PostDetail> _enrichWithAwards(
+    PostDetail detail,
+    String subreddit,
+    String postId, {
+    CommentSort? sort,
+    SessionCookie? sessionCookie,
+  }) async {
     try {
       final awardCounts = await _awardEnricher.fetchAwards(
         subreddit,
@@ -84,20 +116,20 @@ class CommentRepository {
 
       if (awardCounts.isNotEmpty) {
         return PostDetail(
-          post: post.copyWith(
-            awardCount: awardCounts[post.fullname] ?? post.awardCount,
+          post: detail.post.copyWith(
+            awardCount:
+                awardCounts[detail.post.fullname] ?? detail.post.awardCount,
           ),
-          comments: comments
+          comments: detail.comments
               .map((comment) => _applyAwards(comment, awardCounts))
               .toList(),
         );
       }
     } catch (e) {
-      // Keep the JSON-derived detail when HTML award extraction fails.
       debugPrint('CommentRepository._applyAwards HTML parsing failed: $e');
     }
 
-    return PostDetail(post: post, comments: comments);
+    return detail;
   }
 
   List<Comment> _parseComments(List<dynamic> children) {

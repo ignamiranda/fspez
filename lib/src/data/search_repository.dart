@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import '../domain/models/feed.dart';
 import '../domain/models/post.dart';
 import '../domain/models/subreddit.dart';
 import '../domain/models/search_user.dart';
 import '../domain/models/session_cookie.dart';
 import '../domain/enums/feed_sort.dart';
+import 'html_search_parser.dart';
 import 'reddit_client.dart';
 import 'feed_parser.dart';
 import 'api_responses/api_responses.dart';
@@ -30,6 +32,31 @@ class SearchRepository {
     String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
+    if (after == null) {
+      try {
+        final html = await _client.getHtml(
+          _searchPath(subreddit),
+          queryParams: {
+            'q': query,
+            'restrict_sr':
+                subreddit != null && subreddit.isNotEmpty ? 'on' : 'off',
+            'sort': 'relevance',
+          },
+          sessionCookie: sessionCookie,
+        );
+        final feed = HtmlSearchParser().parsePosts(html);
+        if (feed.posts.isNotEmpty) {
+          return PaginatedResult<Post>(
+            items: feed.posts,
+            after: feed.after,
+            hasMore: feed.hasMorePages,
+          );
+        }
+      } catch (e) {
+        debugPrint('SearchRepository HTML search failed, trying JSON: $e');
+      }
+    }
+
     final page = await _search(query,
         after: after, subreddit: subreddit, sessionCookie: sessionCookie);
     return PaginatedResult<Post>(
@@ -46,6 +73,31 @@ class SearchRepository {
     String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
+    if (after == null) {
+      try {
+        final html = await _client.getHtml(
+          _searchPath(subreddit),
+          queryParams: {
+            'q': query,
+            'type': 'sr',
+            if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
+            'sort': 'relevance',
+          },
+          sessionCookie: sessionCookie,
+        );
+        final communities = HtmlSearchParser().parseCommunities(html);
+        if (communities.isNotEmpty) {
+          return PaginatedResult<Subreddit>(
+            items: communities,
+            after: null,
+            hasMore: false,
+          );
+        }
+      } catch (e) {
+        debugPrint('SearchRepository HTML community search failed: $e');
+      }
+    }
+
     final data = await _client.get(_searchPath(subreddit),
         queryParams: {
           'q': query,
@@ -79,6 +131,31 @@ class SearchRepository {
     String? subreddit,
     SessionCookie? sessionCookie,
   }) async {
+    if (after == null) {
+      try {
+        final html = await _client.getHtml(
+          _searchPath(subreddit),
+          queryParams: {
+            'q': query,
+            'type': 'user',
+            if (subreddit != null && subreddit.isNotEmpty) 'restrict_sr': 'on',
+            'sort': 'relevance',
+          },
+          sessionCookie: sessionCookie,
+        );
+        final users = HtmlSearchParser().parseUsers(html);
+        if (users.isNotEmpty) {
+          return PaginatedResult<SearchUser>(
+            items: users,
+            after: null,
+            hasMore: false,
+          );
+        }
+      } catch (e) {
+        debugPrint('SearchRepository HTML user search failed: $e');
+      }
+    }
+
     final data = await _client.get(_searchPath(subreddit),
         queryParams: {
           'q': query,

@@ -71,11 +71,13 @@ Future<SessionHealth> checkSessionHealth(
   Account account,
 ) async {
   try {
-    final me =
-        await redditClient.get('/api/me', sessionCookie: account.sessionCookie);
-    final data = me['data'] as Map<String, dynamic>?;
-    final username = data?['name'] as String?;
-    final apiModhash = data?['modhash'] as String?;
+    final html = await redditClient.getHtml(
+      '/',
+      sessionCookie: account.sessionCookie,
+    );
+
+    final username = _extractUsernameFromHtml(html);
+    final modhash = _extractModhashFromHtml(html);
 
     if (username == null || username.isEmpty) {
       return SessionHealth.expired;
@@ -92,13 +94,13 @@ Future<SessionHealth> checkSessionHealth(
     }
 
     if (account.sessionCookie.modhash == null) {
-      if (apiModhash != null) {
+      if (modhash != null) {
         return SessionHealth._(
           status: SessionHealthStatus.healthy,
           title: 'Session healthy',
           message: '',
           actionLabel: '',
-          newModhash: apiModhash,
+          newModhash: modhash,
         );
       }
       return SessionHealth.missingModhash;
@@ -114,4 +116,41 @@ Future<SessionHealth> checkSessionHealth(
     debugPrint('SessionHealth check failed: $e');
     return SessionHealth.unknown;
   }
+}
+
+String? _extractUsernameFromHtml(String html) {
+  final usernamePatterns = [
+    RegExp(r'"loggedInUser"\s*:\s*"([^"]+)"'),
+    RegExp(r'"user"\s*:\s*\{\s*"name"\s*:\s*"([^"]+)"'),
+    RegExp(r'"username"\s*:\s*"([^"]+)"'),
+    RegExp(r'<shreddit-app[^>]*username="([^"]+)"'),
+  ];
+
+  for (final pattern in usernamePatterns) {
+    final match = pattern.firstMatch(html);
+    if (match != null) {
+      final name = match.group(1);
+      if (name != null && name.isNotEmpty && name.length < 30) return name;
+    }
+  }
+
+  return null;
+}
+
+String? _extractModhashFromHtml(String html) {
+  final modhashPatterns = [
+    RegExp(r'"modhash"\s*:\s*"([^"]+)"'),
+    RegExp(r'name="uh"\s+value="([^"]+)"'),
+    RegExp(r'X-Modhash:\s*([a-z0-9]+)'),
+  ];
+
+  for (final pattern in modhashPatterns) {
+    final match = pattern.firstMatch(html);
+    if (match != null) {
+      final hash = match.group(1);
+      if (hash != null && hash.isNotEmpty) return hash;
+    }
+  }
+
+  return null;
 }

@@ -29,6 +29,7 @@ dependencies:
   share_plus: ^10.0.0
   markdown: ^7.0.0
   image_gallery_saver: ^2.0.3
+  xml: ^6.6.1
 
 dev_dependencies:
   flutter_test:
