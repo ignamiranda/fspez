@@ -87,7 +87,7 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
         children: [
           InAppWebView(
             initialUrlRequest: URLRequest(
-              url: WebUri('https://www.reddit.com/login'),
+              url: WebUri('about:blank'),
             ),
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
@@ -100,8 +100,17 @@ class _AuthWebViewScreenState extends ConsumerState<AuthWebViewScreen> {
               }
               return NavigationActionPolicy.CANCEL;
             },
-            onWebViewCreated: (controller) {
+            onWebViewCreated: (controller) async {
               _controller = controller;
+              try {
+                await CookieManager.instance().deleteAllCookies();
+              } catch (_) {}
+              if (!mounted) return;
+              controller.loadUrl(
+                urlRequest: URLRequest(
+                  url: WebUri('https://www.reddit.com/login'),
+                ),
+              );
             },
             onLoadStop: (controller, url) async {
               if (_done || url == null) return;
